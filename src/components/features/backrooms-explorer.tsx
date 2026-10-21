@@ -87,36 +87,66 @@ export function BackroomsExplorer() {
     // fluorescent flicker
     s.flick = Math.random() > 0.96 ? 0.55 + Math.random() * 0.3 : Math.min(1, s.flick + 0.04);
 
-    // ceiling
+    // ceiling with tile grid
     const ceil = ctx.createLinearGradient(0, 0, 0, h / 2);
-    ceil.addColorStop(0, "#8a7c38");
-    ceil.addColorStop(1, "#6e6230");
+    ceil.addColorStop(0, "#a3924e");
+    ceil.addColorStop(1, "#77692f");
     ctx.fillStyle = ceil;
     ctx.fillRect(0, 0, w, h / 2);
-    // light panels on ceiling
+    // tile rows converge toward the horizon
+    for (let i = 1; i <= 8; i++) {
+      const yy = (h / 2) * (1 - Math.pow(0.82, i));
+      ctx.lineWidth = Math.max(0.5, 2.2 * (1 - yy / (h / 2)) + 0.4);
+      ctx.strokeStyle = "rgba(52,42,15,0.32)";
+      ctx.beginPath();
+      ctx.moveTo(0, yy);
+      ctx.lineTo(w, yy);
+      ctx.stroke();
+    }
+    // converging joist lines
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(52,42,15,0.2)";
+    for (let j = -4; j <= 4; j++) {
+      ctx.beginPath();
+      ctx.moveTo(w / 2, h / 2);
+      ctx.lineTo(w / 2 + j * (w * 0.17), 0);
+      ctx.stroke();
+    }
+    // louvered fluorescent panels
     ctx.save();
     ctx.globalAlpha = 0.85 * s.flick;
     for (let i = -3; i <= 3; i++) {
       const panX = w / 2 + i * (w * 0.24) - (s.dir % 1) * 40;
-      ctx.fillStyle = `rgba(253,243,192,${0.75 * s.flick})`;
-      ctx.fillRect(panX, h * 0.06, w * 0.13, h * 0.05);
       ctx.fillStyle = `rgba(253,243,192,${0.08 * s.flick})`;
       ctx.fillRect(panX - 30, h * 0.02, w * 0.13 + 60, h * 0.16);
+      ctx.fillStyle = "rgba(56,48,20,0.95)";
+      ctx.fillRect(panX - w * 0.072, h * 0.052, w * 0.144, h * 0.062);
+      ctx.fillStyle = `rgba(253,243,192,${0.82 * s.flick})`;
+      for (let b = 0; b < 3; b++) {
+        ctx.fillRect(panX - w * 0.062 + b * (w * 0.047), h * 0.06, w * 0.036, h * 0.046);
+      }
     }
     ctx.restore();
 
-    // floor
+    // floor — damp carpet, darker toward the horizon
     const fl = ctx.createLinearGradient(0, h / 2, 0, h);
-    fl.addColorStop(0, "#7a6c30");
-    fl.addColorStop(1, "#4e4420");
+    fl.addColorStop(0, "#241e0c");
+    fl.addColorStop(0.35, "#453b18");
+    fl.addColorStop(1, "#57491f");
     ctx.fillStyle = fl;
     ctx.fillRect(0, h / 2, w, h / 2);
+    // pool of light under the nearest fixture
+    const pool = ctx.createRadialGradient(w / 2, h * 0.78, 10, w / 2, h * 0.78, w * 0.28);
+    pool.addColorStop(0, "rgba(253,246,210,0.1)");
+    pool.addColorStop(1, "rgba(253,246,210,0)");
+    ctx.fillStyle = pool;
+    ctx.fillRect(0, h / 2, w, h / 2);
     // carpet texture dots
-    ctx.fillStyle = "rgba(0,0,0,0.12)";
-    for (let i = 0; i < 60; i++) {
+    ctx.fillStyle = "rgba(0,0,0,0.15)";
+    for (let i = 0; i < 90; i++) {
       const fx = ((i * 137.5 + performance.now() * 0.01) % w);
       const fy = h / 2 + ((i * 61.7) % (h / 2));
-      ctx.fillRect(fx, fy, 2, 1);
+      ctx.fillRect(fx, fy, 2, 2);
     }
 
     // raycast walls
@@ -129,12 +159,11 @@ export function BackroomsExplorer() {
       const wallH = Math.min(h, (h * 1.1) / Math.max(0.08, corrected));
       const shade = Math.max(0.12, 1 - corrected / 9);
       const x = (r / numRays) * w;
-      // yellowed wallpaper with stripe
-      ctx.fillStyle = `rgba(${Math.round(181 * shade + 40)},${Math.round(162 * shade + 36)},${Math.round(74 * shade + 20)},1)`;
+      // mustard walls with faint panel seams
+      ctx.fillStyle = `rgb(${Math.round(184 * shade + 26)},${Math.round(166 * shade + 24)},${Math.round(82 * shade + 14)},1)`;
       ctx.fillRect(x, h / 2 - wallH / 2, w / numRays + 1, wallH);
-      // wallpaper stripe hint
-      if (r % 7 < 2) {
-        ctx.fillStyle = `rgba(120,105,40,${0.25 * shade})`;
+      if (r % 9 < 2) {
+        ctx.fillStyle = `rgba(96,84,32,${0.16 * shade})`;
         ctx.fillRect(x, h / 2 - wallH / 2, w / numRays + 1, wallH);
       }
       // darker baseboard
@@ -145,7 +174,7 @@ export function BackroomsExplorer() {
     // fog vignette
     const vig = ctx.createRadialGradient(w / 2, h / 2, h * 0.25, w / 2, h / 2, h * 0.75);
     vig.addColorStop(0, "rgba(0,0,0,0)");
-    vig.addColorStop(1, `rgba(10,8,2,${0.55 + s.fog * 0.2})`);
+    vig.addColorStop(1, `rgba(16,12,4,${0.6 + s.fog * 0.2})`);
     ctx.fillStyle = vig;
     ctx.fillRect(0, 0, w, h);
 

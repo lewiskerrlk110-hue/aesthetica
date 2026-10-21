@@ -74,3 +74,24 @@ Work Log:
 
 Stage Summary:
 - Synthwave now matches the uploaded wallpaper; committed and pushed
+
+---
+Task ID: BK-1
+Agent: main (Z.ai)
+Task: Restyle the Backrooms world using the user's uploaded game-render reference (upload/screenshot-1.webp)
+
+Work Log:
+- Analyzed reference: one-point perspective Level 0 hallway — square pillar colonnade, tiled drop ceiling with louvered fluorescent panels, damp dark carpet, warm fog, hazmat explorer reading a note pinned to a pillar, long-limbed entity crawling from the ceiling
+- Rewrote BackroomsEnv (src/components/worlds/backrooms.tsx) as a single full-bleed SVG (viewBox 1600x900, preserveAspectRatio slice) so perspective stays pixel-consistent at any viewport: ceiling polygon + converging joist lines + 7 tile rows, 4 louvered LightFixture components (ambient-flicker staggered), side-wall quads with damp stains (feGaussianBlur), far dark opening, carpet floor with pattern + light pools + contact shadows
+- Parametric one-point perspective: 9 pillars (left λ 1.0/0.55/0.30/0.16, right 0.85/0.42/0.22/0.11) each with corridor-facing side face + depth fog fill, painted far→near
+- Story actors: CeilingCrawler (5 spindly limbs + wall smudge, bl-sway 11s), HazmatReader at right pillar with raised teal-gloved arm reading a PinnedNote (pencil scribbles), HazmatRunner mid-stride further down the hall (bl-bob 4.4s)
+- Atmosphere overlays: far-gloom radial at VP, ceiling light haze, strengthened edge vignette, film-grain, scanlines
+- globals.css: added bl-sway/bl-bob keyframes + classes; registered both in .fx-off list and prefers-reduced-motion block
+- Upgraded raycaster (src/components/features/backrooms-explorer.tsx) to reference palette: ceiling tile rows (0.82^i convergence) + joist fan lines, louvered 3-bar light panels with housings, mustard walls rgb(184,166,84) with faint seams, damp carpet gradient + light pool radial, warmer fog vignette rgba(16,12,4,...); movement/map/fps logic untouched
+- Verified via agent-browser: zero console/page errors; maze entered, walked (W/rotate), exited at 45-52 fps; radio/notes/level panels readable over new env; homepage untouched
+- Refreshed docs/screenshots/backrooms.png
+
+Stage Summary:
+- Backrooms world now mirrors the reference render: yellow colonnade + louvered fluorescents + damp carpet + entity + hazmat explorers
+- All interactions preserved and verified (raycaster 45-52 fps, radio synth, notes archive, level explorer)
+- Committed and pushed to github.com/lewiskerrlk110-hue/aesthetica (main)

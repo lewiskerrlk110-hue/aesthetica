@@ -271,6 +271,18 @@
   --w-radius: 0.1rem;
 }
 
+/* Backrooms scene actors */
+@keyframes bl-sway {
+  0%, 100% { transform: rotate(-1.4deg); }
+  50% { transform: rotate(1.6deg); }
+}
+@keyframes bl-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2.5px); }
+}
+.bl-sway { animation: bl-sway 11s ease-in-out infinite; }
+.bl-bob { animation: bl-bob 5.2s ease-in-out infinite; }
+
 /* ---------- WORLD PRIMITIVES ---------- */
 
 .w-page {
@@ -570,6 +582,8 @@
 .fx-off .ambient-kenburns,
 .fx-off .palm-sway,
 .fx-off .car-bob,
+.fx-off .bl-sway,
+.fx-off .bl-bob,
 .fx-off .neon-future,
 .fx-off .holo-text,
 .fx-off .vapor-text,
@@ -580,7 +594,7 @@
 @media (prefers-reduced-motion: reduce) {
   .ambient-float, .ambient-soft, .ambient-spin, .ambient-bob,
   .ambient-flicker, .ambient-neon-flicker, .ambient-kenburns,
-  .palm-sway, .car-bob, .neon-future,
+  .palm-sway, .car-bob, .bl-sway, .bl-bob, .neon-future,
   .holo-text, .vapor-text {
     animation: none !important;
   }

@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// One coherent data model for all eight aesthetics.
+model Artwork {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  imageUrl    String // data-URL or static path
+  aesthetic   String // retrowave | synthwave | vaporwave | y2k | dreamcore | cyberpunk | liminal | backrooms
+  medium      String    @default("digital") // poster | collage | photograph | render | interface | film-still
+  year        Int? // fictional or historical dating shown on detail
+  authorName  String    @default("Anonymous Dreamer")
+  authorId    String    @default("curator")
+  tags        String    @default("") // comma separated
+  featured    Boolean   @default(false)
+  likeCount   Int       @default(0)
+  viewCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  likes       Like[]
+  comments    Comment[]
+  bookmarks   Bookmark[]
+
+  @@index([aesthetic])
+  @@index([createdAt])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  artworkId String
+  userId    String
+  createdAt DateTime @default(now())
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@unique([artworkId, userId])
+  @@index([userId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  artworkId String
+  userId    String
+  createdAt DateTime @default(now())
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@unique([artworkId, userId])
+  @@index([userId])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  artworkId  String
+  authorName String   @default("Anonymous Dreamer")
+  authorId   String
+  body       String
+  createdAt  DateTime @default(now())
+  artwork    Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@index([artworkId])
+}
+
+// Dreamcore — private-by-default dream journal, scoped to anonymous device identity.
+model JournalEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  mood      String?
+  location  String?
+  tags      String   @default("")
+  published Boolean  @default(false)
+  shareId   String   @unique @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Dreamcore — short floating notes ("Memory Fragments"); sample items flagged.
+model MemoryFragment {
+  id        String   @id @default(cuid())
+  text      String
+  authorName String  @default("A Stranger")
+  authorId  String?
+  isSample  Boolean  @default(false)
+  artworkId String?
+  hearts    Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// Dreamcore — Postcards From Nowhere
+model Postcard {
+  id        String   @id @default(cuid())
+  title     String
+  caption   String
+  imageUrl  String
+  tags      String   @default("")
+  hearts    Int      @default(0)
+  isSample  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// Dreamcore — The Cloud Atlas of imaginary locations
+model CloudLocation {
+  id          String  @id @default(cuid())
+  name        String
+  description String
+  imageUrl    String
+  tags        String  @default("")
+  isSample    Boolean @default(true)
+}
+
+// Backrooms — Level Explorer
+model BackroomsLevel {
+  id          String  @id @default(cuid())
+  identifier  String // "Level 0"
+  title       String
+  description String
+  survival    String // survival guidance, in-universe
+  danger      String  @default("variable")
+  tags        String  @default("")
+  imageUrl    String?
+  connections String  @default("") // comma separated identifiers
+  isCanon     Boolean @default(false) // false = community lore
+}
+
+// Backrooms — Found Notes Archive
+model BackroomsNote {
+  id        String  @id @default(cuid())
+  levelRef  String? // "Level 0"
+  title     String
+  body      String
+  foundAt   String?
+  timestamp String?
+  kind      String  @default("note") // note | document | sketch
+  isCanon   Boolean @default(false)
+}
+
+// Global search index support: pages the user can reach by hash route
+// are handled client-side; this model archives historical articles.
+model ArchiveArticle {
+  id        String @id @default(cuid())
+  aesthetic String
+  title     String
+  body      String
+  kind      String @default("history") // history | interpretation
+  order     Int    @default(0)
+}

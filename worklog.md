@@ -116,3 +116,22 @@ Stage Summary:
 - Cyberpunk world now mirrors the reference: lone figure on a rooftop overlooking a neon wall in purple-blue with pink/cyan/red signage
 - "Ping the city" easter-egg interaction added; homepage portal card updated to match
 - Committed and pushed to github.com/lewiskerrlk110-hue/aesthetica (main)
+
+---
+Task ID: SW-2
+Agent: main (Z.ai)
+Task: Fix the two cars in the synthwave background and put them on the road
+
+Work Log:
+- Diagnosed: canvas road is a trapezoid (edges 50%±2.4% at horizon → 50%±33% at bottom; horizon at 58% viewport height), but the two cruisers were parked at left 9% / right 7.5% — entirely off the road on the roadside, and largely hidden behind the features panels at desktop heights
+- Derived lane geometry from canvas constants: lane dash offset = 1.2% + 7.3%·t from centre, t = 1 − bottom%/42; road half-width = 2.4% + 30.6%·t
+- Repositioned both cars onto the road with perspective scaling (outer div centres on lane via translateX(-50%), inner div carries car-bob so the translateY animation no longer clashes with centring transform):
+  - Near pink cruiser: right lane, bottom 7.5% (t 0.82 → dash 57.2%) at left 57.4%, width min(172px, 25vw)
+  - Far cyan cruiser: left lane, bottom 15% (t 0.64 → dash 44.1%) at left 44.8%, width min(148px, 21vw)
+- Kept both below the ~24%-from-bottom features-panel band (visualiser/mood panels) so they stay visible at 900px-tall viewports; lane dashes now stream from under each car (holding-pace effect)
+- Verified at 1440×900 via agent-browser: both cars visibly on the road trapezoid, correct perspective sizes, zero console/page errors, eslint clean
+- Refreshed docs/screenshots/synthwave.png
+
+Stage Summary:
+- Synthwave cruisers now drive ON the road in their lanes instead of floating on the roadside
+- Committed and pushed to github.com/lewiskerrlk110-hue/aesthetica (main)

@@ -95,3 +95,24 @@ Stage Summary:
 - Backrooms world now mirrors the reference render: yellow colonnade + louvered fluorescents + damp carpet + entity + hazmat explorers
 - All interactions preserved and verified (raycaster 45-52 fps, radio synth, notes archive, level explorer)
 - Committed and pushed to github.com/lewiskerrlk110-hue/aesthetica (main)
+
+---
+Task ID: CP-1
+Agent: main (Z.ai)
+Task: Restyle Cyberpunk world from user's uploaded reference (cyberpunk_rooftop_by_ninerio_devnaz8-pre-700x394.jpg)
+
+Work Log:
+- Analyzed reference: rooftop vantage scene — hooded silhouette figure on left roof edge, railing lined with disc devices, dense sign-plastered tower wall (vertical pink "NR 70"/"NO" boards, red "VALLEY", billboard face screen), flying ships, holo bursts, deep purple-blue atmosphere
+- Rewrote CyberEnv (src/components/worlds/cyberpunk.tsx): violet-to-magenta sky + 40 stars, 3-plane tower wall (12/9/6 buildings, cyan-majority window grids, vertical neon bars, pink rooftop trim + red beacons), horizon glow bath (lighter composite), reference signage boards (NR 70 / NO / NINERIO vertical pink, VALLEY red, 707 gold), scanline billboard portrait, cyan holo koi arcs, 6 aerial ships with pink engine trails, foreground rooftop slab + antennas + dish + hooded figure (pink rim light, breathing bob), full-width railing with cyan-rimmed disc devices, light rain, vignette
+- New interaction: "Ping the city" button (RadioTower) in timeline panel header dispatches cyber-ping; canvas spawns golden burst + expanding double ring + global signage flare (lastPingRef diff detection keeps useEffect side-effect-free per react-hooks/immutability rule)
+- Timeline kind colours retuned: pink literature / red film / gold anime / cyan architecture / violet games; pink node-line gradient
+- globals.css [data-world="cyberpunk"]: bg #0d0a1e, bg2 #171034, accent #ff4fd8, accent2 #4de8ff, panel rgba(23,16,52,.62), pink panel border
+- aesthetics.ts cyberpunk: grad [#241448,#ff4fd8,#4de8ff], accent/accent2/bg/fg updated, portalBlurb "A rooftop above the sign canyons — vertical neon, aerial traffic, holographic weather."
+- homepage.tsx cyberpunk portal preview rebuilt: purple grad sky, #171034 towers, rooftop slab + figure silhouette + railing discs, sign colours updated
+- Verified via agent-browser: zero console/page errors ("1 Issue" dev-tools badge is pre-existing on all worlds), ping flare + ring captured mid-animation, timeline nodes clickable, eslint clean on all touched files
+- Refreshed docs/screenshots/cyberpunk.png
+
+Stage Summary:
+- Cyberpunk world now mirrors the reference: lone figure on a rooftop overlooking a neon wall in purple-blue with pink/cyan/red signage
+- "Ping the city" easter-egg interaction added; homepage portal card updated to match
+- Committed and pushed to github.com/lewiskerrlk110-hue/aesthetica (main)

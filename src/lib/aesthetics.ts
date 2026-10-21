@@ -253,12 +253,12 @@ export const WORLDS: WorldDef[] = [
     short:
       "High tech, low life. Neon in the rain, corporate towers, and identities for sale.",
     portalBlurb:
-      "A cinematic megacity — rain, neon signage, elevated roads and atmospheric depth.",
-    grad: ["#0a1220", "#00e5ff", "#ff2a3c"],
-    accent: "#00e5ff",
-    accent2: "#ff2a3c",
-    bg: "#050810",
-    fg: "#e8f0f8",
+      "A rooftop above the sign canyons — vertical neon, aerial traffic, holographic weather.",
+    grad: ["#241448", "#ff4fd8", "#4de8ff"],
+    accent: "#ff4fd8",
+    accent2: "#4de8ff",
+    bg: "#0d0a1e",
+    fg: "#efeaf8",
     galleryStyle: "editorial",
     related: ["synthwave", "liminal", "backrooms"],
     archive: [

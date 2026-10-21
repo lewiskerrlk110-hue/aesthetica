@@ -65,15 +65,23 @@ function PortalScene({ world }: { world: WorldId }) {
     case "cyberpunk":
       return (
         <div className={common}>
-          <div className="absolute inset-0" style={{ background: `linear-gradient(${w.bg}, #0a1220)` }} />
+          <div className="absolute inset-0" style={{ background: `linear-gradient(${w.bg}, #241448 70%, #4a1f66)` }} />
           {Array.from({ length: 7 }, (_, i) => (
-            <div key={i} className="absolute bottom-0" style={{ left: `${i * 15 - 4}%`, width: "13%", height: `${34 + ((i * 37) % 42)}%`, background: "#0a1220", border: "1px solid #0f1c30" }}>
+            <div key={i} className="absolute bottom-0" style={{ left: `${i * 15 - 4}%`, width: "13%", height: `${34 + ((i * 37) % 42)}%`, background: "#171034", border: "1px solid #2a1a52" }}>
               <div className="absolute left-[25%] top-[22%] h-1.5 w-1.5" style={{ background: i % 2 ? w.accent : w.accent2, boxShadow: `0 0 8px ${i % 2 ? w.accent : w.accent2}` }} />
               <div className="absolute left-[60%] top-[48%] h-1.5 w-1.5" style={{ background: i % 3 ? w.accent2 : w.accent, boxShadow: `0 0 8px ${i % 3 ? w.accent2 : w.accent}` }} />
             </div>
           ))}
-          <div className="absolute left-[18%] top-[14%] font-mono text-[8px] tracking-[0.3em] text-[#ff2a3c] sign-glow">未来市</div>
-          <div className="absolute right-[14%] top-[24%] font-mono text-[8px] tracking-[0.25em] text-[#00e5ff] sign-glow">SECTOR 7</div>
+          <div className="absolute left-[18%] top-[14%] font-mono text-[8px] tracking-[0.3em] text-[#ff3b52] sign-glow">未来市</div>
+          <div className="absolute right-[14%] top-[24%] font-mono text-[8px] tracking-[0.25em] text-[#4de8ff] sign-glow">SECTOR 7</div>
+          {/* rooftop edge, lone figure, railing discs */}
+          <div className="absolute bottom-0 left-0 h-[13%] w-[32%] bg-[#070512]" style={{ clipPath: "polygon(0 0, 100% 45%, 100% 100%, 0 100%)" }} />
+          <div className="absolute bottom-[11%] left-[10%] h-[6%] w-[2%] rounded-t-full bg-[#08061a]" />
+          <div className="absolute bottom-[15.6%] left-[10.4%] h-[1.8%] w-[1.2%] rounded-full bg-[#08061a]" />
+          <div className="absolute bottom-[9%] left-[32%] right-0 h-px bg-[#0a0718]" />
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={`d${i}`} className="absolute h-[2.2%] w-[2.2%] rounded-full border border-[#4de8ff66] bg-[#0d0a1e]" style={{ left: `${36 + i * 13}%`, bottom: "8.4%" }} />
+          ))}
         </div>
       );
     case "liminal":

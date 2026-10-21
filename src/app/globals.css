@@ -225,14 +225,14 @@
 
 /* ---------- CYBERPUNK ---------- */
 [data-world="cyberpunk"] {
-  --w-bg: #050810;
-  --w-bg2: #0a1220;
-  --w-fg: #e8f0f8;
-  --w-fg-dim: rgba(232, 240, 248, 0.6);
-  --w-accent: #00e5ff;
-  --w-accent2: #ff2a3c;
-  --w-panel: rgba(10, 20, 38, 0.66);
-  --w-panel-border: rgba(0, 229, 255, 0.22);
+  --w-bg: #0d0a1e;
+  --w-bg2: #171034;
+  --w-fg: #efeaf8;
+  --w-fg-dim: rgba(239, 234, 248, 0.62);
+  --w-accent: #ff4fd8;
+  --w-accent2: #4de8ff;
+  --w-panel: rgba(23, 16, 52, 0.62);
+  --w-panel-border: rgba(255, 79, 216, 0.24);
   --w-font-display: var(--font-space-grotesk), sans-serif;
   --w-font-body: var(--font-dm-sans), sans-serif;
   --w-font-mono: var(--font-ibm-plex-mono), monospace;

@@ -98,7 +98,7 @@ export const WORLDS: WorldDef[] = [
       "An album cover that learned to move. Wireframe mountains, striped suns and pure rhythmic energy.",
     portalBlurb:
       "An animated electronic album cover — wireframe terrain, striped suns, pulsing rhythm.",
-    grad: ["#1b0538", "#ff38e4", "#23e6ff"],
+    grad: ["#3a0f66", "#ff2ec8", "#ff77e0"],
     accent: "#ff38e4",
     accent2: "#23e6ff",
     bg: "#0d0221",

@@ -549,6 +549,16 @@
 .ambient-flicker { animation: flicker-fluorescent 9s linear infinite; }
 .ambient-neon-flicker { animation: flicker-neon 7s linear infinite; }
 .ambient-kenburns { animation: ken-burns 24s ease-in-out infinite alternate; }
+.palm-sway { animation: palm-sway 7s ease-in-out infinite; transform-origin: 50% 100%; }
+.car-bob { animation: car-bob 3.4s ease-in-out infinite; }
+@keyframes palm-sway {
+  0%, 100% { transform: rotate(-1.1deg); }
+  50% { transform: rotate(1.3deg); }
+}
+@keyframes car-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2.5px); }
+}
 
 /* FX off switch (manual) */
 .fx-off .ambient-float,
@@ -558,6 +568,9 @@
 .fx-off .ambient-flicker,
 .fx-off .ambient-neon-flicker,
 .fx-off .ambient-kenburns,
+.fx-off .palm-sway,
+.fx-off .car-bob,
+.fx-off .neon-future,
 .fx-off .holo-text,
 .fx-off .vapor-text,
 .fx-off .film-grain::after {
@@ -567,6 +580,7 @@
 @media (prefers-reduced-motion: reduce) {
   .ambient-float, .ambient-soft, .ambient-spin, .ambient-bob,
   .ambient-flicker, .ambient-neon-flicker, .ambient-kenburns,
+  .palm-sway, .car-bob, .neon-future,
   .holo-text, .vapor-text {
     animation: none !important;
   }

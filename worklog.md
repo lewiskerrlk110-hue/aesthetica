@@ -33,3 +33,14 @@ Stage Summary:
 - Deliverable: runnable Next.js 16 SPA at / (all views hash-routed), Prisma/SQLite persistence, 42+ artworks seeded + community features live
 - Key decisions: single-route SPA per platform constraint; hash routing for deep links; anonymous device identity instead of full auth; all ambience synthesized (no copyrighted audio); documented history labelled separately from interpretation/community lore throughout
 - Scripts persisted: scripts/gen-images.mjs, scripts/seed.ts, scripts/gen-artwork.sh (legacy), plus QA screenshots under scripts/
+---
+Task ID: GH-1
+Agent: main (Z.ai)
+Task: Upload site + data to GitHub
+
+Work Log:
+- Secret-scanned repo, excluded download/ backups, re-initialized clean single-commit history (173 files, 15MB)
+- Created public repo via GitHub API, pushed main (commit 2045901), scrubbed token from local git config, set 12 topics
+
+Stage Summary:
+- Live at github.com/lewiskerrlk110-hue/aesthetica (code + SQLite db + 24 artworks + HANDOFF.md)

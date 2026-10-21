@@ -137,7 +137,7 @@ export const WORLDS: WorldDef[] = [
       "Marble busts, dead malls and decommissioned software — consumer memory rearranged into collage.",
     portalBlurb:
       "Surreal digital ruins — marble statues, retro OS windows, artificial nostalgia.",
-    grad: ["#2a1e3f", "#7df2d8", "#ff9ecb"],
+    grad: ["#a86fd0", "#ff9ed2", "#7df2d8"],
     accent: "#7df2d8",
     accent2: "#ff9ecb",
     bg: "#13101f",

@@ -178,13 +178,13 @@
 /* ---------- VAPORWAVE ---------- */
 [data-world="vaporwave"] {
   --w-bg: #13101f;
-  --w-bg2: #2a1e3f;
+  --w-bg2: #3d2266;
   --w-fg: #fdf3ff;
   --w-fg-dim: rgba(253, 243, 255, 0.68);
   --w-accent: #7df2d8;
-  --w-accent2: #ff9ecb;
+  --w-accent2: #ff9ed2;
   --w-panel: rgba(255, 255, 255, 0.07);
-  --w-panel-border: rgba(125, 242, 216, 0.25);
+  --w-panel-border: rgba(255, 158, 210, 0.3);
   --w-font-display: var(--font-space-grotesk), sans-serif;
   --w-font-body: var(--font-dm-sans), sans-serif;
   --w-font-mono: var(--font-ibm-plex-mono), monospace;
@@ -627,6 +627,94 @@
   cursor: grab;
   user-select: none;
   letter-spacing: 0.06em;
+}
+
+/* ---------- WIN95 (vaporwave desktop, true 1995 chrome) ---------- */
+
+[data-world="vaporwave"] .win95 {
+  background: #c3c7cb;
+  color: #16161d;
+  border-radius: 0;
+  border: 1px solid;
+  border-color: #ffffff #6d6d6d #6d6d6d #ffffff;
+  box-shadow:
+    2px 2px 0 rgba(18, 8, 38, 0.5),
+    inset -1px -1px 0 #868a8e,
+    inset 1px 1px 0 #dfdfdf;
+}
+[data-world="vaporwave"] .win95-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.3rem 0.3rem 0.55rem;
+  background: linear-gradient(90deg, #000082 0%, #0f6fd8 82%, #64a8e0 100%);
+  color: #ffffff;
+  font-family: var(--w-font-mono, var(--font-ibm-plex-mono), monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+[data-world="vaporwave"] .win95-btn {
+  min-width: 17px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  padding: 0 2px;
+  background: #c3c7cb;
+  color: #16161d;
+  font-family: var(--w-font-mono, var(--font-ibm-plex-mono), monospace);
+  font-size: 9px;
+  line-height: 1;
+  border: 1px solid;
+  border-color: #ffffff #4d4d4d #4d4d4d #ffffff;
+  box-shadow: inset 1px 1px 0 #dfdfdf;
+  cursor: pointer;
+}
+[data-world="vaporwave"] .win95-btn:active {
+  border-color: #4d4d4d #ffffff #ffffff #4d4d4d;
+  box-shadow: inset 1px 1px 0 #868a8e;
+}
+[data-world="vaporwave"] .win95-btn-lg {
+  min-width: 64px;
+  height: 23px;
+  font-size: 11px;
+}
+[data-world="vaporwave"] .win95-chip {
+  height: 18px;
+  max-width: 7rem;
+  padding: 0 7px;
+  font-size: 10px;
+}
+[data-world="vaporwave"] .win95-start {
+  height: 18px;
+  padding: 0 7px;
+  font-size: 10px;
+  font-weight: 700;
+}
+[data-world="vaporwave"] .win95-inset {
+  border: 1px solid;
+  border-color: #868a8e #ffffff #ffffff #868a8e;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.25);
+}
+[data-world="vaporwave"] .win95-fill {
+  background: linear-gradient(90deg, #cdb4ff, #ff9ed2);
+  animation: load98 7s ease-out infinite;
+}
+@keyframes load98 {
+  0% { width: 3%; }
+  72% { width: 98%; }
+  100% { width: 98%; }
+}
+[data-world="vaporwave"] .neon-future {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  color: #ffd7ee;
+  text-shadow:
+    0 0 6px #ff9ed2, 0 0 14px #ff9ed2, 0 0 30px #e070b8;
+  animation: flicker-neon 4.2s linear infinite;
 }
 
 /* ---------- CLOUDS (dreamcore) ---------- */

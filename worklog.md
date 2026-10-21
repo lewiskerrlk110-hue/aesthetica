@@ -44,3 +44,18 @@ Work Log:
 
 Stage Summary:
 - Live at github.com/lewiskerrlk110-hue/aesthetica (code + SQLite db + 24 artworks + HANDOFF.md)
+---
+Task ID: VW-1
+Agent: main (Z.ai)
+Task: Restyle Vaporwave world from user wallpaper reference
+
+Work Log:
+- Rebuilt VaporEnv: banded sun (SVG mask), wireframe-grid mountains, 3 Greek columns, palm silhouettes, purple checkerboard, teal/pink solids, Penrose triangle, David bust on plinth labelled 未来はここにある, vertical neon 過去未来
+- True Win95 chrome (.win95 family in globals.css, scoped to [data-world=vaporwave]): navy gradient title bars, outset buttons, inset track, loading bar stuck at 98% (load98 keyframes)
+- Desktop now runs 7 draggable processes from the wallpaper: dream.exe, untitled - epiphany, error (Reality not found. — auto-restores 2.6s after OK), system.data (wireframe globe + glyphs), ascii.txt, thoughts.exe, loading....
+- Added close buttons + taskbar restore chips; window positions clamp on mobile via min() CSS
+- Palette shift: --w-bg2 #3d2266, panel border pink #ff9ed2/30, portal grad updated in aesthetics.ts
+- Verified: drag, focus z-order, close→chip, OK→auto-restore, lint clean, no console errors; README screenshot refreshed
+
+Stage Summary:
+- Vaporwave now matches the uploaded wallpaper; committed and pushed

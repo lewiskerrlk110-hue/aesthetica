@@ -43,10 +43,11 @@ export function useCanvasLoop(
 
     const frame = (now: number) => {
       if (!running) return;
-      const dt = Math.min(50, now - last);
+      const dt = Math.min(50, Math.max(0, now - last));
       last = now;
       if (w !== canvas.getBoundingClientRect().width) resize();
-      drawRef.current(ctx, w, h, now - start, dt);
+      // rAF timestamps can predate performance.now() on the first frame — clamp to 0.
+      drawRef.current(ctx, w, h, Math.max(0, now - start), dt);
       raf = requestAnimationFrame(frame);
     };
 

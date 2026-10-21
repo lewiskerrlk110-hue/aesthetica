@@ -22,8 +22,9 @@ const FADE_MS = 3500; // crossfade window
 
 function phaseAt(t: number) {
   const cycle = PHASES.length * PHASE_MS;
-  const x = t % cycle;
-  const i = Math.floor(x / PHASE_MS);
+  // JS % keeps the sign — a negative t (early first rAF frame) must wrap forward.
+  const x = ((t % cycle) + cycle) % cycle;
+  const i = Math.floor(x / PHASE_MS) % PHASES.length;
   const local = x - i * PHASE_MS;
   const next = (i + 1) % PHASES.length;
   let a = 1;

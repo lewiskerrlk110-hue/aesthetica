@@ -258,12 +258,20 @@ function SynthEnv({ mood, analyserRef }: { mood: (typeof MOODS)[number]; analyse
         <PalmSil key={`pr${i}`} className="palm-sway absolute" style={{ right: x, bottom: b, height: hh, transform: "scaleX(-1)", opacity: 0.72 + i * 0.056, animationDelay: `${-0.6 - i * 1.1}s` }} />
       ))}
 
-      {/* two cruisers holding their lanes */}
-      <div className="car-bob absolute" style={{ left: "9%", bottom: "26%", width: "min(150px, 24vw)", animationDelay: "-1s" }}>
-        <CarSVG accent="#ff77e0" glow="rgba(255,46,200,0.4)" />
+      {/* two cruisers holding their lanes — placed on the road trapezoid.
+          Lane dash at depth t = 50% ± (1.2% + 7.3%·t), t = 1 − bottom/42.
+          Near car: bottom 7.5% → t 0.82 → dash 57.2% · Far car: bottom 15% → t 0.64 → dash 44.1%.
+          Kept below the ~24% features-panel band so both stay visible on desktop.
+          Outer div centres on the lane; inner div carries the bob so transforms don't clash. */}
+      <div className="absolute" style={{ left: "57.4%", bottom: "7.5%", width: "min(172px, 25vw)", transform: "translateX(-50%)" }}>
+        <div className="car-bob" style={{ animationDelay: "-1s" }}>
+          <CarSVG accent="#ff77e0" glow="rgba(255,46,200,0.4)" />
+        </div>
       </div>
-      <div className="car-bob absolute" style={{ right: "7.5%", bottom: "23.5%", width: "min(178px, 27vw)", animationDelay: "-2.2s" }}>
-        <CarSVG accent="#7de8ff" glow="rgba(35,230,255,0.38)" />
+      <div className="absolute" style={{ left: "44.8%", bottom: "15%", width: "min(148px, 21vw)", transform: "translateX(-50%)" }}>
+        <div className="car-bob" style={{ animationDelay: "-2.2s" }}>
+          <CarSVG accent="#7de8ff" glow="rgba(35,230,255,0.38)" />
+        </div>
       </div>
     </div>
   );

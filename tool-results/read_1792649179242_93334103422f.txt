@@ -1,0 +1,726 @@
+     1→"use client";
+     2→
+     3→import { useEffect, useState, useRef } from "react";
+     4→import { HeroCanvas } from "./hero-canvas";
+     5→import { useApp } from "@/lib/store";
+     6→import { WORLD_MAP, type WorldId } from "@/lib/aesthetics";
+     7→import { useStudioWorlds, useStudioConfig } from "@/lib/worlds-config";
+     8→import type { PortalWorldDef } from "@/lib/studio";
+     9→import { SceneStage } from "@/components/worlds/custom-world";
+    10→import { ArtworkCard, type ArtworkDTO } from "@/components/gallery/artwork-card";
+    11→import { ArrowRight, Search, Upload, Compass, ChevronDown } from "lucide-react";
+    12→
+    13→// ————— Portal mini-scenes (pure CSS/SVG, one per world) —————
+    14→// NOTE: each case mirrors its world page's living environment. Whenever a
+    15→// world is restyled (new reference look), update its case here too so the
+    16→// homepage portal card stays in sync with the world page.
+    17→function PortalScene({ w }: { w: PortalWorldDef }) {
+    18→  const common = "absolute inset-0";
+    19→  switch (w.id) {
+    20→    case "retrowave":
+    21→      return (
+    22→        <div className={common}>
+    23→          <div className="absolute inset-0" style={{ background: `linear-gradient(#1a0a2e 0%, #54123f 55%, ${w.accent} 100%)` }} />
+    24→          <div className="absolute left-1/2 top-[30%] h-14 w-14 -translate-x-1/2 rounded-full" style={{ background: `linear-gradient(#ffe6a0,${w.accent})`, boxShadow: `0 0 34px 6px ${w.accent}` }} />
+    25→          {/* distant city silhouette with amber lights (matches page canvas) */}
+    26→          {[4, 12, 21, 33, 58, 69, 79, 90].map((l, i) => (
+    27→            <div key={i} className="absolute" style={{ left: `${l}%`, bottom: "45%", width: "8%", height: `${8 + ((i * 29) % 18)}%`, background: "rgba(12,4,26,0.9)" }} />
+    28→          ))}
+    29→          {[9, 20, 37, 62, 74, 86, 95].map((l, i) => (
+    30→            <div key={`l${i}`} className="absolute h-[2px] w-[2px] bg-[#ffb347]" style={{ left: `${l}%`, bottom: `${47 + ((i * 17) % 15)}%`, opacity: 0.75 }} />
+    31→          ))}
+    32→          <svg className="absolute bottom-0 h-[45%] w-full" preserveAspectRatio="none" viewBox="0 0 100 40">
+    33→            {Array.from({ length: 9 }, (_, i) => <line key={i} x1={50 + (i - 4) * 22} y1="0" x2={50 + (i - 4) * 110} y2="40" stroke={w.accent} strokeWidth="0.5" opacity="0.8" />)}
+    34→            {[2, 6, 12, 22, 40].map((y, i) => <line key={i} x1="0" y1={y} x2="100" y2={y} stroke={w.accent2} strokeWidth="0.4" opacity="0.8" />)}
+    35→            <rect x="0" y="0" width="100" height="7" fill="#ff2e88" opacity="0.22" />
+    36→          </svg>
+    37→        </div>
+    38→      );
+    39→    case "synthwave":
+    40→      return (
+    41→        <div className={common}>
+    42→          {/* sky — deep purple falling into hot magenta (page SynthEnv, classic mood) */}
+    43→          <div className="absolute inset-0" style={{ background: "linear-gradient(#2b0a4d 0%, #d61c95 58%, #ff5ad4 100%)" }} />
+    44→          {[8, 20, 33, 47, 62, 78, 90].map((l, i) => (
+    45→            <div key={`s${i}`} className="absolute h-[2px] w-[2px] bg-[#ffeaff]" style={{ left: `${l}%`, top: `${4 + ((i * 23) % 20)}%`, opacity: 0.5 + ((i * 13) % 4) * 0.12 }} />
+    46→          ))}
+    47→          {/* the sun — white-hot core, widening stripe cuts */}
+    48→          <svg className="absolute left-1/2 top-[5%] h-[56%] w-auto -translate-x-1/2" viewBox="0 0 200 200" aria-hidden>
+    49→            <defs>
+    50→              <radialGradient id="pv-sw-sun" cx="0.5" cy="0.3" r="0.85">
+    51→                <stop offset="0" stopColor="#fff6fd" />
+    52→                <stop offset="0.45" stopColor="#ff5ad4" />
+    53→                <stop offset="1" stopColor="#d61c95" />
+    54→              </radialGradient>
+    55→              <mask id="pv-sw-mask">
+    56→                <rect width="200" height="200" fill="#fff" />
+    57→                <rect x="0" y="116" width="200" height="6" fill="#000" />
+    58→                <rect x="0" y="134" width="200" height="8" fill="#000" />
+    59→                <rect x="0" y="154" width="200" height="11" fill="#000" />
+    60→                <rect x="0" y="177" width="200" height="14" fill="#000" />
+    61→              </mask>
+    62→            </defs>
+    63→            <circle cx="100" cy="100" r="96" fill="url(#pv-sw-sun)" mask="url(#pv-sw-mask)" />
+    64→          </svg>
+    65→          {/* skyline silhouettes with lit windows */}
+    66→          {[[5, 8, 12], [14, 6, 9], [22, 9, 16], [58, 7, 13], [67, 9, 17], [79, 6, 10], [88, 8, 14]].map(([l, wp, hp], i) => (
+    67→            <div key={`b${i}`} className="absolute" style={{ left: `${l}%`, bottom: "38%", width: `${wp}%`, height: `${hp}%`, background: "rgba(34,8,63,0.92)" }}>
+    68→              <div className="absolute left-[28%] top-[30%] h-[3px] w-[3px]" style={{ background: i % 2 ? "#7de8ff" : "#ff5ad4", boxShadow: `0 0 4px ${i % 2 ? "#7de8ff" : "#ff5ad4"}` }} />
+    69→              {i % 3 === 0 && <div className="absolute left-[62%] top-[58%] h-[3px] w-[3px] bg-[#ff5ad4]" style={{ boxShadow: "0 0 4px #ff5ad4" }} />}
+    70→            </div>
+    71→          ))}
+    72→          {/* ground, perspective grid + neon road with streaming dashes */}
+    73→          <svg className="absolute bottom-0 h-[38%] w-full" preserveAspectRatio="none" viewBox="0 0 100 40">
+    74→            <rect width="100" height="40" fill="#08010f" />
+    75→            <rect width="100" height="8" fill="#ff5ad4" opacity="0.35" />
+    76→            {Array.from({ length: 13 }, (_, i) => (
+    77→              <line key={`v${i}`} x1={50 + (i - 6) * 1.8} y1="0" x2={50 + (i - 6) * 9.5} y2="40" stroke="#ff4fd8" strokeWidth="0.35" opacity="0.55" />
+    78→            ))}
+    79→            {[1, 3, 7, 14, 26].map((y, i) => (
+    80→              <line key={`h${i}`} x1="0" y1={y} x2="100" y2={y} stroke="#ff4fd8" strokeWidth="0.3" opacity="0.45" />
+    81→            ))}
+    82→            <line x1="47.6" y1="0" x2="17" y2="40" stroke="#ff5ad4" strokeWidth="0.9" opacity="0.95" />
+    83→            <line x1="52.4" y1="0" x2="83" y2="40" stroke="#ff5ad4" strokeWidth="0.9" opacity="0.95" />
+    84→            {[[50, 2, 1.6], [50, 5.5, 2.4], [50, 11, 3.6], [50, 19, 5], [50, 30, 6.5]].map(([x, y, hh], i) => (
+    85→              <rect key={`d${i}`} x={x - 0.5} y={y} width="1" height={hh} fill="#ff5ad4" opacity="0.9" />
+    86→            ))}
+    87→          </svg>
+    88→          {/* two cruisers holding their lanes (page positions 57.4% / 44.8%) */}
+    89→          <div className="absolute" style={{ left: "57.4%", bottom: "9%", width: 30, transform: "translateX(-50%)" }}>
+    90→            <div className="h-[7px] rounded-t-[3px] bg-[#12031f]" style={{ boxShadow: "0 2px 6px rgba(255,46,200,0.85)", borderBottom: "1.5px solid #ff2ec8" }}>
+    91→              <div className="mx-auto mt-[1px] h-[2.5px] w-3/5 rounded-t-sm bg-[#ff77e0]/50" />
+    92→            </div>
+    93→          </div>
+    94→          <div className="absolute" style={{ left: "44.8%", bottom: "21%", width: 24, transform: "translateX(-50%)" }}>
+    95→            <div className="h-[6px] rounded-t-[3px] bg-[#12031f]" style={{ boxShadow: "0 2px 5px rgba(35,230,255,0.8)", borderBottom: "1.5px solid #23e6ff" }}>
+    96→              <div className="mx-auto mt-[1px] h-[2px] w-3/5 rounded-t-sm bg-[#7de8ff]/50" />
+    97→            </div>
+    98→          </div>
+    99→        </div>
+   100→      );
+   101→    case "vaporwave":
+   102→      return (
+   103→        <div className={common}>
+   104→          {/* sunset sky + banded sun (page VaporEnv) */}
+   105→          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,#7b4fb0 0%,#a86fd0 34%,#dfa0da 58%,#f6c1dd 82%)" }} />
+   106→          <svg className="absolute left-1/2 top-[7%] h-[40%] w-auto -translate-x-1/2" viewBox="0 0 200 200" aria-hidden style={{ filter: "drop-shadow(0 0 14px #ff9ed288)" }}>
+   107→            <defs>
+   108→              <radialGradient id="pv-vp-sun" cx="0.42" cy="0.36" r="0.75">
+   109→                <stop offset="0" stopColor="#ffe0f0" />
+   110→                <stop offset="0.55" stopColor="#ffa8d8" />
+   111→                <stop offset="1" stopColor="#ef74be" />
+   112→              </radialGradient>
+   113→              <mask id="pv-vp-mask">
+   114→                <rect width="200" height="200" fill="#fff" />
+   115→                <rect x="0" y="118" width="200" height="9" fill="#000" />
+   116→                <rect x="0" y="139" width="200" height="11" fill="#000" />
+   117→                <rect x="0" y="162" width="200" height="13" fill="#000" />
+   118→                <rect x="0" y="187" width="200" height="13" fill="#000" />
+   119→              </mask>
+   120→            </defs>
+   121→            <circle cx="100" cy="100" r="88" fill="url(#pv-vp-sun)" mask="url(#pv-vp-mask)" />
+   122→          </svg>
+   123→          {/* wireframe mountains */}
+   124→          <svg className="absolute inset-x-0 bottom-[30%] h-[24%] w-full" preserveAspectRatio="none" viewBox="0 0 100 30">
+   125→            <path d="M0 20 L12 8 L24 17 L38 5 L52 16 L64 9 L78 18 L90 10 L100 17" fill="#4a2f86" fillOpacity="0.5" stroke="#5d3f9e" strokeWidth="0.6" />
+   126→            <path d="M0 26 L15 18 L30 25 L48 15 L64 24 L80 17 L100 23 L100 30 L0 30 Z" fill="#3a2470" fillOpacity="0.65" stroke="#5d3f9e" strokeWidth="0.5" />
+   127→          </svg>
+   128→          {/* marble columns */}
+   129→          {[[74, 22, 26], [84, 18, 20], [91, 14, 15]].map(([l, hh, wp], i) => (
+   130→            <div key={`c${i}`} className="absolute" style={{ left: `${l}%`, bottom: "26%", height: `${hh}%`, width: `${wp / 3}%`, background: "linear-gradient(90deg,#f6c8e6,#d898cc 55%,#a464aa)", opacity: 1 - i * 0.14, boxShadow: "inset 0 3px 0 #f6d4ec" }} />
+   131→          ))}
+   132→          {/* checkerboard floor */}
+   133→          <div className="absolute inset-x-[-20%] bottom-[-14%] h-[42%]" style={{ background: "repeating-conic-gradient(#8a5fb8 0% 25%, #bd8ed4 0% 50%) 50% / 34px 34px", transform: "perspective(150px) rotateX(52deg)", transformOrigin: "top", maskImage: "linear-gradient(to bottom, black 55%, transparent)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent)" }} />
+   134→          {/* floating solids */}
+   135→          <div className="ambient-float absolute left-[12%] top-[24%] h-6 w-6 rounded-full" style={{ background: "radial-gradient(circle at 32% 28%, #eafcf8, #7de8d8 45%, #3aa898 85%)", animationDelay: "-3s" }} />
+   136→          <svg className="ambient-float absolute left-[24%] top-[14%] h-6 w-6" viewBox="0 0 100 100" style={{ animationDelay: "-5s" }} aria-hidden>
+   137→            <polygon points="50 4 96 50 50 96 4 50" fill="#ef74be" stroke="#ffd7ee" strokeWidth="4" />
+   138→            <polygon points="50 22 78 50 50 78 22 50" fill="#d860ac" />
+   139→          </svg>
+   140→          <svg className="ambient-float absolute right-[22%] top-[16%] h-5 w-5" viewBox="0 0 100 100" style={{ animationDelay: "-6s" }} aria-hidden>
+   141→            <path d="M50 6 L95 84 L5 84 Z" fill="#f07ac0" stroke="#ffe0f0" strokeWidth="4" />
+   142→            <path d="M50 38 L68 70 L32 70 Z" fill="#c488d4" />
+   143→          </svg>
+   144→          {/* marble bust on plinth */}
+   145→          <svg className="absolute bottom-[22%] left-1/2 h-[34%] w-auto -translate-x-1/2" viewBox="0 0 170 240" aria-hidden>
+   146→            <defs>
+   147→              <linearGradient id="pv-vp-marble" x1="0" y1="0" x2="1" y2="1">
+   148→                <stop offset="0" stopColor="#fbeef8" />
+   149→                <stop offset="0.55" stopColor="#ddc9de" />
+   150→                <stop offset="1" stopColor="#b394bc" />
+   151→              </linearGradient>
+   152→            </defs>
+   153→            <ellipse cx="85" cy="233" rx="62" ry="6" fill="#1a0e30" opacity="0.4" />
+   154→            <path d="M38 138 L45 96 Q49 86 55 84 L55 76 Q46 68 46 52 Q46 30 63 30 Q80 30 80 52 Q80 68 71 76 L71 84 Q77 86 81 96 L88 138 Z" fill="url(#pv-vp-marble)" />
+   155→            <ellipse cx="63" cy="52" rx="17" ry="20" fill="#fbeef8" />
+   156→            <polygon points="45,192 125,192 118,185 52,185" fill="#efe0ee" />
+   157→            <rect x="45" y="192" width="80" height="34" fill="#c4a0c8" />
+   158→            <rect x="63" y="199" width="44" height="15" fill="#140b22" />
+   159→            <text x="85" y="210" textAnchor="middle" fontSize="10" fill="#f5ecff" style={{ fontFamily: "var(--font-ibm-plex-mono), monospace" }}>未来はここにある</text>
+   160→          </svg>
+   161→          {/* vertical neon */}
+   162→          <span className="absolute right-[3%] top-[22%] font-mono text-[9px] tracking-[0.3em] text-[#ffd7ee]" style={{ writingMode: "vertical-rl", textShadow: "0 0 8px #ff9ed2, 0 0 16px #e070b8" }}>過去未来</span>
+   163→        </div>
+   164→      );
+   165→    case "y2k":
+   166→      return (
+   167→        <div className={common}>
+   168→          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,#f8ddee 0%,#e6d0f4 55%,#f6c2e0 100%)" }} />
+   169→          {/* desk gloss */}
+   170→          <div className="absolute inset-x-0 bottom-0 h-[42%]" style={{ background: "linear-gradient(to top,#ffffff99,transparent)" }} />
+   171→          {/* CD */}
+   172→          <div className="absolute right-[10%] top-[14%] h-14 w-14 rounded-full" style={{ background: "conic-gradient(#ffd2ec,#fff2c8,#cdf2de,#cfe6ff,#e6d4ff,#ffd2ec)", WebkitMaskImage: "radial-gradient(circle,transparent 15%,black 16%)", maskImage: "radial-gradient(circle,transparent 15%,black 16%)", boxShadow: "0 8px 18px -8px #b06ab8" }} />
+   173→          <div className="absolute right-[16.5%] top-[21%] h-3.5 w-3.5 rounded-full" style={{ background: "linear-gradient(#f4eaf8,#cdb8e2)", border: "1px solid #b39cc9" }} />
+   174→          {/* mini MD player */}
+   175→          <div className="absolute left-[8%] top-[20%] h-11 w-24 -rotate-6 rounded-lg" style={{ background: "linear-gradient(160deg,#fdf9ff,#e2d4f0 70%,#f2e8f6)", border: "1px solid #c2aed8", boxShadow: "0 8px 16px -8px #b07ab8" }}>
+   176→            <div className="absolute left-1.5 top-1.5 flex gap-1">
+   177→              {Array.from({ length: 5 }, (_, i) => <div key={i} className="h-2 w-2.5 rounded-[2px] bg-[#f0e6f6] ring-1 ring-[#c6b4d8]" />)}
+   178→            </div>
+   179→            <div className="absolute bottom-1.5 left-1.5 h-1.5 w-6 rounded-full bg-[#463656]/80" />
+   180→            <div className="absolute bottom-1.5 right-2 h-2 w-2 rounded-full ring-1 ring-[#b7a0cc]">
+   181→              <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#463656]" />
+   182→            </div>
+   183→          </div>
+   184→          {/* mini holo mouse */}
+   185→          <div className="absolute bottom-[13%] left-[24%] h-11 w-[68px] -rotate-3 rounded-[50%]" style={{ background: "radial-gradient(circle at 35% 28%,#fff,#fbeef8 42%,#dcc9f0 82%,#f4e6f6)", boxShadow: "0 8px 14px -6px #b078b899" }}>
+   186→            <div className="absolute left-1/2 top-[18%] h-3.5 w-2.5 -translate-x-1/2 rounded-full" style={{ background: "repeating-linear-gradient(90deg,#b9a2d8 0 1px,#e8dcf6 1px 2px)" }} />
+   187→          </div>
+   188→          {/* mini glitter ball */}
+   189→          <div className="absolute bottom-[11%] right-[16%] h-10 w-10 rounded-full" style={{ background: "radial-gradient(circle at 34% 28%,#fff,#f4eafc 30%,#c2aae0 85%)", boxShadow: "0 6px 12px -5px #b078b8" }}>
+   190→            <div className="absolute inset-0 rounded-full" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.95) 0.8px,transparent 1.2px),radial-gradient(rgba(198,168,236,0.9) 0.8px,transparent 1.3px)", backgroundSize: "6px 6px,9px 9px", backgroundPosition: "0 0,3px 4px", opacity: 0.65 }} />
+   191→            <div className="absolute left-[18%] top-[12%] h-2.5 w-3.5 rounded-[50%] bg-white/90 blur-[1px]" />
+   192→          </div>
+   193→          {/* sparkles */}
+   194→          <div className="y2k-sparkle absolute left-[16%] top-[16%] h-2 w-2 rotate-45 bg-white" />
+   195→          <div className="y2k-sparkle absolute right-[28%] top-[38%] h-1.5 w-1.5 rotate-45 bg-white" style={{ animationDelay: "-1.4s" }} />
+   196→          <div className="y2k-sparkle absolute bottom-[28%] left-[48%] h-1.5 w-1.5 rotate-45 bg-white" style={{ animationDelay: "-2.2s" }} />
+   197→        </div>
+   198→      );
+   199→    case "dreamcore":
+   200→      return (
+   201→        <div className={common}>
+   202→          {/* twilight sky + evening star (page DreamEnv) */}
+   203→          <div className="absolute inset-0" style={{ background: "linear-gradient(#0d1233 0%, #26306b 45%, #55508f 75%, #b878b8 100%)" }} />
+   204→          <div className="absolute right-[30%] top-[12%] h-1 w-1 rounded-full bg-[#f4f6ff]" style={{ boxShadow: "0 0 8px 2px rgba(220,230,255,0.75)" }} />
+   205→          <div className="absolute left-[24%] top-[7%] h-px w-px bg-white/80" />
+   206→          <div className="absolute left-[58%] top-[5%] h-px w-px bg-white/70" />
+   207→          <div className="absolute right-[10%] top-[20%] h-px w-px bg-[#c8e0ff]/80" />
+   208→          {/* the great pink-gold cumulus */}
+   209→          <div className="cloud-blob absolute left-[12%] top-[32%] h-9 w-28" style={{ background: "radial-gradient(circle at 50% 88%, #ffd8a8 0%, #f0a8c8 48%, #6b5492 100%)", opacity: 0.95 }} />
+   210→          <div className="cloud-blob absolute right-[16%] top-[26%] h-5 w-14 bg-[#6a5590]/80" />
+   211→          {/* meadow */}
+   212→          <div className="absolute bottom-0 h-[30%] w-full" style={{ background: "linear-gradient(#2c5244, #152e28)" }} />
+   213→          {/* tethered island with pink-roofed house */}
+   214→          <div className="ambient-float absolute left-[11%] top-[14%] w-[18%]">
+   215→            <div className="absolute bottom-full left-1/2 h-5 w-px -translate-x-1/2 bg-white/35" />
+   216→            <svg viewBox="0 0 60 46" className="h-auto w-full" aria-hidden>
+   217→              <polygon points="6,18 54,18 47,32 38,40 30,34 22,42 14,30" fill="#3a2f52" />
+   218→              <path d="M3 17 Q17 12 30 14 Q45 16 57 18 Q43 23 30 23 Q15 23 3 17 Z" fill="#3f7a52" />
+   219→              <rect x="22" y="6" width="14" height="9" fill="#f6ecf4" />
+   220→              <polygon points="20,6 29,1 38,6" fill="#ff9ed2" />
+   221→              <rect x="25" y="8" width="3.5" height="3.5" fill="#ffd898" />
+   222→            </svg>
+   223→          </div>
+   224→          {/* Bar of Dreams kiosk */}
+   225→          <div className="absolute bottom-[12%] right-[12%] w-[24%]">
+   226→            <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap font-[var(--font-caveat)] text-[8px] text-[#ffd8f0]" style={{ textShadow: "0 0 6px #ff9ed2, 0 0 12px rgba(255,158,210,0.5)" }}>Bar of Dreams</div>
+   227→            <div className="h-2.5 w-full rounded-t-sm" style={{ background: "repeating-linear-gradient(90deg,#ff9ed2 0 4px,#fff2fa 4px 8px,#9ee8e0 8px 12px,#fff2fa 12px 16px)" }} />
+   228→            <div className="mx-auto h-5 w-[88%] rounded-b-sm bg-[#241f42] p-0.5">
+   229→              <div className="h-3 w-full rounded-[2px]" style={{ background: "linear-gradient(#ffd898,#ffb090)", boxShadow: "0 0 8px rgba(255,190,120,0.55)" }} />
+   230→            </div>
+   231→          </div>
+   232→          {/* pond + flowers */}
+   233→          <div className="absolute bottom-[7%] left-[36%] h-2.5 w-8 rounded-[50%]" style={{ background: "linear-gradient(rgba(255,158,210,0.5), rgba(16,23,54,0.9))" }} />
+   234→          <div className="absolute bottom-[5%] left-[12%] h-1 w-1 rounded-full bg-[#ff9ed2]" />
+   235→          <div className="absolute bottom-[9%] left-[22%] h-1 w-1 rounded-full bg-[#c8a8ee]" />
+   236→          <div className="absolute bottom-[4%] left-[46%] h-1 w-1 rounded-full bg-[#fff2fa]/90" />
+   237→          <div className="absolute bottom-[6%] right-[40%] h-1 w-1 rounded-full bg-[#ff9ed2]/80" />
+   238→        </div>
+   239→      );
+   240→    case "cyberpunk":
+   241→      return (
+   242→        <div className={common}>
+   243→          <div className="absolute inset-0" style={{ background: `linear-gradient(${w.bg}, #241448 70%, #4a1f66)` }} />
+   244→          {Array.from({ length: 7 }, (_, i) => (
+   245→            <div key={i} className="absolute bottom-0" style={{ left: `${i * 15 - 4}%`, width: "13%", height: `${34 + ((i * 37) % 42)}%`, background: "#171034", border: "1px solid #2a1a52" }}>
+   246→              <div className="absolute left-[25%] top-[22%] h-1.5 w-1.5" style={{ background: i % 2 ? w.accent : w.accent2, boxShadow: `0 0 8px ${i % 2 ? w.accent : w.accent2}` }} />
+   247→              <div className="absolute left-[60%] top-[48%] h-1.5 w-1.5" style={{ background: i % 3 ? w.accent2 : w.accent, boxShadow: `0 0 8px ${i % 3 ? w.accent2 : w.accent}` }} />
+   248→            </div>
+   249→          ))}
+   250→          <div className="absolute left-[18%] top-[14%] font-mono text-[8px] tracking-[0.3em] text-[#ff3b52] sign-glow">未来市</div>
+   251→          <div className="absolute right-[14%] top-[24%] font-mono text-[8px] tracking-[0.25em] text-[#4de8ff] sign-glow">SECTOR 7</div>
+   252→          {/* rooftop edge, lone figure, railing discs */}
+   253→          <div className="absolute bottom-0 left-0 h-[13%] w-[32%] bg-[#070512]" style={{ clipPath: "polygon(0 0, 100% 45%, 100% 100%, 0 100%)" }} />
+   254→          <div className="absolute bottom-[11%] left-[10%] h-[6%] w-[2%] rounded-t-full bg-[#08061a]" />
+   255→          <div className="absolute bottom-[15.6%] left-[10.4%] h-[1.8%] w-[1.2%] rounded-full bg-[#08061a]" />
+   256→          <div className="absolute bottom-[9%] left-[32%] right-0 h-px bg-[#0a0718]" />
+   257→          {[0, 1, 2, 3, 4].map((i) => (
+   258→            <div key={`d${i}`} className="absolute h-[2.2%] w-[2.2%] rounded-full border border-[#4de8ff66] bg-[#0d0a1e]" style={{ left: `${36 + i * 13}%`, bottom: "8.4%" }} />
+   259→          ))}
+   260→        </div>
+   261→      );
+   262→    case "liminal":
+   263→      return (
+   264→        <div className={common}>
+   265→          <div className="absolute inset-0 bg-[#d8d2c4]" />
+   266→          <div className="absolute inset-x-0 bottom-0 h-[46%] bg-[#c4beae]" style={{ clipPath: "polygon(0 0, 34% 40%, 66% 40%, 100% 0, 100% 100%, 0 100%)" }} />
+   267→          <div className="absolute left-1/2 top-[34%] h-8 w-1 -translate-x-1/2 bg-[#a89f88]" />
+   268→          <div className="absolute inset-x-[34%] top-[36%] h-[34%] bg-[#efe9da]" style={{ clipPath: "polygon(18% 0, 82% 0, 92% 100%, 8% 100%)" }} />
+   269→          <div className="ambient-flicker absolute inset-x-[30%] top-0 h-[10%] bg-[#fdf8e8]/90" />
+   270→        </div>
+   271→      );
+   272→    case "backrooms":
+   273→      return (
+   274→        <div className={common}>
+   275→          {/* Level 0 corridor (page BackroomsEnv): striped yellow walls with
+   276→              chair rail + baseboard, drop ceiling with flush fluorescents,
+   277→              wall openings into further rooms, damp carpet, hazmat explorer */}
+   278→          <svg className="h-full w-full" viewBox="0 0 300 224" preserveAspectRatio="xMidYMid slice" aria-hidden>
+   279→            <defs>
+   280→              <linearGradient id="pv-br-ceil" x1="0" y1="0" x2="0" y2="1">
+   281→                <stop offset="0" stopColor="#d5c795" />
+   282→                <stop offset="1" stopColor="#a2934f" />
+   283→              </linearGradient>
+   284→              <linearGradient id="pv-br-floor" x1="0" y1="0" x2="0" y2="1">
+   285→                <stop offset="0" stopColor="#2a2208" />
+   286→                <stop offset="1" stopColor="#6b5b24" />
+   287→              </linearGradient>
+   288→            </defs>
+   289→            <rect width="300" height="224" fill="#8a7a3a" />
+   290→            {/* ceiling + joists */}
+   291→            <polygon points="0,0 300,0 236,60 64,60" fill="url(#pv-br-ceil)" />
+   292→            {[-60, 30, 110, 190, 268, 350].map((x, i) => (
+   293→              <line key={`j${i}`} x1={x} y1="0" x2={150 + (x - 150) * 0.19} y2="60" stroke="#584c22" strokeWidth="1" opacity="0.7" />
+   294→            ))}
+   295→            {/* flush fluorescents, nearest flickers */}
+   296→            <g className="ambient-flicker" style={{ animationDuration: "7s" }}>
+   297→              <ellipse cx="150" cy="10" rx="52" ry="7" fill="rgba(253,248,214,0.3)" />
+   298→              <rect x="112" y="3" width="76" height="9" rx="1" fill="#6e6128" />
+   299→              <rect x="115" y="4.5" width="70" height="6" rx="0.8" fill="#fdf8d6" />
+   300→            </g>
+   301→            <rect x="133" y="20" width="34" height="5" rx="0.8" fill="#6e6128" />
+   302→            <rect x="134.5" y="21.2" width="31" height="2.8" fill="#fdf8d6" opacity="0.95" />
+   303→            <rect x="142" y="34" width="16" height="3" rx="0.5" fill="#6e6128" />
+   304→            <rect x="143" y="34.8" width="14" height="1.6" fill="#fdf8d6" opacity="0.8" />
+   305→            {/* wallpaper stripes converging with depth */}
+   306→            {[[12.8, 12, 12.8, 191.2], [28.8, 27, 28.8, 150.2], [48, 36, 48, 126], [287.2, 12, 287.2, 191.2], [271.2, 27, 271.2, 150.2], [252, 36, 252, 126]].map(([x1, y1, x2, y2], i) => (
+   307→              <line key={`s${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,243,190,0.14)" strokeWidth="1" />
+   308→            ))}
+   309→            {/* chair rail + baseboard */}
+   310→            <line x1="64" y1="60" x2="0" y2="130" stroke="rgba(58,48,16,0.45)" strokeWidth="1.5" />
+   311→            <line x1="236" y1="60" x2="300" y2="130" stroke="rgba(58,48,16,0.45)" strokeWidth="1.5" />
+   312→            <polygon points="64,60 0,210.6 0,224 64,60" fill="#4c4019" opacity="0.9" />
+   313→            <polygon points="236,60 300,210.6 300,224 236,60" fill="#4c4019" opacity="0.9" />
+   314→            {/* opening into a lit room, left wall */}
+   315→            <polygon points="35.2,33 22.4,21 22.4,166.6 35.2,133.8" fill="#6b5d2b" />
+   316→            <polygon points="35.2,72 22.4,78 22.4,166.6 35.2,133.8" fill="#3d3312" opacity="0.85" />
+   317→            <ellipse cx="29" cy="48" rx="7" ry="9" fill="rgba(253,246,205,0.45)" />
+   318→            {/* opening into the dark, right wall */}
+   319→            <polygon points="264.8,39 277.6,27 277.6,172.6 264.8,139.8" fill="#0b0802" />
+   320→            {/* far end of the hall — someone is standing there */}
+   321→            <rect x="136" y="86" width="28" height="42" fill="#0f0c04" />
+   322→            <rect x="143" y="98" width="14" height="30" fill="#060502" />
+   323→            <circle cx="149.5" cy="104" r="1.6" fill="#040302" />
+   324→            <rect x="148" y="105.5" width="3" height="8" rx="1.2" fill="#040302" />
+   325→            {/* damp carpet + pooled light */}
+   326→            <polygon points="64,60 236,60 300,224 0,224" fill="url(#pv-br-floor)" />
+   327→            <ellipse cx="150" cy="152" rx="55" ry="14" fill="rgba(253,246,200,0.12)" />
+   328→            {/* hazmat explorer reading a note pinned to the right wall */}
+   329→            <g className="bl-bob" style={{ animationDuration: "5s" }}>
+   330→              <ellipse cx="238" cy="164" rx="12" ry="2.6" fill="rgba(8,6,2,0.4)" />
+   331→              <rect x="233" y="128" width="13" height="26" rx="4" fill="#8f8838" />
+   332→              <rect x="236" y="131" width="7" height="17" rx="2.5" fill="#6e6730" />
+   333→              <circle cx="239.5" cy="122" r="5" fill="#8f8838" />
+   334→              <circle cx="238" cy="124" r="2" fill="#8f8736" />
+   335→              <rect x="248" y="126" width="7" height="9" fill="#efe8d0" transform="rotate(-6 251 130)" />
+   336→            </g>
+   337→          </svg>
+   338→        </div>
+   339→      );
+   340→    case "frutiger":
+   341→      return (
+   342→        <div className={common}>
+   343→          {/* Aqua utopia (page FrutigerEnv): sky, sun, rainbow, glass towers,
+   344→              dome, looping slide tube, lagoon shimmer, signs, bubbles */}
+   345→          <svg className="h-full w-full" viewBox="0 0 300 224" preserveAspectRatio="xMidYMid slice" aria-hidden>
+   346→            <defs>
+   347→              <linearGradient id="pv-fa-sky" x1="0" y1="0" x2="0" y2="1">
+   348→                <stop offset="0" stopColor="#3fb2ef" />
+   349→                <stop offset="0.6" stopColor="#8ed9f8" />
+   350→                <stop offset="1" stopColor="#d9f5fe" />
+   351→              </linearGradient>
+   352→              <linearGradient id="pv-fa-glass" x1="0" y1="0" x2="0.7" y2="1">
+   353→                <stop offset="0" stopColor="#eafaff" />
+   354→                <stop offset="0.55" stopColor="#9fdcf6" />
+   355→                <stop offset="1" stopColor="#57b4e4" />
+   356→              </linearGradient>
+   357→              <linearGradient id="pv-fa-water" x1="0" y1="0" x2="0" y2="1">
+   358→                <stop offset="0" stopColor="#9fe8f6" />
+   359→                <stop offset="1" stopColor="#1286c2" />
+   360→              </linearGradient>
+   361→            </defs>
+   362→            <rect width="300" height="224" fill="url(#pv-fa-sky)" />
+   363→            <circle cx="56" cy="34" r="34" fill="#ffffff" opacity="0.9" />
+   364→            <circle cx="56" cy="34" r="13" fill="#ffffff" />
+   365→            {/* rainbow */}
+   366→            <path d="M 20 120 A 130 130 0 0 1 282 112" fill="none" stroke="#ffffff" strokeWidth="6" strokeLinecap="round" opacity="0.55" />
+   367→            {/* towers + dome */}
+   368→            <rect x="16" y="96" width="22" height="94" rx="3" fill="url(#pv-fa-glass)" stroke="#ffffff" strokeOpacity="0.6" strokeWidth="1.2" />
+   369→            <rect x="46" y="74" width="30" height="116" rx="3" fill="url(#pv-fa-glass)" stroke="#ffffff" strokeOpacity="0.65" strokeWidth="1.2" />
+   370→            <rect x="248" y="52" width="34" height="138" rx="3" fill="url(#pv-fa-glass)" stroke="#ffffff" strokeOpacity="0.65" strokeWidth="1.2" />
+   371→            <rect x="256" y="60" width="20" height="8" rx="3" fill="#ffffff" />
+   372→            <ellipse cx="128" cy="118" rx="24" ry="17" fill="#bdeafc" stroke="#ffffff" strokeWidth="1.4" />
+   373→            <rect x="106" y="126" width="44" height="64" rx="3" fill="url(#pv-fa-glass)" stroke="#ffffff" strokeOpacity="0.6" strokeWidth="1.2" />
+   374→            {/* slide tube */}
+   375→            <path d="M 208 128 C 246 84 288 96 286 140 C 284 170 250 176 240 152" fill="none" stroke="#eafcff" strokeWidth="7" strokeLinecap="round" opacity="0.75" />
+   376→            <path d="M 208 128 C 246 84 288 96 286 140 C 284 170 250 176 240 152" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 12" className="fa-flow" style={{ animationDuration: "2.2s" }} />
+   377→            {/* lagoon */}
+   378→            <rect x="0" y="156" width="300" height="68" fill="url(#pv-fa-water)" />
+   379→            <rect x="0" y="155" width="300" height="2.4" fill="#ffffff" opacity="0.6" />
+   380→            {[14, 68, 122, 176, 232, 268].map((x, i) => (
+   381→              <rect key={i} x={x} y={170 + (i % 3) * 14} width="34" height="2.6" rx="1.3" fill="#ffffff" className="fa-shimmer" opacity="0.45" style={{ animationDelay: `${i * 0.5}s` }} />
+   382→            ))}
+   383→            {/* welcome board */}
+   384→            <rect x="212" y="176" width="62" height="20" rx="4" fill="#ffffff" stroke="#cfeaf6" strokeWidth="1.5" />
+   385→            <text x="243" y="189" textAnchor="middle" fontSize="7.5" fill="#1f88be" style={{ fontWeight: 700 }}>
+   386→              Paradise
+   387→            </text>
+   388→            {/* bubbles */}
+   389→            {[[36, 200, 5], [82, 210, 3.4], [150, 204, 4.4], [196, 212, 3], [266, 206, 5]].map(([cx, cy, r], i) => (
+   390→              <circle key={i} cx={cx} cy={cy} r={r} fill="#ffffff" opacity="0.7" className="fa-shimmer" style={{ animationDelay: `${i * 0.7}s` }} />
+   391→            ))}
+   392→          </svg>
+   393→        </div>
+   394→      );
+   395→    default:
+   396→      // Studio-built custom worlds: render their live scene graph, scaled to the card
+   397→      return (
+   398→        <div className={common}>
+   399→          <SceneStage doc={w.scene} className="absolute inset-0" />
+   400→        </div>
+   401→      );
+   402→  }
+   403→}
+   404→
+   405→function PortalCard({ w }: { w: PortalWorldDef }) {
+   406→  const navigate = useApp((s) => s.navigate);
+   407→  const [blurb, setBlurb] = useState(false);
+   408→  return (
+   409→    <button
+   410→      className="portal-card group block h-56 text-left md:h-64"
+   411→      style={{ "--p-accent": w.accent, "--p-accent2": w.accent2 } as React.CSSProperties}
+   412→      onMouseEnter={() => setBlurb(true)}
+   413→      onMouseLeave={() => setBlurb(false)}
+   414→      onFocus={() => setBlurb(true)}
+   415→      onBlur={() => setBlurb(false)}
+   416→      onClick={() => navigate({ view: "world", world: w.id })}
+   417→      aria-label={`Enter ${w.name} — ${w.epithet}`}
+   418→    >
+   419→      <PortalScene w={w} />
+   420→      <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+   421→      <div className="absolute inset-x-0 bottom-0 z-20 p-4">
+   422→        <p className="text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: w.accent }}>
+   423→          World {String(w.index).padStart(2, "0")}
+   424→        </p>
+   425→        <h3 className="w-display mt-0.5 text-xl font-bold text-white">{w.name}</h3>
+   426→        <p className="text-[12px] italic text-white/60">{w.epithet}</p>
+   427→        <div className={`mt-2 overflow-hidden transition-all duration-300 ${blurb ? "max-h-24 opacity-100" : "max-h-0 opacity-0"}`}>
+   428→          <p className="text-[12.5px] leading-snug text-white/80">{w.portalBlurb}</p>
+   429→          <p className="mt-1.5 flex items-center gap-1 text-[12px] font-semibold" style={{ color: w.accent }}>
+   430→            Enter the world <ArrowRight className="h-3.5 w-3.5" />
+   431→          </p>
+   432→        </div>
+   433→      </div>
+   434→    </button>
+   435→  );
+   436→}
+   437→
+   438→// ————— Homepage —————
+   439→interface Stats {
+   440→  total: number;
+   441→  trending: { tag: string; count: number }[];
+   442→  featuredCreators: { name: string; id: string; works: number; likes: number }[];
+   443→}
+   444→
+   445→const COLLECTIONS: { title: string; desc: string; query: string; world: WorldId }[] = [
+   446→  { title: "Neon After Dark", desc: "Signs, skylines and electric rain", query: "neon", world: "retrowave" },
+   447→  { title: "Empty Rooms", desc: "Silence, rendered in fluorescent light", query: "corridor", world: "liminal" },
+   448→  { title: "Summers That Never Ended", desc: "Meadows, buses and petrol stations", query: "summer", world: "dreamcore" },
+   449→  { title: "Chrome & Gloss", desc: "The optimistic interface era", query: "chrome", world: "y2k" },
+   450→];
+   451→
+   452→export function Homepage() {
+   453→  const navigate = useApp((s) => s.navigate);
+   454→  const setSearchOpen = useApp((s) => s.setSearchOpen);
+   455→  const worlds = useStudioWorlds();
+   456→  const site = useStudioConfig((s) => s.site);
+   457→  const [featured, setFeatured] = useState<ArtworkDTO[]>([]);
+   458→  const [recent, setRecent] = useState<ArtworkDTO[]>([]);
+   459→  const [stats, setStats] = useState<Stats | null>(null);
+   460→  const featuredRef = useRef<HTMLDivElement>(null);
+   461→
+   462→  useEffect(() => {
+   463→    fetch("/api/artworks?featured=1&limit=10")
+   464→      .then((r) => r.json())
+   465→      .then((d) => setFeatured(d.artworks || []))
+   466→      .catch(() => {});
+   467→    fetch("/api/artworks?limit=12")
+   468→      .then((r) => r.json())
+   469→      .then((d) => setRecent(d.artworks || []))
+   470→      .catch(() => {});
+   471→    fetch("/api/stats")
+   472→      .then((r) => r.json())
+   473→      .then(setStats)
+   474→      .catch(() => {});
+   475→  }, []);
+   476→
+   477→  const scrollFeatured = (dir: number) => {
+   478→    featuredRef.current?.scrollBy({ left: dir * 340, behavior: "smooth" });
+   479→  };
+   480→
+   481→  return (
+   482→    <div className="bg-[#0d0b14] text-white">
+   483→      {/* ——— HERO ——— */}
+   484→      <section className="relative flex min-h-[88vh] items-center justify-center overflow-hidden">
+   485→        <HeroCanvas />
+   486→        <div
+   487→          className="absolute inset-0"
+   488→          style={{ background: "radial-gradient(ellipse 62% 52% at 50% 54%, rgba(5,3,10,0.52), rgba(5,3,10,0.18) 60%, transparent 78%)" }}
+   489→          aria-hidden
+   490→        />
+   491→        <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
+   492→          <p className="text-[12px] font-semibold uppercase tracking-[0.5em] text-white/70">
+   493→            {site.heroEyebrow}
+   494→          </p>
+   495→          <h1 className="mt-5 text-6xl font-black leading-[0.95] tracking-tight md:text-8xl">
+   496→            <span className="bg-gradient-to-r from-[#ff2e88] via-[#f7b4d0] via-50% to-[#9be8ff] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(255,46,136,0.35)]">
+   497→              AESTHETICA
+   498→            </span>
+   499→          </h1>
+   500→          <p className="mx-auto mt-6 max-w-2xl text-balance text-[16px] leading-relaxed text-white/80 md:text-lg">
+   501→            {site.heroSub}
+   502→          </p>
+   503→          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+   504→            <button onClick={() => document.getElementById("portals")?.scrollIntoView({ behavior: "smooth" })} className="w-btn-primary w-btn !rounded-full !px-6 !py-3 !text-[15px] !text-white">
+   505→              <Compass className="h-4.5 w-4.5" />
+   506→              Begin the tour
+   507→            </button>
+   508→            <button onClick={() => setSearchOpen(true)} className="w-btn !rounded-full !px-6 !py-3 !text-[15px] !border-white/25 !bg-white/10 !text-white hover:!border-white/60">
+   509→              <Search className="h-4.5 w-4.5" />
+   510→              Search the archive
+   511→            </button>
+   512→          </div>
+   513→          <div className="mt-10 flex items-center justify-center gap-6 text-[12px] text-white/50">
+   514→            <span>{stats ? `${stats.total}+ artworks` : "—"}</span>
+   515→            <span className="h-1 w-1 rounded-full bg-white/30" />
+   516→            <span>{worlds.length} worlds</span>
+   517→            <span className="h-1 w-1 rounded-full bg-white/30" />
+   518→            <span>1 archive</span>
+   519→          </div>
+   520→        </div>
+   521→        <ChevronDown className="absolute bottom-5 left-1/2 h-5 w-5 -translate-x-1/2 animate-bounce text-white/40" aria-hidden />
+   522→      </section>
+   523→
+   524→      {/* ——— PORTALS ——— */}
+   525→      <section id="portals" className="relative mx-auto max-w-7xl px-4 py-20">
+   526→        <header className="mb-10 text-center">
+   527→          <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#7df2d8]">{site.portalsKicker}</p>
+   528→          <h2 className="mt-3 text-3xl font-bold md:text-4xl">{site.portalsTitle}</h2>
+   529→          <p className="mx-auto mt-3 max-w-xl text-[15px] text-white/60">
+   530→            Each portal opens a different reality: its own light, typography, motion and archive.
+   531→            Hover to preview. Enter to stay a while.
+   532→          </p>
+   533→        </header>
+   534→        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+   535→          {worlds.map((w) => (
+   536→            <PortalCard key={w.id} w={w} />
+   537→          ))}
+   538→        </div>
+   539→      </section>
+   540→
+   541→      {/* ——— FEATURED ——— */}
+   542→      {featured.length > 0 && (
+   543→        <section className="border-y border-white/8 bg-white/[0.02] py-16">
+   544→          <div className="mx-auto max-w-7xl px-4">
+   545→            <div className="mb-7 flex items-end justify-between gap-4">
+   546→              <div>
+   547→                <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#ff2e88]">Curated</p>
+   548→                <h2 className="mt-2 text-3xl font-bold">Featured Works</h2>
+   549→              </div>
+   550→              <div className="flex gap-2">
+   551→                <button onClick={() => scrollFeatured(-1)} className="w-btn !px-3" aria-label="Scroll left">←</button>
+   552→                <button onClick={() => scrollFeatured(1)} className="w-btn !px-3" aria-label="Scroll right">→</button>
+   553→              </div>
+   554→            </div>
+   555→            <div ref={featuredRef} className="flex gap-5 overflow-x-auto pb-3 w-scroll [scrollbar-width:thin]">
+   556→              {featured.map((a) => (
+   557→                <div key={a.id} className="w-[300px] shrink-0">
+   558→                  <ArtworkCard art={a} />
+   559→                </div>
+   560→              ))}
+   561→            </div>
+   562→          </div>
+   563→        </section>
+   564→      )}
+   565→
+   566→      {/* ——— COLLECTIONS + TRENDING ——— */}
+   567→      <section className="mx-auto max-w-7xl px-4 py-20">
+   568→        <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr]">
+   569→          <div>
+   570→            <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#9be8ff]">Curated paths</p>
+   571→            <h2 className="mt-2 text-3xl font-bold">Collections</h2>
+   572→            <div className="mt-7 grid gap-4 sm:grid-cols-2">
+   573→              {COLLECTIONS.map((c) => {
+   574→                const w = WORLD_MAP[c.world];
+   575→                return (
+   576→                  <button
+   577→                    key={c.title}
+   578→                    onClick={() => navigate({ view: "search", q: c.query })}
+   579→                    className="group relative overflow-hidden rounded-2xl border border-white/10 p-5 text-left transition-all hover:-translate-y-1 hover:border-white/30"
+   580→                    style={{ background: `linear-gradient(135deg, ${w.grad[0]}, ${w.grad[1]}33 60%, ${w.grad[2]}22)` }}
+   581→                  >
+   582→                    <p className="text-[10px] font-bold uppercase tracking-[0.25em]" style={{ color: w.accent }}>{w.name}</p>
+   583→                    <h3 className="mt-1.5 text-xl font-bold">{c.title}</h3>
+   584→                    <p className="mt-1 text-[13px] text-white/60">{c.desc}</p>
+   585→                    <p className="mt-4 flex items-center gap-1.5 text-[12.5px] font-semibold text-white/80 transition-colors group-hover:text-white">
+   586→                      Browse collection <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+   587→                    </p>
+   588→                  </button>
+   589→                );
+   590→              })}
+   591→            </div>
+   592→          </div>
+   593→          <div>
+   594→            <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#ffb347]">Signals</p>
+   595→            <h2 className="mt-2 text-3xl font-bold">Trending Tags</h2>
+   596→            <div className="mt-7 flex flex-wrap gap-2.5">
+   597→              {(stats?.trending || []).map((t, i) => (
+   598→                <button
+   599→                  key={t.tag}
+   600→                  onClick={() => navigate({ view: "search", q: t.tag })}
+   601→                  className="rounded-full border border-white/12 px-4 py-2 text-[13.5px] text-white/75 transition-all hover:border-[#ff2e88] hover:text-white hover:shadow-[0_0_20px_-6px_#ff2e88]"
+   602→                  style={{ fontSize: `${Math.max(13, 16 - i * 0.35)}px` }}
+   603→                >
+   604→                  #{t.tag}
+   605→                  <span className="ml-1.5 text-[11px] text-white/35">{t.count}</span>
+   606→                </button>
+   607→              ))}
+   608→              {!stats && <p className="text-[13px] text-white/40">Reading the archive…</p>}
+   609→            </div>
+   610→
+   611→            <h2 className="mt-12 text-xl font-bold">Featured Creators</h2>
+   612→            <div className="mt-4 space-y-2.5">
+   613→              {(stats?.featuredCreators || []).slice(0, 5).map((c) => (
+   614→                <button
+   615→                  key={c.id}
+   616→                  onClick={() => navigate({ view: "search", q: c.name })}
+   617→                  className="flex w-full items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 text-left transition-colors hover:bg-white/[0.07]"
+   618→                >
+   619→                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#ff2e88] to-[#9be8ff] text-[13px] font-bold text-black">
+   620→                    {c.name.slice(0, 1).toUpperCase()}
+   621→                  </span>
+   622→                  <span className="min-w-0 flex-1">
+   623→                    <span className="block truncate text-[14px] font-medium">{c.name}</span>
+   624→                    <span className="block text-[12px] text-white/45">{c.works} works in the archive</span>
+   625→                  </span>
+   626→                  <span className="text-[12px] text-white/50">♥ {c.likes}</span>
+   627→                </button>
+   628→              ))}
+   629→              {stats && stats.featuredCreators.length === 0 && (
+   630→                <p className="text-[13px] text-white/40">No community uploads yet — yours could be first.</p>
+   631→              )}
+   632→            </div>
+   633→          </div>
+   634→        </div>
+   635→      </section>
+   636→
+   637→      {/* ——— RECENT ——— */}
+   638→      {recent.length > 0 && (
+   639→        <section className="border-y border-white/8 bg-white/[0.02] py-16">
+   640→          <div className="mx-auto max-w-7xl px-4">
+   641→            <div className="mb-7">
+   642→              <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#7df2d8]">Fresh from the worlds</p>
+   643→              <h2 className="mt-2 text-3xl font-bold">Recently Added</h2>
+   644→            </div>
+   645→            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+   646→              {recent.slice(0, 6).map((a) => (
+   647→                <ArtworkCard key={a.id} art={a} />
+   648→              ))}
+   649→            </div>
+   650→          </div>
+   651→        </section>
+   652→      )}
+   653→
+   654→      {/* ——— ARCHIVE HIGHLIGHTS ——— */}
+   655→      <section className="mx-auto max-w-7xl px-4 py-20">
+   656→        <div className="mb-9 text-center">
+   657→          <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#ffb3e6]">Learn the lore</p>
+   658→          <h2 className="mt-2 text-3xl font-bold">Historical Archive Highlights</h2>
+   659→          <p className="mx-auto mt-3 max-w-xl text-[15px] text-white/60">
+   660→            Documented history and cultural interpretation for every world — carefully separated,
+   661→            credibly sourced, openly labelled.
+   662→          </p>
+   663→        </div>
+   664→        <div className="grid gap-4 md:grid-cols-2">
+   665→          {worlds.filter((w) => w.kind === "builtin").map((w) => (
+   666→            <button
+   667→              key={w.id}
+   668→              onClick={() => navigate({ view: "world", world: w.id, tab: "archive" })}
+   669→              className="group flex items-start gap-4 rounded-2xl border border-white/8 bg-white/[0.03] p-5 text-left transition-all hover:-translate-y-0.5 hover:border-white/25"
+   670→            >
+   671→              <span className="mt-1 h-10 w-10 shrink-0 rounded-xl" style={{ background: `linear-gradient(135deg, ${w.grad[1]}, ${w.grad[2]})`, boxShadow: `0 6px 20px -6px ${w.grad[1]}` }} />
+   672→              <span>
+   673→                <span className="flex items-center gap-2 text-[16px] font-bold">
+   674→                  {w.name} <ArrowRight className="h-3.5 w-3.5 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
+   675→                </span>
+   676→                <span className="mt-1 line-clamp-2 block text-[13.5px] leading-relaxed text-white/55">
+   677→                  {w.archive?.[0] ? `${w.archive[0].heading} — ${w.archive[0].body.slice(0, 130)}…` : w.short}
+   678→                </span>
+   679→              </span>
+   680→            </button>
+   681→          ))}
+   682→        </div>
+   683→      </section>
+   684→
+   685→      {/* ——— UPLOAD CTA ——— */}
+   686→      <section className="relative overflow-hidden border-t border-white/8 py-20">
+   687→        <div className="absolute inset-0 bg-gradient-to-r from-[#ff2e88]/12 via-transparent to-[#9be8ff]/12" />
+   688→        <div className="relative mx-auto max-w-3xl px-4 text-center">
+   689→          <Upload className="mx-auto h-8 w-8 text-white/70" />
+   690→          <h2 className="mt-4 text-3xl font-bold md:text-4xl">Add your vision to the museum</h2>
+   691→          <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/65">
+   692→            Upload artwork into any of the {worlds.length} worlds. Your pieces join the gallery with full
+   693→            tagging, likes, comments and collections — no account needed, this device is your key.
+   694→          </p>
+   695→          <button onClick={() => navigate({ view: "upload" })} className="w-btn-primary w-btn mt-8 !rounded-full !px-8 !py-3.5 !text-[15px] !text-white">
+   696→            <Upload className="h-4.5 w-4.5" />
+   697→            Add artwork
+   698→          </button>
+   699→        </div>
+   700→      </section>
+   701→
+   702→      {/* ——— FOOTER ——— */}
+   703→      <footer className="mt-auto border-t border-white/8 bg-black/40 py-10">
+   704→        <div className="mx-auto max-w-7xl px-4">
+   705→          <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+   706→            <div className="flex items-center gap-2.5">
+   707→              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#ff2e88] via-[#7df2d8] to-[#9be8ff] text-[11px] font-black text-black">Æ</span>
+   708→              <span className="text-[13px] tracking-[0.25em] text-white/70">AESTHETICA</span>
+   709→            </div>
+   710→            <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-[12.5px] text-white/50" aria-label="Footer">
+   711→              {worlds.map((w) => (
+   712→                <button key={w.id} onClick={() => navigate({ view: "world", world: w.id })} className="transition-colors hover:text-white">
+   713→                  {w.name}
+   714→                </button>
+   715→              ))}
+   716→              <button onClick={() => navigate({ view: "profile" })} className="transition-colors hover:text-white">Profile</button>
+   717→              <button onClick={() => navigate({ view: "studio" })} className="transition-colors hover:text-white">Studio</button>
+   718→            </nav>
+   719→            <p className="text-[11.5px] text-white/35">A living museum · art, history & community · MMXXVI</p>
+   720→          </div>
+   721→        </div>
+   722→      </footer>
+   723→    </div>
+   724→  );
+   725→}
+   726→

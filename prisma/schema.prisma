@@ -158,15 +158,18 @@ model ArchiveArticle {
 // STUDIO — the site editor (staff-only)
 // ─────────────────────────────────────────────
 
-// Recognised logins for the Studio. "owner" manages the staff list;
-// "editor" is staff who can edit the site but not manage accounts.
+// Accounts for the site. Roles:
+//   owner  — studio access + manages staff accounts
+//   editor — studio access
+//   member — public account; can post artworks + comments, no studio access
 // Emails are identity-only and live in the local (untracked) database —
 // never rendered publicly, never committed to the repository.
 model StaffUser {
   id           String   @id @default(cuid())
   email        String   @unique
+  name         String? // public display name for posts and comments
   passwordHash String // scrypt: "s1:<salt hex>:<hash hex>"
-  role         String   @default("editor") // owner | editor
+  role         String   @default("member") // owner | editor | member
   createdAt    DateTime @default(now())
 }
 

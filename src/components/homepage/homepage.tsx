@@ -857,7 +857,7 @@ export function Homepage() {
                 </button>
               ))}
               <button onClick={() => navigate({ view: "profile" })} className="transition-colors hover:text-white">Profile</button>
-              <button onClick={() => navigate({ view: "studio" })} className="transition-colors hover:text-white">Staff sign in</button>
+              <button onClick={() => navigate({ view: "studio" })} className="transition-colors hover:text-white">Sign in</button>
             </nav>
             <p className="text-[11.5px] text-white/35">A living museum · art, history & community · MMXXVI</p>
           </div>

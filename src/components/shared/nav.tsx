@@ -1,51 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useApp, type Route } from "@/lib/store";
 import { useStudioWorlds } from "@/lib/worlds-config";
-import { getIdentity, setName as saveName } from "@/lib/identity";
-import { Search, Upload, User, Home, Sparkles, ChevronDown, LogIn, LogOut, Wrench } from "lucide-react";
+import { Search, Upload, Home, Sparkles, ChevronDown, LogIn, LogOut, Wrench } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { useSession } from "@/lib/session";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { handleOf, useSession } from "@/lib/session";
 
 export function Nav() {
   const { route, navigate, searchOpen, setSearchOpen, fxReduced, setFxReduced } = useApp();
   const worlds = useStudioWorlds();
-  const [ident, setIdent] = useState({ id: "", name: "" });
-  const [nameDraft, setNameDraft] = useState("");
-  const [staffAuthed, setStaffAuthed] = useState(false);
   const { user: sessionUser, refresh: refreshSession } = useSession();
   const isStaff = sessionUser?.role === "owner" || sessionUser?.role === "editor";
-  const isMember = sessionUser?.role === "member";
+  const handle = handleOf(sessionUser);
 
+  // Keep the account badge honest as the user moves around the museum.
   useEffect(() => {
-    const t = setTimeout(() => {
-      const i = getIdentity();
-      setIdent(i);
-      setNameDraft(i.name);
-    }, 0);
-    return () => clearTimeout(t);
-  }, [route]);
-
-  // Legacy probe kept for tooltip parity; the session hook drives the button.
-  useEffect(() => {
-    fetch("/api/studio/auth")
-      .then((r) => r.json())
-      .then((d) => setStaffAuthed(!!d.ok))
-      .catch(() => {});
-  }, [route]);
+    refreshSession().catch(() => {});
+  }, [route, refreshSession]);
 
   const onHome = route.view === "home";
   const world = route.view === "world" ? worlds.find((w) => w.id === route.world) : null;
 
   const go = (r: Route) => navigate(r);
+
+  const signOut = async () => {
+    await fetch("/api/studio/auth", { method: "DELETE" }).catch(() => {});
+    // Leaving the studio view? Reload so the portal card replaces the editor.
+    if (route.view === "studio") {
+      window.location.reload();
+      return;
+    }
+    await refreshSession();
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-black/55 backdrop-blur-xl">
@@ -129,30 +121,53 @@ export function Nav() {
             <Upload className="h-4 w-4" />
             <span className="hidden sm:inline">Add Artwork</span>
           </button>
-          <button
-            onClick={async () => {
-              if (isMember) {
-                await fetch("/api/studio/auth", { method: "DELETE" });
-                await refreshSession();
-                setStaffAuthed(false);
-              } else {
-                go({ view: "studio" });
-              }
-            }}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors ${
-              route.view === "studio" && !isMember ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
-            }`}
-            title={isStaff ? "Open the Studio" : isMember ? "Sign out of your account" : "Sign in or create an account"}
-          >
-            {isMember ? (
-              <LogOut className="h-4 w-4" />
-            ) : isStaff ? (
-              <Wrench className="h-4 w-4" />
-            ) : (
+          {sessionUser ? (
+            <>
+              <button
+                onClick={() => go({ view: "profile" })}
+                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] py-1 pl-1 pr-2.5 transition-colors hover:border-white/25 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--w-accent)]"
+                title={`${handle} — ${sessionUser.email}`}
+                aria-label="Your account and collection"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#ff2e88] to-[#7df2d8] text-[11px] font-bold text-black">
+                  {handle.slice(0, 1).toUpperCase()}
+                </span>
+                <span className="hidden max-w-[140px] truncate text-[12.5px] font-medium text-white/90 md:inline">
+                  {handle}
+                </span>
+              </button>
+              {isStaff && (
+                <button
+                  onClick={() => go({ view: "studio" })}
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors ${
+                    route.view === "studio" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
+                  }`}
+                  title="Open the Studio"
+                >
+                  <Wrench className="h-4 w-4" />
+                  <span className="hidden lg:inline">Studio</span>
+                </button>
+              )}
+              <button
+                onClick={signOut}
+                className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--w-accent)]"
+                title="Sign out"
+                aria-label="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden xl:inline">Sign out</span>
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => go({ view: "studio" })}
+              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--w-accent)]"
+              title="Sign in or create an account"
+            >
               <LogIn className="h-4 w-4" />
-            )}
-            <span className="hidden lg:inline">{isStaff ? "Studio" : isMember ? "Sign out" : "Sign in"}</span>
-          </button>
+              <span className="hidden lg:inline">Sign in</span>
+            </button>
+          )}
           <button
             onClick={() => setFxReduced(!fxReduced)}
             className={`hidden items-center gap-1 rounded-md px-2 py-1.5 text-[12px] transition-colors md:flex ${fxReduced ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"}`}
@@ -161,47 +176,6 @@ export function Nav() {
           >
             <Sparkles className={`h-4 w-4 ${fxReduced ? "opacity-40" : ""}`} />
           </button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--w-accent)]"
-                aria-label="Your profile"
-              >
-                <User className="h-4 w-4" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-64 border-white/15 bg-black/90 p-3 backdrop-blur-xl">
-              <p className="mb-1 text-[11px] uppercase tracking-widest text-white/40">Signed in as</p>
-              <Input
-                value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
-                className="mb-2 border-white/20 bg-white/5 text-white"
-                placeholder="Display name"
-                maxLength={48}
-                aria-label="Display name"
-              />
-              <div className="flex gap-2">
-                <button
-                  className="flex-1 rounded-md bg-white/10 py-1.5 text-[12px] text-white hover:bg-white/20"
-                  onClick={() => {
-                    saveName(nameDraft.trim() || ident.name);
-                    setIdent({ ...ident, name: nameDraft.trim() || ident.name });
-                  }}
-                >
-                  Save name
-                </button>
-                <button
-                  className="flex-1 rounded-md bg-white/10 py-1.5 text-[12px] text-white hover:bg-white/20"
-                  onClick={() => go({ view: "profile" })}
-                >
-                  Profile & collection
-                </button>
-              </div>
-              <p className="mt-2 text-[11px] leading-snug text-white/35">
-                No account needed — this device is your key. Likes, uploads and your dream journal are tied to it.
-              </p>
-            </PopoverContent>
-          </Popover>
         </div>
       </div>
     </header>

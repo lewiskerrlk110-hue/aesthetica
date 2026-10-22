@@ -1,17 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
-import { STUDIO_COOKIE, checkPin, isAuthed, studioToken } from "@/lib/studio-auth";
+import {
+  STUDIO_COOKIE,
+  ensureSeedStaff,
+  isAuthed,
+  makeSessionToken,
+  sessionUser,
+  verifyPassword,
+} from "@/lib/studio-auth";
+import { db } from "@/lib/db";
 
 export async function GET() {
-  return NextResponse.json({ ok: await isAuthed() });
+  const user = await sessionUser();
+  return NextResponse.json({
+    ok: user !== null,
+    user: user ? { username: user.username, role: user.role } : null,
+  });
 }
 
 export async function POST(req: NextRequest) {
-  const body = (await req.json().catch(() => ({}))) as { pin?: string };
-  if (!body.pin || !checkPin(body.pin)) {
-    return NextResponse.json({ error: "Incorrect PIN" }, { status: 401 });
+  const body = (await req.json().catch(() => ({}))) as {
+    username?: string;
+    password?: string;
+  };
+  const username = (body.username || "").trim();
+  const password = body.password || "";
+  if (!username || !password) {
+    return NextResponse.json({ error: "Enter your username and password." }, { status: 400 });
   }
-  const resp = NextResponse.json({ ok: true });
-  resp.cookies.set(STUDIO_COOKIE, studioToken(), {
+
+  await ensureSeedStaff();
+
+  const user = await db.staffUser.findUnique({ where: { username } });
+  if (!user || !verifyPassword(password, user.passwordHash)) {
+    return NextResponse.json(
+      { error: "Unrecognised login — this studio is for staff only." },
+      { status: 401 },
+    );
+  }
+
+  const resp = NextResponse.json({
+    ok: true,
+    user: { username: user.username, role: user.role },
+  });
+  resp.cookies.set(STUDIO_COOKIE, makeSessionToken(user.username), {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
@@ -21,7 +52,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE() {
-  const resp = NextResponse.json({ ok: true });
+  const resp = NextResponse.json({ ok: true, authed: await isAuthed() });
   resp.cookies.set(STUDIO_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
   return resp;
 }

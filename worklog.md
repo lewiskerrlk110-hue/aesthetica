@@ -464,3 +464,22 @@ Stage Summary:
 - A "Visually similar" section now ranks other pieces by actual pixel-palette resemblance (plus tag/medium/aesthetic signals) — real visual matching, computed in the browser with zero new dependencies.
 - The Studio's live preview grew proper pop-out controls: open the page in a new tab and it updates live while you edit; links inside the preview open in new tabs so the preview never wanders off the page being edited.
 - The upload form's Title and Description boxes (and every field around them) finally read as solid, bordered inputs.
+
+---
+Task ID: STAFF-AUTH-1
+Agent: main (Z.ai)
+Task: Studio is staff-only — recognised logins (username + password) replace the shared PIN; no public entry points anywhere on the site.
+
+Work Log:
+- Prisma: new StaffUser model (username unique, scrypt passwordHash "s1:salt:hash", role owner|editor); db push + client regen (needed a full dev-server restart — stale .prisma client kept db.staffUser undefined)
+- src/lib/studio-auth.ts rewritten: scrypt hash/verify (node crypto, timing-safe), HMAC-signed expiring session cookie "v1.<b64username>.<exp>.<sig>" (STUDIO_SECRET env, 30d), sessionUser() re-checks the DB on every request so removal revokes instantly, ensureSeedStaff() lazily creates the first owner from STAFF_OWNER_USER/STAFF_OWNER_PASS (defaults lewis / aesthetica-owner), isOwner() helper
+- /api/studio/auth: POST now takes {username,password} and returns {ok,user}; GET returns the session user; DELETE logs out
+- New /api/studio/staff (owner-only GET roster + POST add, username 3–24 chars, password ≥8, role editor|owner), /api/studio/staff/[id] DELETE (owner-only; guards: not self, never the last owner), /api/studio/staff/password POST (any staff changes own password after verifying current)
+- studio.tsx: PinGate → LoginGate (username+password, branded, no default-PIN hint), header identity chip (avatar initial + username + role badge), new Staff tab
+- New staff-panel.tsx: "Your account" card (change password, all roles) + "The team" card (owner only: add form with role select, roster with per-user remove, self-remove disabled, confirm dialog)
+- Public entry points removed: nav.tsx Studio button deleted (Wrench import cleaned), homepage footer Studio link deleted; #/studio direct URL is the only door
+- Verified via agent-browser + curl: wrong creds rejected, owner login works, curator (editor) added via UI, editor sees no team card and gets 403 on staff POST, password rotation + re-login OK, owner removed curator via API (self-removal guarded, last-owner guard coded), removed account's login revoked immediately, all studio mutation APIs return 401 unauthenticated, homepage unaffected with 0 console errors, mobile login gate fits 390px (358px card)
+- Screenshots: docs/screenshots/staff-login.png, staff-studio-home.png, staff-manager.png, staff-roster.png, staff-editor-view.png, staff-login-mobile.png
+
+Stage Summary:
+- Studio now staff-only with real accounts: lewis / aesthetica-owner is the seeded owner (change it in Staff → Your account, or set STAFF_OWNER_USER/STAFF_OWNER_PASS before first boot); owners add staff in the Staff tab; sessions are signed cookies re-validated against the DB per request; no public link or default-PIN hint remains

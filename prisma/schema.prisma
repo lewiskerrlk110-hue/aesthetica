@@ -155,8 +155,18 @@ model ArchiveArticle {
 }
 
 // ─────────────────────────────────────────────
-// STUDIO — the site editor
+// STUDIO — the site editor (staff-only)
 // ─────────────────────────────────────────────
+
+// Recognised logins for the Studio. "owner" manages the staff list;
+// "editor" is staff who can edit the site but not manage accounts.
+model StaffUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String // scrypt: "s1:<salt hex>:<hash hex>"
+  role         String   @default("editor") // owner | editor
+  createdAt    DateTime @default(now())
+}
 
 // Uploaded media library (images, GIFs, videos, audio)
 model StudioAsset {

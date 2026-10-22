@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useApp, type Route } from "@/lib/store";
 import { useStudioWorlds } from "@/lib/worlds-config";
 import { getIdentity, setName as saveName } from "@/lib/identity";
-import { Search, Upload, User, Home, Sparkles, ChevronDown, Wrench } from "lucide-react";
+import { Search, Upload, User, Home, Sparkles, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,14 +115,6 @@ export function Nav() {
           >
             <Upload className="h-4 w-4" />
             <span className="hidden sm:inline">Add Artwork</span>
-          </button>
-          <button
-            onClick={() => go({ view: "studio" })}
-            className={`hidden items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors md:flex ${route.view === "studio" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"}`}
-            title="Open the Studio — edit every part of the site"
-          >
-            <Wrench className="h-4 w-4" />
-            <span className="hidden lg:inline">Studio</span>
           </button>
           <button
             onClick={() => setFxReduced(!fxReduced)}

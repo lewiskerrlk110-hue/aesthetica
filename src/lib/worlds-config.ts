@@ -18,6 +18,7 @@ import {
   type SiteSettings,
   type BgSettings,
   type SceneDoc,
+  type SectionsConfig,
   type WorldThemePatch,
 } from "./studio";
 
@@ -42,6 +43,7 @@ export interface WorldDraftPatch {
   bgMediaUrl?: string | null;
   bgSettings?: Partial<BgSettings>;
   scene?: SceneDoc;
+  sections?: SectionsConfig | null;
 }
 
 export interface StudioDraft {
@@ -76,6 +78,7 @@ function mergeWorld(w: PortalWorldDef, p: WorldDraftPatch | undefined): PortalWo
       p.bgSettings || w.bgSettings
         ? ({ ...(w.bgSettings || {}), ...(p.bgSettings || {}) } as BgSettings)
         : w.bgSettings,
+    ...("sections" in p ? { sections: p.sections } : {}),
     ...("scene" in p ? { scene: p.scene } : {}),
   };
 }

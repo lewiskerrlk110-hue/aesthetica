@@ -196,6 +196,7 @@ model WorldOverride {
   theme       String? // JSON WorldThemePatch
   bgMediaUrl  String?
   bgSettings  String? // JSON BgSettings
+  sections    String? // JSON SectionsConfig — homepage-style block order for the world page
 }
 
 // User-created worlds driven by a JSON scene graph

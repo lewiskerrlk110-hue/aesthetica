@@ -7,11 +7,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, RotateCcw, Save, Trash2, Sparkles } from "lucide-react";
 import { WORLDS } from "@/lib/aesthetics";
-import type { PortalWorldDef, SceneDoc, WorldThemePatch, BgSettings } from "@/lib/studio";
-import { GENRE_PACKS, effectClass, fontStack, type GenrePack } from "@/lib/studio";
+import type { PortalWorldDef, SceneDoc, WorldThemePatch, BgSettings, SectionsConfig } from "@/lib/studio";
+import { GENRE_PACKS, effectClass, fontStack, WORLD_SECTIONS, type GenrePack } from "@/lib/studio";
 import { useStudioConfig, publishWorldDraft, type WorldDraftPatch } from "@/lib/worlds-config";
 import { SceneEditor } from "./scene-editor";
 import { MediaPicker } from "./media-library";
+import { SectionsEditor, type SectionRowDef } from "./sections-editor";
 import { FontPicker, EffectPicker, AlignPicker, SliderRow, type AlignValue } from "./design-controls";
 import { LivePreview } from "./preview-panel";
 import { BLEND_MODES } from "@/lib/studio";
@@ -25,7 +26,14 @@ const THEME_FIELDS: { key: keyof WorldThemePatch; label: string }[] = [
   { key: "panelBorder", label: "Panel border" },
 ];
 
-type EditorTab = "identity" | "type" | "position" | "theme" | "background" | "scene";
+type EditorTab = "identity" | "sections" | "type" | "position" | "theme" | "background" | "scene";
+
+const WORLD_SECTION_ROWS: SectionRowDef[] = [
+  { id: "features", label: "World features", desc: "This world's interactive panels and exhibits." },
+  { id: "gallery", label: "Gallery", desc: "Community artworks with filters and sorting." },
+  { id: "archive", label: "Archive", desc: "The documented-history timeline — a tab beside the gallery." },
+  { id: "related", label: "Related worlds", desc: "The closing \u201cstep through a neighbouring world\u201d strip." },
+];
 
 export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () => void }) {
   const reload = useStudioConfig((s) => s.reload);
@@ -35,6 +43,7 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
   const [theme, setTheme] = useState<WorldThemePatch>(def.theme || {});
   const [bgMediaUrl, setBgMediaUrl] = useState<string | null>(def.bgMediaUrl || null);
   const [bgSettings, setBgSettings] = useState<Partial<BgSettings>>({ opacity: 0.5, blend: "normal", fit: "cover", dim: 0.25, ...(def.bgSettings || {}) });
+  const [sections, setSections] = useState<SectionsConfig | null>(def.sections ?? null);
   const [scene, setScene] = useState<SceneDoc>(def.scene || { bg: "#0d0b14", layers: [] });
   const [selectedLayer, setSelectedLayer] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -53,6 +62,7 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
     setTheme(def.theme || {});
     setBgMediaUrl(def.bgMediaUrl || null);
     setBgSettings({ opacity: 0.5, blend: "normal", fit: "cover", dim: 0.25, ...(def.bgSettings || {}) });
+    setSections(def.sections ?? null);
     setScene(def.scene || { bg: "#0d0b14", layers: [] });
     setSelectedLayer(null);
     setTab(def.kind === "custom" ? "scene" : "identity");
@@ -67,11 +77,12 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
         portalBlurb: blurb,
         theme,
         bgMediaUrl,
+        ...(def.kind === "builtin" ? { sections } : {}),
         ...(def.kind === "custom" ? { scene } : { bgSettings: bgSettings as WorldDraftPatch["bgSettings"] }),
       });
     }, 160);
     return () => clearTimeout(t);
-  }, [def.id, def.kind, name, epithet, blurb, theme, bgMediaUrl, bgSettings, scene]);
+  }, [def.id, def.kind, name, epithet, blurb, theme, bgMediaUrl, bgSettings, scene, sections]);
 
   // leaving this editor (world switch or unmount) drops its draft
   useEffect(() => {
@@ -88,9 +99,10 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
       JSON.stringify(theme) !== JSON.stringify(def.theme || {}) ||
       bgMediaUrl !== (def.bgMediaUrl || null) ||
       JSON.stringify(bgSettings) !== JSON.stringify(bgDefault) ||
+      (def.kind === "builtin" && JSON.stringify(sections) !== JSON.stringify(def.sections ?? null)) ||
       (def.kind === "custom" && JSON.stringify(scene) !== JSON.stringify(def.scene || {}))
     );
-  }, [def, name, epithet, blurb, theme, bgMediaUrl, bgSettings, scene]);
+  }, [def, name, epithet, blurb, theme, bgMediaUrl, bgSettings, scene, sections]);
 
   // static defaults for reset hints + effect tinting
   const staticDef = WORLDS.find((w) => w.id === def.id);
@@ -105,6 +117,7 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
       body.theme = theme;
       body.bgMediaUrl = bgMediaUrl;
       body.bgSettings = bgSettings;
+      body.sections = sections;
     } else {
       body.theme = theme;
       body.scene = scene;
@@ -161,6 +174,7 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
 
   const tabs: { id: EditorTab; label: string; show: boolean }[] = [
     { id: "identity", label: "Identity", show: true },
+    { id: "sections", label: "Sections", show: def.kind === "builtin" },
     { id: "type", label: "Type & FX", show: true },
     { id: "position", label: "Position", show: true },
     { id: "theme", label: "Theme colors", show: true },
@@ -241,6 +255,26 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
                 The name, epithet and blurb update the portal card on the homepage, the nav dropdown
                 and the world page hero. {def.kind === "custom" ? "The slug /#/world/" + def.id + " is permanent." : ""}
               </p>
+            </div>
+          )}
+
+          {tab === "sections" && def.kind === "builtin" && (
+            <div className="space-y-4">
+              <p className="max-w-3xl text-[12.5px] leading-relaxed text-white/45">
+                Drag the page blocks into the order visitors should meet them, and hide what this
+                world doesn&apos;t need — the hero always leads. Gallery and Archive share one tabbed
+                block, so their relative order here decides which tab comes first and which the page
+                lands on.
+              </p>
+              <div className="max-w-2xl">
+                <SectionsEditor
+                  rows={WORLD_SECTION_ROWS}
+                  value={sections ?? { order: [...WORLD_SECTIONS], hidden: [] }}
+                  canonical={[...WORLD_SECTIONS]}
+                  onChange={setSections}
+                  onReset={() => setSections(null)}
+                />
+              </div>
             </div>
           )}
 

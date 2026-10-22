@@ -288,6 +288,51 @@ export interface SceneDoc {
 /** How the main page presents the world portals. */
 export type PortalsLayout = "grid" | "carousel";
 
+// ————— section reorganising (Studio) —————
+
+/** Ordered + visibility config for a page's content sections.
+ *  Stored as JSON (SiteSetting "homeSections" / WorldOverride.sections).
+ *  Missing/empty = the page's default order with everything visible. */
+export interface SectionsConfig {
+  order: string[];
+  hidden: string[];
+}
+
+/** Build a safe SectionsConfig: only known ids, no dupes, canonical entries
+ *  that were missing from the saved order appended at the end. */
+export function parseSections(raw: string | null | undefined, canonical: string[]): SectionsConfig {
+  const fallback: SectionsConfig = { order: [...canonical], hidden: [] };
+  if (!raw) return fallback;
+  try {
+    const d = JSON.parse(raw) as Partial<SectionsConfig>;
+    const seen = new Set<string>();
+    const order: string[] = [];
+    for (const id of Array.isArray(d.order) ? d.order : []) {
+      if (canonical.includes(id) && !seen.has(id)) {
+        order.push(id);
+        seen.add(id);
+      }
+    }
+    for (const id of canonical) if (!seen.has(id)) order.push(id);
+    const hidden = Array.isArray(d.hidden) ? d.hidden.filter((id) => canonical.includes(id)) : [];
+    return { order, hidden: [...new Set(hidden)] };
+  } catch {
+    return fallback;
+  }
+}
+
+/** Serialize a SectionsConfig back to its compact stored JSON form. */
+export function stringifySections(cfg: SectionsConfig): string {
+  return JSON.stringify({ order: cfg.order, hidden: cfg.hidden });
+}
+
+/** Homepage content sections (hero + footer are fixed bookends). */
+export const HOME_SECTIONS = ["portals", "featured", "collections", "recent", "archive", "upload"] as const;
+
+/** Built-in world page blocks. "gallery" and "archive" share one tabbed
+ *  content block; their relative order in `order` sets the tab order. */
+export const WORLD_SECTIONS = ["features", "gallery", "archive", "related"] as const;
+
 export interface SiteSettings {
   heroEyebrow: string;
   heroSub: string;
@@ -316,6 +361,8 @@ export interface SiteSettings {
   heroCopyWidth: string;
   /** Homepage wordmark effect: chrome | neon | holo | vapor | outline | "" = none. */
   heroTitleEffect: string;
+  /** JSON SectionsConfig — order + visibility of the homepage content sections. "" = default. */
+  homeSections: string;
 }
 
 export const DEFAULT_SITE: SiteSettings = {
@@ -335,6 +382,7 @@ export const DEFAULT_SITE: SiteSettings = {
   heroOffsetY: "0",
   heroCopyWidth: "",
   heroTitleEffect: "",
+  homeSections: "",
 };
 
 /** The world object the museum UI consumes — built-ins overridden by Studio data,
@@ -359,6 +407,8 @@ export interface PortalWorldDef {
   bgMediaUrl?: string | null;
   bgSettings?: BgSettings | null;
   theme?: WorldThemePatch | null;
+  /** Parsed world-page section config (null = default layout). */
+  sections?: SectionsConfig | null;
   // custom extras
   scene?: SceneDoc | null;
 }
@@ -374,6 +424,7 @@ export interface OverrideRow {
   theme: string | null;
   bgMediaUrl: string | null;
   bgSettings: string | null;
+  sections: string | null;
 }
 
 export interface CustomRow {
@@ -447,6 +498,7 @@ export function buildMergedWorlds(
       bgMediaUrl: o?.bgMediaUrl ?? null,
       bgSettings: safeParse<BgSettings | null>(o?.bgSettings, null),
       theme: safeParse<WorldThemePatch | null>(o?.theme, null),
+      sections: o?.sections ? parseSections(o.sections, [...WORLD_SECTIONS]) : null,
     });
   }
 

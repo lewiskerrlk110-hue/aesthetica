@@ -8,10 +8,11 @@ import { useEffect, useState } from "react";
 import { Save, LayoutGrid, GalleryHorizontal, ImagePlus, X } from "lucide-react";
 import { useStudioConfig, publishSiteDraft } from "@/lib/worlds-config";
 import { MediaPicker } from "./media-library";
+import { SectionsEditor, type SectionRowDef } from "./sections-editor";
 import { FontPicker, EffectPicker, AlignPicker, SliderRow, type AlignValue } from "./design-controls";
 import { LivePreview } from "./preview-panel";
-import type { SiteSettings, PortalsLayout } from "@/lib/studio";
-import { fontStack } from "@/lib/studio";
+import type { SiteSettings, PortalsLayout, SectionsConfig } from "@/lib/studio";
+import { fontStack, parseSections, stringifySections, HOME_SECTIONS } from "@/lib/studio";
 
 const LAYOUT_OPTIONS: { value: PortalsLayout; icon: typeof LayoutGrid; title: string; desc: string }[] = [
   {
@@ -26,6 +27,15 @@ const LAYOUT_OPTIONS: { value: PortalsLayout; icon: typeof LayoutGrid; title: st
     title: "Carousel",
     desc: "One grand portal at a time — swipe or drag, step with arrows, jump with the dots.",
   },
+];
+
+const HOME_SECTION_ROWS: SectionRowDef[] = [
+  { id: "portals", label: "World portals", desc: "The grid or carousel of world doors." },
+  { id: "featured", label: "Featured works", desc: "The curated horizontal strip of featured pieces." },
+  { id: "collections", label: "Collections & trending", desc: "Curated paths, trending tags and featured creators." },
+  { id: "recent", label: "Recently added", desc: "The newest community uploads." },
+  { id: "archive", label: "Archive highlights", desc: "Historical archive entry points for every world." },
+  { id: "upload", label: "Upload invitation", desc: "The call-to-action inviting visitors to add their vision." },
 ];
 
 export function SiteSettingsForm() {
@@ -80,6 +90,9 @@ export function SiteSettingsForm() {
 
   const heroOpacity = Math.min(1, Math.max(0, parseFloat(draft.heroMediaOpacity) || 0.55));
   const heroIsVideo = /\.(mp4|webm|mov|ogv)(\?|$)/i.test(draft.heroMediaUrl);
+  const homeSectionsCfg = parseSections(draft.homeSections, [...HOME_SECTIONS]);
+  const setHomeSections = (next: SectionsConfig) =>
+    setDraft({ ...draft, homeSections: stringifySections(next) });
 
   return (
     <div className="flex flex-col gap-6">
@@ -282,6 +295,24 @@ export function SiteSettingsForm() {
           ))}
         </div>
         <p className="text-[11.5px] text-white/40">Applies to the worlds section on the main page the moment you save.</p>
+      </section>
+
+      {/* ——— Main page sections ——— */}
+      <section className="space-y-3">
+        <h3 className="text-[12px] font-semibold uppercase tracking-[0.3em] text-white/45">Main page sections</h3>
+        <p className="max-w-3xl text-[12.5px] leading-relaxed text-white/45">
+          Drag to reorder how the homepage flows, and hide what you don&apos;t need — the hero and the
+          footer always stay. Changes preview live below and apply for everyone when you save.
+        </p>
+        <div className="max-w-2xl">
+          <SectionsEditor
+            rows={HOME_SECTION_ROWS}
+            value={homeSectionsCfg}
+            canonical={[...HOME_SECTIONS]}
+            onChange={setHomeSections}
+            onReset={() => setDraft({ ...draft, homeSections: "" })}
+          />
+        </div>
       </section>
 
       <div className="flex items-center gap-3">

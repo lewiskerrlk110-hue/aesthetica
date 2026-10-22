@@ -4,7 +4,7 @@ import { useApp } from "@/lib/store";
 import { useEffect } from "react";
 import { type WorldDef } from "@/lib/aesthetics";
 import { useStudioConfig } from "@/lib/worlds-config";
-import { effectClass, fontStack } from "@/lib/studio";
+import { effectClass, fontStack, parseSections, WORLD_SECTIONS, type SectionsConfig } from "@/lib/studio";
 import { WorldGallery, WorldArchive, RelatedWorlds } from "./world-shell";
 
 export function WorldPage({
@@ -41,6 +41,22 @@ export function WorldPage({
             : "";
   const epithetFont = fontStack(studioTheme?.epithetFont);
 
+  // ——— Studio "Sections" layout: order + visibility of the world-page blocks ———
+  // features = the world's unique interactive panels; gallery + archive share
+  // one tabbed block (their relative order in `order` sets the tab order);
+  // related = the closing "neighbouring world" strip. Hero always leads.
+  const studioDef = useStudioConfig((s) => s.worlds.find((w) => w.id === world.id));
+  const secCfg: SectionsConfig = studioDef?.sections ?? { order: [...WORLD_SECTIONS], hidden: [] };
+  const secOrder = (id: string) => secCfg.order.indexOf(id) + 1;
+  const visible = secCfg.order.filter((id) => !secCfg.hidden.includes(id));
+  const featuresVisible = visible.includes("features");
+  const relatedVisible = visible.includes("related");
+  const tabsVisible = visible.filter((id) => id === "gallery" || id === "archive");
+  // land on the first tab in the configured order; a valid ?tab= wins
+  const contentTab = tab && tabsVisible.includes(tab as "gallery" | "archive") ? tab : tabsVisible[0];
+  const blockOrder = Math.min(...tabsVisible.map((t) => secOrder(t)));
+  const switcherOn = (featuresVisible ? 1 : 0) + tabsVisible.length >= 2;
+
   // scroll content into view when switching tabs
   useEffect(() => {
     if (tab) {
@@ -58,11 +74,12 @@ export function WorldPage({
         {environment}
       </div>
 
-      <div className="relative z-10">
-        {/* HERO */}
+      <div className="relative z-10 flex flex-col">
+        {/* HERO — always the opening */}
         <section
           className={`relative mx-auto flex min-h-[62vh] max-w-6xl flex-col justify-center px-4 pb-16 pt-14 ${heroAlignCls}`}
           style={{
+            order: -1,
             minHeight: studioTheme?.heroHeight ? `${studioTheme.heroHeight}vh` : undefined,
             transform: studioTheme?.heroOffsetY ? `translateY(${studioTheme.heroOffsetY}vh)` : undefined,
           }}
@@ -104,53 +121,59 @@ export function WorldPage({
           {heroExtra}
         </section>
 
-        {/* UNIQUE FEATURES */}
-        {features && <div className="relative z-10">{features}</div>}
+        {/* UNIQUE FEATURES — Studio "Sections" can reorder or hide this */}
+        {features && featuresVisible && (
+          <div className="relative z-10" style={{ order: secOrder("features") }}>{features}</div>
+        )}
 
-        {/* GALLERY / ARCHIVE */}
-        <section
-          id="w-content"
-          className="relative z-10 mx-auto max-w-7xl scroll-mt-16 px-4 py-14"
-          style={{ maxWidth: studioTheme?.contentWidth ? `${studioTheme.contentWidth}rem` : undefined }}
-        >
-          {tab === "archive" ? (
-            <WorldArchive world={world} />
-          ) : (
-            <WorldGallery world={world} />
-          )}
-        </section>
+        {/* GALLERY / ARCHIVE — one tabbed block, positioned by the Studio */}
+        {contentTab && (
+          <section
+            id="w-content"
+            className="relative z-10 mx-auto max-w-7xl scroll-mt-16 px-4 py-14"
+            style={{
+              maxWidth: studioTheme?.contentWidth ? `${studioTheme.contentWidth}rem` : undefined,
+              order: blockOrder,
+            }}
+          >
+            {contentTab === "archive" ? (
+              <WorldArchive world={world} />
+            ) : (
+              <WorldGallery world={world} />
+            )}
+          </section>
+        )}
 
-        {/* TAB SWITCHER — floating */}
-        <div className="pointer-events-none sticky bottom-5 z-30 flex justify-center pb-2">
-          <div className="w-panel pointer-events-auto flex items-center gap-1 !rounded-full px-2 py-1.5" style={{ boxShadow: "var(--w-shadow)" }}>
-            <button
-              onClick={() => navigate({ view: "world", world: world.id, tab: undefined })}
-              aria-current={!tab}
-              className={`rounded-full px-4 py-1.5 text-[12.5px] transition-all ${!tab ? "font-semibold" : "opacity-65 hover:opacity-100"}`}
-              style={!tab ? { background: world.accent, color: world.id === "dreamcore" || world.id === "liminal" ? "#21324a" : "#0b0518" } : undefined}
-            >
-              World
-            </button>
-            <button
-              onClick={() => navigate({ view: "world", world: world.id, tab: "gallery" })}
-              aria-current={tab === "gallery"}
-              className={`rounded-full px-4 py-1.5 text-[12.5px] transition-all ${tab === "gallery" ? "font-semibold" : "opacity-65 hover:opacity-100"}`}
-              style={tab === "gallery" ? { background: world.accent, color: world.id === "dreamcore" || world.id === "liminal" ? "#21324a" : "#0b0518" } : undefined}
-            >
-              Gallery
-            </button>
-            <button
-              onClick={() => navigate({ view: "world", world: world.id, tab: "archive" })}
-              aria-current={tab === "archive"}
-              className={`rounded-full px-4 py-1.5 text-[12.5px] transition-all ${tab === "archive" ? "font-semibold" : "opacity-65 hover:opacity-100"}`}
-              style={tab === "archive" ? { background: world.accent, color: world.id === "dreamcore" || world.id === "liminal" ? "#21324a" : "#0b0518" } : undefined}
-            >
-              Archive
-            </button>
+        {/* TAB SWITCHER — floating; buttons follow the Studio section config */}
+        {switcherOn && (
+          <div className="pointer-events-none sticky bottom-5 z-30 flex justify-center pb-2" style={{ order: blockOrder }}>
+            <div className="w-panel pointer-events-auto flex items-center gap-1 !rounded-full px-2 py-1.5" style={{ boxShadow: "var(--w-shadow)" }}>
+              {featuresVisible && (
+                <button
+                  onClick={() => navigate({ view: "world", world: world.id, tab: undefined })}
+                  aria-current={!tab}
+                  className={`rounded-full px-4 py-1.5 text-[12.5px] transition-all ${!tab ? "font-semibold" : "opacity-65 hover:opacity-100"}`}
+                  style={!tab ? { background: world.accent, color: world.id === "dreamcore" || world.id === "liminal" ? "#21324a" : "#0b0518" } : undefined}
+                >
+                  World
+                </button>
+              )}
+              {tabsVisible.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => navigate({ view: "world", world: world.id, tab: t })}
+                  aria-current={tab === t}
+                  className={`rounded-full px-4 py-1.5 text-[12.5px] transition-all ${tab === t ? "font-semibold" : "opacity-65 hover:opacity-100"}`}
+                  style={tab === t ? { background: world.accent, color: world.id === "dreamcore" || world.id === "liminal" ? "#21324a" : "#0b0518" } : undefined}
+                >
+                  {t === "gallery" ? "Gallery" : "Archive"}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        <RelatedWorlds world={world} />
+        {relatedVisible && <RelatedWorlds world={world} />}
       </div>
     </div>
   );

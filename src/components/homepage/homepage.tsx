@@ -5,7 +5,7 @@ import { HeroCanvas } from "./hero-canvas";
 import { useApp } from "@/lib/store";
 import { WORLD_MAP, type WorldId } from "@/lib/aesthetics";
 import { useStudioWorlds, useStudioConfig } from "@/lib/worlds-config";
-import { fontStack, effectClass, type PortalWorldDef } from "@/lib/studio";
+import { fontStack, effectClass, parseSections, HOME_SECTIONS, type PortalWorldDef } from "@/lib/studio";
 import { SceneStage } from "@/components/worlds/custom-world";
 import { ArtworkCard, type ArtworkDTO } from "@/components/gallery/artwork-card";
 import { ArrowRight, Search, Upload, Compass, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
@@ -589,12 +589,20 @@ export function Homepage() {
     featuredRef.current?.scrollBy({ left: dir * 340, behavior: "smooth" });
   };
 
+  // Studio → Main Page: content sections render in the configured order and
+  // hidden ones are skipped. The DOM sequence is fixed, so re-flowing uses
+  // CSS `order` on the flex column root — safe for every child layout.
+  const sectionCfg = parseSections(site.homeSections, [...HOME_SECTIONS]);
+  const secOrder = (id: string) => sectionCfg.order.indexOf(id) + 1;
+  const secHidden = (id: string) => sectionCfg.hidden.includes(id);
+  const firstSectionId = sectionCfg.order.find((id) => !sectionCfg.hidden.includes(id));
+
   return (
-    <div className="bg-[#0d0b14] text-white" style={{ ...pageVars, fontFamily: pageFontBody ?? undefined }}>
-      {/* ——— HERO ——— */}
+    <div className="flex flex-col bg-[#0d0b14] text-white" style={{ ...pageVars, fontFamily: pageFontBody ?? undefined }}>
+      {/* ——— HERO — always the opening ——— */}
       <section
         className="relative flex items-center justify-center overflow-hidden"
-        style={{ minHeight: `${heroMinH}vh` }}
+        style={{ order: -1, minHeight: `${heroMinH}vh` }}
       >
         <HeroCanvas />
         {site.heroMediaUrl && (
@@ -638,7 +646,13 @@ export function Homepage() {
             {site.heroSub}
           </p>
           <div className={`mt-9 flex flex-wrap items-center gap-3 ${heroAlign === "left" ? "justify-start" : heroAlign === "right" ? "justify-end" : "justify-center"}`}>
-            <button onClick={() => document.getElementById("portals")?.scrollIntoView({ behavior: "smooth" })} className="cta-hero !px-7 !py-3 !text-[15px]">
+            <button
+              onClick={() => {
+                const el = firstSectionId ? document.querySelector(`[data-home-sec="${firstSectionId}"]`) : null;
+                el?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="cta-hero !px-7 !py-3 !text-[15px]"
+            >
               <Compass className="h-4.5 w-4.5" />
               Begin the tour
             </button>
@@ -659,7 +673,8 @@ export function Homepage() {
       </section>
 
       {/* ——— PORTALS ——— */}
-      <section id="portals" className="relative mx-auto max-w-7xl px-4 py-20">
+      {!secHidden("portals") && (
+      <section id="portals" data-home-sec="portals" style={{ order: secOrder("portals") }} className="relative mx-auto max-w-7xl px-4 py-20">
         <header className="mb-10 text-center">
           <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#7df2d8]">{site.portalsKicker}</p>
           <h2 className="page-display mt-3 text-3xl font-bold md:text-4xl">{site.portalsTitle}</h2>
@@ -680,10 +695,11 @@ export function Homepage() {
           </div>
         )}
       </section>
+      )}
 
       {/* ——— FEATURED ——— */}
-      {featured.length > 0 && (
-        <section className="border-y border-white/8 bg-white/[0.02] py-16">
+      {featured.length > 0 && !secHidden("featured") && (
+        <section data-home-sec="featured" style={{ order: secOrder("featured") }} className="border-y border-white/8 bg-white/[0.02] py-16">
           <div className="mx-auto max-w-7xl px-4">
             <div className="mb-7 flex items-end justify-between gap-4">
               <div>
@@ -707,7 +723,8 @@ export function Homepage() {
       )}
 
       {/* ——— COLLECTIONS + TRENDING ——— */}
-      <section className="mx-auto max-w-7xl px-4 py-20">
+      {!secHidden("collections") && (
+      <section data-home-sec="collections" style={{ order: secOrder("collections") }} className="mx-auto max-w-7xl px-4 py-20">
         <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr]">
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#9be8ff]">Curated paths</p>
@@ -776,10 +793,11 @@ export function Homepage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ——— RECENT ——— */}
-      {recent.length > 0 && (
-        <section className="border-y border-white/8 bg-white/[0.02] py-16">
+      {recent.length > 0 && !secHidden("recent") && (
+        <section data-home-sec="recent" style={{ order: secOrder("recent") }} className="border-y border-white/8 bg-white/[0.02] py-16">
           <div className="mx-auto max-w-7xl px-4">
             <div className="mb-7">
               <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#7df2d8]">Fresh from the worlds</p>
@@ -795,7 +813,8 @@ export function Homepage() {
       )}
 
       {/* ——— ARCHIVE HIGHLIGHTS ——— */}
-      <section className="mx-auto max-w-7xl px-4 py-20">
+      {!secHidden("archive") && (
+      <section data-home-sec="archive" style={{ order: secOrder("archive") }} className="mx-auto max-w-7xl px-4 py-20">
         <div className="mb-9 text-center">
           <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#ffb3e6]">Learn the lore</p>
           <h2 className="mt-2 text-3xl font-bold">Historical Archive Highlights</h2>
@@ -824,9 +843,11 @@ export function Homepage() {
           ))}
         </div>
       </section>
+      )}
 
       {/* ——— UPLOAD CTA ——— */}
-      <section className="relative overflow-hidden border-t border-white/8 py-20">
+      {!secHidden("upload") && (
+      <section data-home-sec="upload" style={{ order: secOrder("upload") }} className="relative overflow-hidden border-t border-white/8 py-20">
         <div className="absolute inset-0 bg-gradient-to-r from-[#ff2e88]/12 via-transparent to-[#9be8ff]/12" />
         <div className="relative mx-auto max-w-3xl px-4 text-center">
           <Upload className="mx-auto h-8 w-8 text-white/70" />
@@ -841,9 +862,10 @@ export function Homepage() {
           </button>
         </div>
       </section>
+      )}
 
-      {/* ——— FOOTER ——— */}
-      <footer className="mt-auto border-t border-white/8 bg-black/40 py-10">
+      {/* ——— FOOTER — always the closing ——— */}
+      <footer style={{ order: 999 }} className="mt-auto border-t border-white/8 bg-black/40 py-10">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
             <div className="flex items-center gap-2.5">

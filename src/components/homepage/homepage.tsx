@@ -498,7 +498,7 @@ function PortalCarousel({ worlds }: { worlds: PortalWorldDef[] }) {
         onScroll={onScroll}
         role="region"
         aria-label="World portals carousel"
-        className="portal-carousel flex snap-x snap-mandatory gap-5 overflow-x-auto px-[max(1rem,calc(50%-19rem))] pb-4 pt-2 md:px-[max(2rem,calc(50%-18rem))]"
+        className="portal-carousel home-scroll flex snap-x snap-mandatory gap-5 overflow-x-auto px-[max(1rem,calc(50%-19rem))] pb-4 pt-2 md:px-[max(2rem,calc(50%-18rem))]"
       >
         {worlds.map((w, i) => (
           <div key={w.id} data-p-card className="w-[82vw] max-w-[36rem] shrink-0 snap-center sm:w-[34rem]">
@@ -695,7 +695,7 @@ export function Homepage() {
                 <button onClick={() => scrollFeatured(1)} className="w-btn !px-3" aria-label="Scroll right">→</button>
               </div>
             </div>
-            <div ref={featuredRef} className="flex gap-5 overflow-x-auto pb-3 w-scroll [scrollbar-width:thin]">
+            <div ref={featuredRef} className="home-scroll flex gap-5 overflow-x-auto pb-3">
               {featured.map((a) => (
                 <div key={a.id} className="w-[300px] shrink-0">
                   <ArtworkCard art={a} />

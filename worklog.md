@@ -403,3 +403,18 @@ Work Log:
 
 Stage Summary:
 - The scene builder is now a proper drag editor: pull any layer around and it either clicks to a 1–10% grid or snaps to its neighbours' edges/centres (and the stage's edges/centre) with glowing pink guide lines showing every match; resizing snaps too; Alt frees the drag; the canvas is 4.7x wider on desktop. Snap preferences persist per browser.
+
+---
+Task ID: HOME-SCROLL-1
+Agent: main (Z.ai)
+Task: "make the scroll bar on the featured works themed and also make the choose a door all worlds have one" — themed scrollbar for the homepage Featured Works row, and a (visible, themed) scrollbar for the All Worlds carousel.
+
+Work Log:
+- Diagnosis: Featured Works used w-scroll (thumb colour = var(--w-accent), which is UNSET on the homepage → invisible) plus an arbitrary [scrollbar-width:thin] that disables ::-webkit-scrollbar styling in Chromium → a plain default browser bar; the portal carousel actively HID its scrollbar (scrollbar-width:none + display:none)
+- globals.css: new shared .home-scroll — 10px bar, subtle rounded track rgba(255,255,255,0.06), brand-gradient thumb linear-gradient(90deg,#ff2e88,#7df2d8) (the Æ mark's pink→teal) floated via transparent 2.5px border + background-clip:padding-box, brighter gradient on hover; @supports not selector(::-webkit-scrollbar) guard gives Firefox scrollbar-color fallback; .portal-carousel keeps overscroll-behavior-x:contain but no longer hides its bar
+- homepage.tsx: Featured Works row w-scroll [scrollbar-width:thin] → home-scroll; portal carousel track gets home-scroll alongside portal-carousel
+- Dev-server incident: edits were on disk but the running next dev served stale chunks (persistent .next/dev/cache from 00:59, identical chunk hash across restart); fixed by killing the server, rm -rf .next, restart — both the new markup and CSS then served
+- Verified via agent-browser: computed pseudo styles on BOTH rows — ::-webkit-scrollbar height 10px, track rgba(255,255,255,0.06), thumb background-image is the pink→teal linear-gradient, radius 999px; both rows scrollable (carousel snapped to Synthwave, featured scrolled 620px); headless Chrome auto-hides overlay scrollbars in idle screenshots so the bars don't paint there — on desktop browsers custom ::-webkit-scrollbar styling renders a persistent classic bar; screenshots home-carousel-scrollbar.png + home-featured-scrollbar.png; eslint clean
+
+Stage Summary:
+- Featured Works and the All Worlds carousel now share one themed horizontal scrollbar: a rounded pink→teal gradient pill (the homepage's brand accent) floating in a faint track — visible by default on the carousel (previously hidden) and finally actually themed on Featured Works (previously a default browser bar).

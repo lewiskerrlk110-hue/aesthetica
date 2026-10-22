@@ -418,3 +418,25 @@ Work Log:
 
 Stage Summary:
 - Featured Works and the All Worlds carousel now share one themed horizontal scrollbar: a rounded pink→teal gradient pill (the homepage's brand accent) floating in a faint track — visible by default on the carousel (previously hidden) and finally actually themed on Featured Works (previously a default browser bar).
+
+---
+Task ID: STUDIO-BOTTOM-1
+Agent: main (Z.ai)
+Task: "put the live preview in the studio at the bottom and make the desktop view work better and the tablet as well and make the button in Add your vision to the museum Add to the archive more visible"
+
+Work Log:
+- Root cause of the invisible CTA: .w-btn-primary and bg-[var(--w-accent)] depend on --w-accent, which is only defined under [data-world] — the homepage, upload view and the global artwork viewer render OUTSIDE any data-world scope, so those buttons computed to transparent background + dark text on dark pages
+- globals.css: new .cta-hero — explicit brand gradient (pink #ff2e88 → #ff5fb0 → teal #7df2d8), dark ink text, 999px pill, 1px white/28 rim, triple glow shadow (pink ring + pink drop + teal drop), hover lift/brighten/stronger glow, focus ring teal, disabled + reduced-motion guards
+- homepage.tsx: hero "Begin the tour" and the upload-section CTA now use .cta-hero; the upload CTA is renamed "Add artwork" → "Add to the archive" (matches the user's name for it and the dialog's h1)
+- upload-dialog.tsx: submit button swapped from var(--w-accent) shadcn Button to .cta-hero (w-full on mobile, wide pill on sm+); unused Button import dropped
+- artwork-viewer.tsx: comment "Post" button had the same bug for every modal opened outside world pages — replaced with an explicit gradient pill (fixed in passing)
+- world-editor.tsx: live preview ALWAYS stacks below the controls now (removed the xl:flex-row sidebar and xl:sticky xl:w-[540px]); editor column takes the full 1120px content width; tabs bar got overflow-x-auto + shrink-0 whitespace-nowrap buttons for narrow/tablet widths; Identity tab → md:grid-cols-2 (name+epithet side by side, blurb full width); Type & FX fonts → md:grid-cols-2 pickers (epithet spans both); Position tab → one sm:grid-cols-2 grid folding title-size + alignment + three sliders (was max-w-2xl stack); Theme colors → lg:grid-cols-[1fr_320px] with xl:grid-cols-4 swatches; Background settings → sm:2/lg:4 columns
+- site-settings.tsx: same treatment — preview below controls, max-w-2xl editor cap removed; Hero copy + Portals copy → md:grid-cols-2; Typography display/body pickers → md:grid-cols-2; Hero positioning → alignment folded into the sm:grid-cols-2 slider grid
+- preview-panel.tsx: default height h-[560px] xl:h-[calc(100vh-13.5rem)] (sidebar-era) → h-[520px] md:h-[660px] for full-width bottom placement
+- eslint + tsc clean on all six changed files (no errors in studio/homepage/gallery)
+- E2E (agent-browser): desktop 1440×900 — world editor container computes flex-direction column, preview wrapper below editor (24px gap), both 1120px wide; Main Page editor same; CTA computed style = gradient + 999px pill + glow shadow, 243×57; tablet 834×1112 — stacked, 802px columns, tab bar not overflowing (overflow-x auto guard in place); homepage hero + archive CTAs gradient; upload dialog submit 400×54 gradient; zero page errors
+- Screenshots: home-cta-archive.png, upload-archive-cta.png, studio-desktop-editor-bottom-preview.png, studio-desktop-typefx.png, studio-tablet-editor.png, studio-tablet-mainpage.png (docs/screenshots/)
+
+Stage Summary:
+- The Studio reads top-to-bottom now: controls fill the whole width, and the live preview always sits beneath them as a full-width stage on desktop and tablet alike (device crops, reload and the unsaved pill unchanged) — no more 540px sidebar squeezing the editors.
+- Every "Add to the archive" entry point (hero tour button, museum CTA, upload submit) and the artwork-viewer Post button now wear the explicit Æ pink→teal gradient with a glow — visible on any background, no longer dependent on world-scoped CSS variables that don't exist outside world pages.

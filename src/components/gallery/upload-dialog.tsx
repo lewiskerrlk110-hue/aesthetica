@@ -7,7 +7,6 @@ import { useApp } from "@/lib/store";
 import { MEDIUM_LABELS } from "@/lib/aesthetics";
 import { useStudioWorlds } from "@/lib/worlds-config";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
 // Upload flow: choose image → downscaled via canvas to ≤1400px JPEG/PNG
@@ -197,14 +196,14 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
                 aria-label="Year"
               />
             </div>
-            <Button
+            <button
               onClick={submit}
               disabled={busy}
-              className="mt-1 h-11 gap-2 rounded-[var(--w-radius)] bg-[var(--w-accent)] text-[15px] font-semibold text-black hover:bg-[var(--w-accent)] hover:brightness-110"
+              className="cta-hero mt-1 w-full !py-3.5 sm:w-auto sm:!px-12"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
               {busy ? "Adding…" : "Add to the archive"}
-            </Button>
+            </button>
           </div>
         </div>
       </div>

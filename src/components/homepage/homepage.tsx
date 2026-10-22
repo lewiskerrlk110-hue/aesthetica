@@ -638,7 +638,7 @@ export function Homepage() {
             {site.heroSub}
           </p>
           <div className={`mt-9 flex flex-wrap items-center gap-3 ${heroAlign === "left" ? "justify-start" : heroAlign === "right" ? "justify-end" : "justify-center"}`}>
-            <button onClick={() => document.getElementById("portals")?.scrollIntoView({ behavior: "smooth" })} className="w-btn-primary w-btn !rounded-full !px-6 !py-3 !text-[15px] !text-white">
+            <button onClick={() => document.getElementById("portals")?.scrollIntoView({ behavior: "smooth" })} className="cta-hero !px-7 !py-3 !text-[15px]">
               <Compass className="h-4.5 w-4.5" />
               Begin the tour
             </button>
@@ -835,9 +835,9 @@ export function Homepage() {
             Upload artwork into any of the {worlds.length} worlds. Your pieces join the gallery with full
             tagging, likes, comments and collections — no account needed, this device is your key.
           </p>
-          <button onClick={() => navigate({ view: "upload" })} className="w-btn-primary w-btn mt-8 !rounded-full !px-8 !py-3.5 !text-[15px] !text-white">
-            <Upload className="h-4.5 w-4.5" />
-            Add artwork
+          <button onClick={() => navigate({ view: "upload" })} className="cta-hero mt-8">
+            <Upload className="h-5 w-5" />
+            Add to the archive
           </button>
         </div>
       </section>

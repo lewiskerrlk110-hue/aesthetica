@@ -228,7 +228,11 @@ export function ArtworkViewer({
                     maxLength={600}
                     aria-label="Write a comment"
                   />
-                  <button className="w-btn-primary w-btn shrink-0" onClick={comment} disabled={sending}>
+                  <button
+                    className="inline-flex shrink-0 items-center rounded-[var(--w-radius,0.75rem)] bg-gradient-to-r from-[#ff2e88] to-[#7df2d8] px-4 py-2 text-[13px] font-semibold text-black shadow-[0_4px_18px_-6px_rgba(255,46,136,0.6)] transition-[filter,transform] hover:scale-[1.03] hover:brightness-110 disabled:opacity-50"
+                    onClick={comment}
+                    disabled={sending}
+                  >
                     {sending ? "…" : "Post"}
                   </button>
                 </div>

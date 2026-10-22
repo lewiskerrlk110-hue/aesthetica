@@ -18,7 +18,7 @@ const DEVICE_WIDTH: Record<Device, string> = {
 
 export function LivePreview({
   path,
-  heightClass = "h-[560px] xl:h-[calc(100vh-13.5rem)]",
+  heightClass = "h-[520px] md:h-[660px]",
 }: {
   path: string;
   heightClass?: string;

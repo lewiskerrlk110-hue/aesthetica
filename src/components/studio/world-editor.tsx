@@ -202,13 +202,13 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
         </div>
       </div>
 
-      {/* tabs */}
-      <div className="mt-4 flex gap-1 border-b border-white/10">
+      {/* tabs — horizontally scrollable on narrow/tablet widths */}
+      <div className="mt-4 flex gap-1 overflow-x-auto border-b border-white/10">
         {tabs.filter((t) => t.show).map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`-mb-px border-b-2 px-3.5 py-2 text-[13px] transition-colors ${
+            className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-3.5 py-2 text-[13px] transition-colors ${
               tab === t.id ? "border-[#ff2e88] font-semibold text-white" : "border-transparent text-white/50 hover:text-white/85"
             }`}
           >
@@ -217,12 +217,11 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
         ))}
       </div>
 
-      {/* editor + live preview — the scene builder takes the full width
-          (the canvas is a drag surface; the preview stacks below it) */}
-      <div className={`mt-5 flex flex-col gap-6 ${tab === "scene" ? "" : "xl:flex-row xl:items-start"}`}>
+      {/* editor — full width; the live preview always stacks below it */}
+      <div className="mt-5 flex flex-col gap-6">
         <div className="min-w-0 flex-1">
           {tab === "identity" && (
-            <div className="max-w-xl space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="studio-label">World name</label>
                 <input className="studio-input" value={name} maxLength={48} onChange={(e) => setName(e.target.value)} />
@@ -234,11 +233,11 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
                   Give it a script voice with a genre font — see the Type &amp; FX tab.
                 </p>
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <label className="studio-label">Portal blurb (shown on hover)</label>
                 <textarea className="studio-input min-h-[70px]" value={blurb} maxLength={280} onChange={(e) => setBlurb(e.target.value)} />
               </div>
-              <p className="text-[12px] leading-relaxed text-white/40">
+              <p className="text-[12px] leading-relaxed text-white/40 md:col-span-2">
                 The name, epithet and blurb update the portal card on the homepage, the nav dropdown
                 and the world page hero. {def.kind === "custom" ? "The slug /#/world/" + def.id + " is permanent." : ""}
               </p>
@@ -308,7 +307,7 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
                 <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
                   Or fine-tune each slot yourself — every specimen renders in the real font.
                 </p>
-                <div className="mt-4 space-y-6">
+                <div className="mt-4 grid gap-6 md:grid-cols-2 md:items-start">
                   <div>
                     <label className="studio-label">Display font — headings &amp; hero title</label>
                     <FontPicker
@@ -325,7 +324,7 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
                       defaultLabel="World default"
                     />
                   </div>
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="studio-label">Epithet font — the tagline&apos;s own voice</label>
                     <p className="mb-2 text-[11.5px] text-white/40">
                       A flowing script here (try Mrs Saint Delafield) gives the pink-ink signature look.
@@ -366,33 +365,33 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
           )}
 
           {tab === "position" && (
-            <div className="max-w-2xl space-y-7">
-              <p className="text-[12.5px] leading-relaxed text-white/45">
+            <div className="space-y-7">
+              <p className="max-w-3xl text-[12.5px] leading-relaxed text-white/45">
                 {def.kind === "custom"
                   ? "Layout of the world-page hero. Fine per-element positioning (X/Y/size/rotation of every scene layer) lives in the Scene builder tab — drag or nudge there."
                   : "Layout of the world-page hero: where the title block sits, how tall it breathes, and how wide the content column below runs."}
               </p>
-              <div className="max-w-md">
-                <SliderRow
-                  label="Hero title size"
-                  value={theme.titleScale ?? 1}
-                  min={0.5}
-                  max={2}
-                  step={0.05}
-                  format={(v) => `${Math.round(v * 100)}%`}
-                  onReset={() => setThemeKey("titleScale", null)}
-                  onChange={(v) => setTheme((t) => ({ ...t, titleScale: v }))}
-                />
-                <p className="mt-1 text-[11px] text-white/35">100% is the built-in size.</p>
-              </div>
-              <div>
-                <label className="studio-label">Hero text alignment</label>
-                <AlignPicker
-                  value={(theme.heroAlign as AlignValue) || "center"}
-                  onChange={(v) => setTheme((t) => ({ ...t, heroAlign: v }))}
-                />
-              </div>
-              <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
+                <div>
+                  <SliderRow
+                    label="Hero title size"
+                    value={theme.titleScale ?? 1}
+                    min={0.5}
+                    max={2}
+                    step={0.05}
+                    format={(v) => `${Math.round(v * 100)}%`}
+                    onReset={() => setThemeKey("titleScale", null)}
+                    onChange={(v) => setTheme((t) => ({ ...t, titleScale: v }))}
+                  />
+                  <p className="mt-1 text-[11px] text-white/35">100% is the built-in size.</p>
+                </div>
+                <div>
+                  <label className="studio-label">Hero text alignment</label>
+                  <AlignPicker
+                    value={(theme.heroAlign as AlignValue) || "center"}
+                    onChange={(v) => setTheme((t) => ({ ...t, heroAlign: v }))}
+                  />
+                </div>
                 <SliderRow
                   label="Hero height"
                   value={theme.heroHeight ?? 62}
@@ -426,8 +425,8 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
           )}
 
           {tab === "theme" && (
-            <div className="grid max-w-3xl gap-5 md:grid-cols-[1fr_260px]">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 {THEME_FIELDS.map((f) => (
                   <div key={f.key}>
                     <label className="studio-label">{f.label}</label>
@@ -489,7 +488,7 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
           )}
 
           {tab === "background" && def.kind === "builtin" && (
-            <div className="max-w-2xl space-y-5">
+            <div className="space-y-5">
               <p className="text-[13px] leading-relaxed text-white/55">
                 Assign an image, GIF or video as a living background wash. It sits between the
                 world's own canvas environment and its content — dial opacity and blend to taste.
@@ -519,7 +518,7 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
                 </div>
               </div>
               {bgMediaUrl && (
-                <div className="grid max-w-md grid-cols-2 gap-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <label className="studio-label">Opacity — {Math.round((bgSettings.opacity ?? 0.5) * 100)}%</label>
                     <input type="range" min={0} max={1} step={0.02} className="w-full accent-[#ff2e88]" value={bgSettings.opacity} onChange={(e) => setBgSettings({ ...bgSettings, opacity: Number(e.target.value) })} />
@@ -552,8 +551,8 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
           )}
         </div>
 
-        {/* ——— live preview ——— */}
-        <div className={tab === "scene" ? "w-full shrink-0" : "w-full shrink-0 xl:sticky xl:top-[72px] xl:w-[540px]"}>
+        {/* ——— live preview — always stacked below the controls ——— */}
+        <div className="w-full">
           <LivePreview path={`/#/world/${def.id}`} />
         </div>
       </div>

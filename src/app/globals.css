@@ -461,6 +461,46 @@
   box-shadow: 0 8px 30px -6px var(--w-accent);
 }
 
+/* Brand CTA — for pages outside any [data-world] scope (the homepage and
+   the upload view never set --w-accent, which used to leave .w-btn-primary
+   with a transparent background and near-invisible dark text). This class
+   carries the Æ brand gradient explicitly so the call-to-action is always
+   impossible to miss. */
+.cta-hero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.95rem 2.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: linear-gradient(100deg, #ff2e88 0%, #ff5fb0 38%, #7df2d8 100%);
+  color: #17041f;
+  font-weight: 700;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(255, 46, 136, 0.35),
+    0 12px 36px -10px rgba(255, 46, 136, 0.7),
+    0 4px 18px -6px rgba(125, 242, 216, 0.45);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+.cta-hero:hover {
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.08) saturate(1.05);
+  box-shadow:
+    0 0 0 1px rgba(255, 46, 136, 0.55),
+    0 18px 48px -10px rgba(255, 46, 136, 0.85),
+    0 8px 26px -6px rgba(125, 242, 216, 0.6);
+}
+.cta-hero:active { transform: translateY(0) scale(0.99); }
+.cta-hero:focus-visible { outline: 2px solid #7df2d8; outline-offset: 3px; }
+.cta-hero:disabled { opacity: 0.6; cursor: wait; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .cta-hero, .cta-hero:hover { transition: none; transform: none; }
+}
+
 .w-tag {
   display: inline-flex;
   align-items: center;

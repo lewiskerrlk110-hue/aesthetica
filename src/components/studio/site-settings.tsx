@@ -82,13 +82,15 @@ export function SiteSettingsForm() {
   const heroIsVideo = /\.(mp4|webm|mov|ogv)(\?|$)/i.test(draft.heroMediaUrl);
 
   return (
-    <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
-      <div className="max-w-2xl min-w-0 flex-1 space-y-9">
+    <div className="flex flex-col gap-6">
+      <div className="min-w-0 flex-1 space-y-9">
       {/* ——— Hero copy ——— */}
       <section className="space-y-5">
         <h3 className="text-[12px] font-semibold uppercase tracking-[0.3em] text-white/45">Hero copy</h3>
-        {field("heroEyebrow", "Hero eyebrow", "The small uppercase line above the AESTHETICA wordmark.")}
-        {field("heroSub", "Hero description", "The paragraph under the wordmark on the homepage.", true)}
+        <div className="grid gap-5 md:grid-cols-2 md:items-start">
+          {field("heroEyebrow", "Hero eyebrow", "The small uppercase line above the AESTHETICA wordmark.")}
+          {field("heroSub", "Hero description", "The paragraph under the wordmark on the homepage.", true)}
+        </div>
       </section>
 
       {/* ——— Hero background media ——— */}
@@ -156,21 +158,23 @@ export function SiteSettingsForm() {
       {/* ——— Typography ——— */}
       <section className="space-y-5">
         <h3 className="text-[12px] font-semibold uppercase tracking-[0.3em] text-white/45">Typography</h3>
-        <div>
-          <label className="studio-label">Display font — headings & wordmark</label>
-          <FontPicker
-            value={draft.fontDisplay}
-            onChange={(k) => setDraft({ ...draft, fontDisplay: k })}
-            defaultLabel="Site default"
-          />
-        </div>
-        <div>
-          <label className="studio-label">Body font — paragraphs & buttons</label>
-          <FontPicker
-            value={draft.fontBody}
-            onChange={(k) => setDraft({ ...draft, fontBody: k })}
-            defaultLabel="Site default"
-          />
+        <div className="grid gap-5 md:grid-cols-2 md:items-start">
+          <div>
+            <label className="studio-label">Display font — headings & wordmark</label>
+            <FontPicker
+              value={draft.fontDisplay}
+              onChange={(k) => setDraft({ ...draft, fontDisplay: k })}
+              defaultLabel="Site default"
+            />
+          </div>
+          <div>
+            <label className="studio-label">Body font — paragraphs & buttons</label>
+            <FontPicker
+              value={draft.fontBody}
+              onChange={(k) => setDraft({ ...draft, fontBody: k })}
+              defaultLabel="Site default"
+            />
+          </div>
         </div>
         <div className="max-w-md">
           <SliderRow
@@ -204,14 +208,14 @@ export function SiteSettingsForm() {
       {/* ——— Hero layout ——— */}
       <section className="space-y-5">
         <h3 className="text-[12px] font-semibold uppercase tracking-[0.3em] text-white/45">Hero positioning</h3>
-        <div>
-          <label className="studio-label">Text alignment</label>
-          <AlignPicker
-            value={(draft.heroAlign as AlignValue) || "center"}
-            onChange={(v) => setDraft({ ...draft, heroAlign: v })}
-          />
-        </div>
-        <div className="grid max-w-2xl gap-x-8 gap-y-4 sm:grid-cols-2">
+        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          <div>
+            <label className="studio-label">Text alignment</label>
+            <AlignPicker
+              value={(draft.heroAlign as AlignValue) || "center"}
+              onChange={(v) => setDraft({ ...draft, heroAlign: v })}
+            />
+          </div>
           <SliderRow
             label="Hero height"
             value={Math.min(140, Math.max(50, parseInt(draft.heroHeight, 10) || 88))}
@@ -249,8 +253,10 @@ export function SiteSettingsForm() {
       {/* ——— Portals presentation ——— */}
       <section className="space-y-5">
         <h3 className="text-[12px] font-semibold uppercase tracking-[0.3em] text-white/45">Portals copy</h3>
-        {field("portalsKicker", "Portals kicker", "Small line above the worlds — e.g. “Choose a door”.")}
-        {field("portalsTitle", "Portals title", "Heading of the worlds section — e.g. “All Worlds”.")}
+        <div className="grid gap-5 md:grid-cols-2">
+          {field("portalsKicker", "Portals kicker", "Small line above the worlds — e.g. “Choose a door”.")}
+          {field("portalsTitle", "Portals title", "Heading of the worlds section — e.g. “All Worlds”.")}
+        </div>
       </section>
 
       {/* ——— Presentation ——— */}
@@ -295,8 +301,8 @@ export function SiteSettingsForm() {
       </p>
       </div>
 
-      {/* ——— live preview ——— */}
-      <div className="w-full shrink-0 xl:sticky xl:top-[72px] xl:w-[540px]">
+      {/* ——— live preview — always stacked below the controls ——— */}
+      <div className="w-full">
         <LivePreview path="/#/" />
       </div>
     </div>

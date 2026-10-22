@@ -541,3 +541,19 @@ Work Log:
 
 Stage Summary:
 - Accounts are now public: anyone registers at the portal (member) and can post artwork + comments with a server-forced identity; recognised staff (owner/editor, assigned by the owner) unlock the studio on sign-in; likes/bookmarks remain anonymous; the "Signed in as" chip is gone — the nav button (Sign in / Sign out / Studio) carries the state.
+
+---
+Task ID: NAV-ACCOUNT-1
+Agent: main (Z.ai)
+Task: "get rid of the Signed in as menu top right on the main page and when someone is signed in show there account" — remove the legacy "Signed in as" popover from the nav and surface the real signed-in account instead.
+
+Work Log:
+- nav.tsx: deleted the "Signed in as" Popover (display-name input + Save name + Profile & collection) and its dead local-identity machinery — ident/nameDraft state, getIdentity/saveName import, the idle effect, plus the redundant staffAuthed state and legacy /api/studio/auth probe (useSession already broadcasts)
+- nav.tsx: new signed-in header state — gradient avatar chip with the account's display handle (email local-part fallback), full account (handle — email) in the hover tooltip, click opens Profile & collection; separate "Studio" button for owner/editor only; explicit "Sign out" icon button; guests keep the "Sign in" button
+- signOut(): DELETE /api/studio/auth then refreshSession(); defensive reload if ever on the studio view (in practice the studio has its own chrome + "Sign out of the Studio")
+- homepage.tsx footer: "Staff sign in" → "Sign in" (the account portal is public since PUBLIC-POST-1)
+- Verified with agent-browser: guest nav shows only "Sign in" and body contains no "Signed in as"; registered temp member (Nav Checker) → chip shows avatar + handle, tooltip "Nav Checker — navcheck@test.local", chip click opens #/profile, Sign out returns guest nav; owner sign-in → chip + Studio + Sign out, Studio entry works, studio's own header/sign-out intact; mobile 390px fits with avatar-only chip (scrollWidth 390); 0 console errors; temp account deleted afterwards — revocation-safe session instantly flipped nav back to "Sign in"
+- Screenshots: docs/screenshots/nav-account-guest.png, nav-account-member.png, nav-account-staff.png, nav-account-member-mobile.png
+
+Stage Summary:
+- The redundant "Signed in as" menu is gone from the top-right of every page. The nav now shows the actual signed-in account: avatar + display handle (hover for the email) linking to Profile & collection, a Studio shortcut for staff, and a one-click Sign out. Guest state is a single Sign in button.

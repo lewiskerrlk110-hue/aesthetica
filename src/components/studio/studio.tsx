@@ -19,6 +19,7 @@ import { StaffPanel, type StaffMe } from "./staff-panel";
 type Tab = "worlds" | "media" | "site" | "staff";
 
 export function LoginGate({ onUnlock }: { onUnlock: (me: StaffMe) => void }) {
+  const navigate = useApp((s) => s.navigate);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -101,6 +102,12 @@ export function LoginGate({ onUnlock }: { onUnlock: (me: StaffMe) => void }) {
           Recognised staff only · all sign-ins are verified server-side
         </p>
       </div>
+      <button
+        onClick={() => navigate({ view: "home" })}
+        className="relative mt-5 text-[12.5px] text-white/45 transition-colors hover:text-white"
+      >
+        ← Back to the museum
+      </button>
     </div>
   );
 }

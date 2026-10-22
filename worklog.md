@@ -502,3 +502,18 @@ Work Log:
 
 Stage Summary:
 - Staff Portal at #/studio (unlinked from public UI): email + password sign-in, owner bootstrapped from private .env, staff assigned by email in the Staff tab; emails stay server-side in an untracked local database — invisible to visitors and absent from the repository; previous username-based credentials are dead (login resolves by email now)
+
+---
+Task ID: PORTAL-DOOR-1
+Agent: main (Z.ai)
+Task: Make the sign-in accessible on the public site — a visible door for staff, without exposing anything staff-only.
+
+Work Log:
+- nav.tsx: public "Sign in" button (LogIn icon) between Add Artwork and the FX toggle → navigates to #/studio; probes /api/studio/auth on route change so signed-in staff see "Studio" instead; tooltip flips between "Staff sign in" and "Open the Studio"
+- homepage.tsx footer: "Staff sign in" link added next to Profile
+- studio.tsx LoginGate: "← Back to the museum" link under the portal card for stray visitors
+- Verified: visitor nav shows Sign in + footer Staff sign in, both open the portal; back link returns home; owner email sign-in lands in the Studio; back on the public site the nav reads Studio (Sign in gone); 0 console errors; mobile nav fits 390px
+- Screenshots: docs/screenshots/portal-accessible.png, nav-studio-signedin.png
+
+Stage Summary:
+- One visible, session-aware door: visitors get a Sign in button that opens the staff-only portal (non-staff logins rejected server-side); staff get a direct Studio shortcut. Studio content remains fully gated.

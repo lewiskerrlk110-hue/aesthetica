@@ -244,3 +244,24 @@ Work Log:
 Stage Summary:
 - Dreamcore now runs on a living 24-hour sky: drag the slider or hit Turn the sky and the whole world — clouds, meadow, sun/stars, tethered island, Bar of Dreams — turns through dawn, dream-day noon, golden hour and back to starlight
 - The reference-reel twilight remains the default and the homepage portal look; daytime is one click away
+
+---
+Task ID: BL-ART-1
+Agent: main (Z.ai)
+Task: Make better Backrooms art for the Backrooms world page
+
+Work Log:
+- Rebuilt BackroomsEnv (src/components/worlds/backrooms.tsx) from a pillar colonnade into the canonical Level 0 corridor: full side walls with perspective wallpaper stripes (STRIPE_K depths converging to the vanishing point), chair-rail lines, lower-wall tone, baseboard bands, and damp stains climbing the walls
+- Added WallOpening component (full-height openings cut into the side walls): lit room beyond on the left wall (k 0.46-0.27) with its own glow + floor line + light pool, a pitch-dark slot on the left (k 0.70-0.58), and a distant lit room on the right (k 0.20-0.10); each with reveal-face strips for wall thickness
+- Replaced hanging louvered fixtures with FlushPanel components sitting in the drop-ceiling grid (classic 2x4 look); panels cover grid lines where they sit, one mid panel flickers (ambient-flicker, 6.4s), light bleed ellipses on the walls plus two light-shaft cones down to the carpet
+- Brightened the whole grade toward the iconic sickly yellow: ceiling #d8cca0->#a2934f, walls #c9b55e->#8a7a3a, carpet #2a2208->#6b5b24, richer carpet pattern (larger mottling + wear flecks), traffic-wear highlights, four light pools, five floor stains, junction shadows kept
+- Far end: faint doorway frame with a tiny dark silhouette standing in it (subtle dread); far-gloom fog retained
+- Repositioned actors: HazmatReader scaled 0.84 + moved to (1060,605) reading a note now pinned to the right wall at (1104,480) with cast shadow + pin; CeilingCrawler wrapped translate(380,-30) scale(0.72) so it clings to the ceiling deep in the right corner instead of sprawling over the hero title
+- Atmosphere stack retuned: far gloom, new top scrim for title contrast over the brighter ceiling, warm haze, lighter vignette, film-grain 0.60, scanlines 0.25
+- Homepage portal preview (homepage.tsx case "backrooms") rebuilt to mirror the page scene: flush panels, wallpaper stripes, chair rail + baseboard, lit/dark wall slots, far-end silhouette, same palette; removed the mini pillar array and louvered fixtures
+- Fixed transient HMR ReferenceErrors (LightFixture/STRIPE_K mid-edit states) by touch + fresh browser context: ERROR COUNT 0 after clean reload; tsc + eslint clean on touched files; radio room interaction re-verified (station tunes, Power on/off toggles)
+- Refreshed docs/screenshots/backrooms.png and docs/screenshots/home.png
+
+Stage Summary:
+- The Backrooms now reads as the iconic Level 0: striped mono-yellow walls with trim, flush buzzing fluorescents in a drop-ceiling grid, doorless openings into further rooms (one lit, one black), damp mottled carpet with light shafts, an explorer reading a found note, a runner deeper in, something long-limbed on the ceiling, and a figure waiting in the far dark
+- Homepage portal card synchronized with the new scene look

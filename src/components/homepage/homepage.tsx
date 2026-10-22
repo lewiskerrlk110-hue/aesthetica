@@ -270,71 +270,60 @@ function PortalScene({ world }: { world: WorldId }) {
     case "backrooms":
       return (
         <div className={common}>
-          {/* Level 0 colonnade (page BackroomsEnv): one-point perspective,
-              tiled ceiling with louvered fluorescents, pillars into the gloom,
-              damp carpet, hazmat explorer */}
+          {/* Level 0 corridor (page BackroomsEnv): striped yellow walls with
+              chair rail + baseboard, drop ceiling with flush fluorescents,
+              wall openings into further rooms, damp carpet, hazmat explorer */}
           <svg className="h-full w-full" viewBox="0 0 300 224" preserveAspectRatio="xMidYMid slice" aria-hidden>
             <defs>
               <linearGradient id="pv-br-ceil" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#cab97f" />
-                <stop offset="1" stopColor="#857641" />
+                <stop offset="0" stopColor="#d5c795" />
+                <stop offset="1" stopColor="#a2934f" />
               </linearGradient>
               <linearGradient id="pv-br-floor" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#1f1908" />
-                <stop offset="1" stopColor="#57491f" />
-              </linearGradient>
-              <linearGradient id="pv-br-pillar" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stopColor="#d0ba6e" />
-                <stop offset="1" stopColor="#9a8746" />
+                <stop offset="0" stopColor="#2a2208" />
+                <stop offset="1" stopColor="#6b5b24" />
               </linearGradient>
             </defs>
-            <rect width="300" height="224" fill="#bda75c" />
-            {/* far end of the hall */}
-            <rect x="136" y="86" width="28" height="42" fill="#d8c88a" />
-            <rect x="143" y="98" width="14" height="30" fill="#4c4019" />
-            {/* ceiling */}
+            <rect width="300" height="224" fill="#8a7a3a" />
+            {/* ceiling + joists */}
             <polygon points="0,0 300,0 236,60 64,60" fill="url(#pv-br-ceil)" />
             {[-60, 30, 110, 190, 268, 350].map((x, i) => (
-              <line key={`j${i}`} x1={x} y1="0" x2={150 + (x - 150) * 0.19} y2="60" stroke="#6e5f28" strokeWidth="1" opacity="0.7" />
+              <line key={`j${i}`} x1={x} y1="0" x2={150 + (x - 150) * 0.19} y2="60" stroke="#584c22" strokeWidth="1" opacity="0.7" />
             ))}
-            {/* louvered fluorescents receding, nearest flickers */}
+            {/* flush fluorescents, nearest flickers */}
             <g className="ambient-flicker" style={{ animationDuration: "7s" }}>
-              <ellipse cx="150" cy="8" rx="52" ry="8" fill="#fdf6d2" opacity="0.25" />
-              <rect x="106" y="4" width="88" height="7" rx="1.5" fill="#3e3616" />
-              {[0, 1, 2, 3].map((b) => (
-                <rect key={b} x={110 + b * 21} y="5.5" width="17" height="4" rx="1" fill="#fdf6d2" />
-              ))}
+              <ellipse cx="150" cy="10" rx="52" ry="7" fill="rgba(253,248,214,0.3)" />
+              <rect x="112" y="3" width="76" height="9" rx="1" fill="#6e6128" />
+              <rect x="115" y="4.5" width="70" height="6" rx="0.8" fill="#fdf8d6" />
             </g>
-            <rect x="126" y="22" width="48" height="5" rx="1" fill="#3e3616" />
-            {[0, 1, 2, 3].map((b) => (
-              <rect key={`m${b}`} x={128 + b * 11.5} y="23" width="9.5" height="3" rx="0.5" fill="#fdf6d2" opacity="0.9" />
+            <rect x="133" y="20" width="34" height="5" rx="0.8" fill="#6e6128" />
+            <rect x="134.5" y="21.2" width="31" height="2.8" fill="#fdf8d6" opacity="0.95" />
+            <rect x="142" y="34" width="16" height="3" rx="0.5" fill="#6e6128" />
+            <rect x="143" y="34.8" width="14" height="1.6" fill="#fdf8d6" opacity="0.8" />
+            {/* wallpaper stripes converging with depth */}
+            {[[12.8, 12, 12.8, 191.2], [28.8, 27, 28.8, 150.2], [48, 36, 48, 126], [287.2, 12, 287.2, 191.2], [271.2, 27, 271.2, 150.2], [252, 36, 252, 126]].map(([x1, y1, x2, y2], i) => (
+              <line key={`s${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,243,190,0.14)" strokeWidth="1" />
             ))}
-            <rect x="139" y="36" width="22" height="3" rx="0.5" fill="#3e3616" />
-            {[0, 1, 2, 3].map((b) => (
-              <rect key={`f${b}`} x={140 + b * 5.4} y="36.8" width="4.4" height="1.8" rx="0.3" fill="#fdf6d2" opacity="0.75" />
-            ))}
-            {/* damp carpet */}
+            {/* chair rail + baseboard */}
+            <line x1="64" y1="60" x2="0" y2="130" stroke="rgba(58,48,16,0.45)" strokeWidth="1.5" />
+            <line x1="236" y1="60" x2="300" y2="130" stroke="rgba(58,48,16,0.45)" strokeWidth="1.5" />
+            <polygon points="64,60 0,210.6 0,224 64,60" fill="#4c4019" opacity="0.9" />
+            <polygon points="236,60 300,210.6 300,224 236,60" fill="#4c4019" opacity="0.9" />
+            {/* opening into a lit room, left wall */}
+            <polygon points="35.2,33 22.4,21 22.4,166.6 35.2,133.8" fill="#6b5d2b" />
+            <polygon points="35.2,72 22.4,78 22.4,166.6 35.2,133.8" fill="#3d3312" opacity="0.85" />
+            <ellipse cx="29" cy="48" rx="7" ry="9" fill="rgba(253,246,205,0.45)" />
+            {/* opening into the dark, right wall */}
+            <polygon points="264.8,39 277.6,27 277.6,172.6 264.8,139.8" fill="#0b0802" />
+            {/* far end of the hall — someone is standing there */}
+            <rect x="136" y="86" width="28" height="42" fill="#0f0c04" />
+            <rect x="143" y="98" width="14" height="30" fill="#060502" />
+            <circle cx="149.5" cy="104" r="1.6" fill="#040302" />
+            <rect x="148" y="105.5" width="3" height="8" rx="1.2" fill="#040302" />
+            {/* damp carpet + pooled light */}
             <polygon points="64,60 236,60 300,224 0,224" fill="url(#pv-br-floor)" />
-            {/* pillars receding into the gloom, far first */}
-            {([
-              [141, 5, 92, 116, 0.55],
-              [163, 5, 92, 116, 0.55],
-              [124, 8, 84, 126, 0.48],
-              [178, 8, 84, 126, 0.48],
-              [96, 13, 72, 142, 0.38],
-              [204, 13, 72, 142, 0.38],
-              [40, 22, 52, 168, 0.24],
-              [248, 22, 52, 168, 0.24],
-              [-14, 40, 22, 210, 0.1],
-              [276, 40, 22, 210, 0.1],
-            ] as const).map(([x, wp, yt, yb, fog], i) => (
-              <g key={`p${i}`}>
-                <rect x={x} y={yt} width={wp} height={yb - yt} fill="url(#pv-br-pillar)" />
-                <rect x={x + wp} y={yt} width={Math.max(1.5, wp * 0.22)} height={yb - yt} fill="#4c4019" />
-                <rect x={x} y={yt} width={wp} height={yb - yt} fill={`rgba(33,25,9,${fog})`} />
-              </g>
-            ))}
-            {/* hazmat explorer reading a note by the near-right pillar */}
+            <ellipse cx="150" cy="152" rx="55" ry="14" fill="rgba(253,246,200,0.12)" />
+            {/* hazmat explorer reading a note pinned to the right wall */}
             <g className="bl-bob" style={{ animationDuration: "5s" }}>
               <ellipse cx="238" cy="164" rx="12" ry="2.6" fill="rgba(8,6,2,0.4)" />
               <rect x="233" y="128" width="13" height="26" rx="4" fill="#8f8838" />

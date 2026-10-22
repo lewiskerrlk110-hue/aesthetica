@@ -8,26 +8,21 @@ import { authHeaders } from "@/lib/identity";
 import { useToast } from "@/hooks/use-toast";
 import { Radio, FileText, Volume2, VolumeX, Signal, Map as MapIcon } from "lucide-react";
 
-// ————— Environment: Level 0 — one-point perspective colonnade —————
-// Rebuilt from a game-render reference: mono-yellow hallway, tiled drop
-// ceiling with louvered fluorescents, square pillars receding into gloom,
-// damp carpet, a hazmat explorer reading a note, and something on the ceiling.
-// Everything structural lives in one SVG (viewBox 1600x900, slice) so the
-// perspective stays pixel-consistent at any viewport aspect ratio.
+// ————— Environment: Level 0 — the infinite corridor —————
+// Rebuilt around the canonical Level 0 look: mono-yellow striped wallpaper
+// with chair rail and baseboard, drop-ceiling grid with flush fluorescent
+// panels, full-height wall openings breathing into further rooms, damp
+// mottled carpet, a hazmat explorer reading a found note, a runner deeper
+// in, and something on the ceiling. Everything structural lives in one SVG
+// (viewBox 1600x900, slice) so the one-point perspective stays
+// pixel-consistent at any viewport aspect ratio.
 const FOG = (o: number) => `rgba(33,25,9,${o})`;
 
-const PILLARS = [
-  // painted far → near so nearer columns overlap farther ones
-  { cx: 741.5, w: 15, top: 361, bottom: 457, fog: 0.56 },
-  { cx: 871.5, w: 18.7, top: 351, bottom: 468, fog: 0.52, side: "left" },
-  { cx: 696, w: 27, top: 327, bottom: 497, fog: 0.46 },
-  { cx: 943, w: 37.4, top: 298, bottom: 531, fog: 0.4, side: "left" },
-  { cx: 605, w: 51, top: 259, bottom: 577, fog: 0.32 },
-  { cx: 1073, w: 71.4, top: 201, bottom: 646, fog: 0.24, side: "left" },
-  { cx: 442.5, w: 93.5, top: 138, bottom: 721, fog: 0.16 },
-  { cx: 1352.5, w: 144.5, top: -7, bottom: 894, fog: 0.08, side: "left" },
-  { cx: 150, w: 170, top: -80, bottom: 980, fog: 0 },
-] as const;
+// one-point perspective helpers — k ∈ [0,1], 0 = far plane, 1 = frame edge
+const PT_L = (k: number) => ({ x: 740 * (1 - k), y: 375 * (1 - k) });
+const PB_L = (k: number) => ({ x: 740 * (1 - k), y: 435 + 465 * k });
+const PT_R = (k: number) => ({ x: 860 + 740 * k, y: 375 * (1 - k) });
+const PB_R = (k: number) => ({ x: 860 + 740 * k, y: 435 + 465 * k });
 
 // ceiling grid rows: y position + half-width (the plane narrows toward the far opening)
 const CEIL_ROWS = [
@@ -42,37 +37,62 @@ const CEIL_ROWS = [
 // converging joist lines: top-edge x → far-opening x
 const CEIL_JOISTS = [-150, 120, 360, 580, 800, 1020, 1240, 1480, 1750];
 
-function LightFixture({ y, w, h, delay, dur }: { y: number; w: number; h: number; delay: number; dur: number }) {
-  const gap = w * 0.06;
-  const barW = (w - 3 * gap) / 4;
+// flush fluorescent panel sitting in the drop-ceiling grid
+function FlushPanel({ y, w, h, flicker, delay, dur }: { y: number; w: number; h: number; flicker?: boolean; delay?: number; dur?: number }) {
   const x0 = 800 - w / 2;
   return (
-    <g className="ambient-flicker" style={{ animationDelay: `${delay}s`, animationDuration: `${dur}s` }}>
-      <ellipse cx={800} cy={y + h / 2} rx={w * 0.95} ry={h * 1.15} fill="url(#lightGlow)" opacity={0.55} />
-      <rect x={x0 - 5} y={y - 4} width={w + 10} height={h + 8} rx={2} fill="#3e3616" />
-      {[0, 1, 2, 3].map((b) => (
-        <rect key={b} x={x0 + b * (barW + gap)} y={y} width={barW} height={h} rx={1.5} fill="#fdf6d2" />
+    <g
+      className={flicker ? "ambient-flicker" : undefined}
+      style={flicker ? { animationDelay: `${delay ?? 0}s`, animationDuration: `${dur ?? 9}s` } : undefined}
+    >
+      <rect x={x0 - 4} y={y - 4} width={w + 8} height={h + 8} rx={1.5} fill="#6e6128" />
+      <rect x={x0} y={y} width={w} height={h} fill="url(#panelG)" />
+      {[1, 2].map((i) => (
+        <line key={i} x1={x0 + (w * i) / 3} y1={y + 2} x2={x0 + (w * i) / 3} y2={y + h - 2} stroke="rgba(110,97,40,0.35)" strokeWidth={1.2} />
       ))}
     </g>
   );
 }
 
-function Pillar({ p }: { p: (typeof PILLARS)[number] }) {
-  const sideW = Math.max(3, p.w * 0.18);
-  const sideX = "side" in p && p.side === "left" ? p.cx - p.w / 2 - sideW : p.cx + p.w / 2;
+// full-height opening in a side wall — a glimpse of the room beyond
+function WallOpening({ wall, kNear, kFar, lit }: { wall: "L" | "R"; kNear: number; kFar: number; lit: boolean }) {
+  const T = wall === "L" ? PT_L : PT_R;
+  const B = wall === "L" ? PB_L : PB_R;
+  const nT = T(kNear), fT = T(kFar), fB = B(kFar), nB = B(kNear);
+  const inward = wall === "L" ? -7 : 7; // reveal face extends into the room beyond
+  const mx = (nT.x + fT.x) / 2;
+  const gid = lit ? (wall === "L" ? "roomGL" : "roomGR") : "roomDark";
   return (
     <g>
-      <rect x={sideX} y={p.top} width={sideW} height={p.bottom - p.top} fill="#4c4019" />
-      <rect x={p.cx - p.w / 2} y={p.top} width={p.w} height={p.bottom - p.top} fill="url(#pillarG)" />
-      <rect x={p.cx - p.w / 2} y={p.top} width={p.w} height={p.bottom - p.top} fill={FOG(p.fog)} />
+      <polygon points={`${nT.x},${nT.y} ${fT.x},${fT.y} ${fB.x},${fB.y} ${nB.x},${nB.y}`} fill={`url(#${gid})`} />
+      <polygon
+        points={`${fT.x},${fT.y} ${fT.x + inward},${fT.y + 3} ${fT.x + inward},${fB.y - 4} ${fB.x},${fB.y}`}
+        fill={lit ? "#8f7e3e" : "#332a0f"}
+        opacity={lit ? 0.55 : 0.75}
+      />
+      {lit && (
+        <>
+          {/* the room's own floor line, caught by its light */}
+          <line x1={nB.x} y1={nB.y - 52} x2={fB.x} y2={fB.y - 46} stroke="rgba(18,13,3,0.5)" strokeWidth={1.6} />
+          <ellipse cx={mx} cy={(nT.y + fT.y) / 2 + 20} rx={Math.abs(nT.x - fT.x) * 0.42} ry={14} fill="url(#lightGlow)" opacity={0.85} />
+          <ellipse
+            cx={(nB.x + fB.x) / 2}
+            cy={(nB.y + fB.y) / 2 - 14}
+            rx={Math.abs(nB.x - fB.x) * 0.38}
+            ry={Math.abs(nB.y - fB.y) * 0.2}
+            fill="url(#poolG)"
+            opacity={0.8}
+          />
+        </>
+      )}
     </g>
   );
 }
 
-// long-limbed entity, clinging to the ceiling between the right columns
+// long-limbed entity, clinging to the ceiling deep in the right corner
 function CeilingCrawler() {
   return (
-    <g>
+    <g transform="translate(380 -30) scale(0.72)" opacity={0.94}>
       <ellipse cx={1180} cy={360} rx={46} ry={130} fill="rgba(20,14,4,0.3)" filter="url(#soft2)" />
       <g className="bl-sway" style={{ transformOrigin: "1150px 240px" }}>
         <g stroke="#191309" strokeLinecap="round" fill="none">
@@ -89,10 +109,11 @@ function CeilingCrawler() {
   );
 }
 
-// hazmat explorer, back turned, reading the note pinned to the column
+// hazmat explorer, back turned, reading the note pinned to the right wall
 function HazmatReader() {
   return (
     <g className="bl-bob">
+      <g transform="translate(220 50) scale(0.84)">
       <ellipse cx={1000} cy={663} rx={36} ry={8} fill="rgba(8,6,2,0.4)" filter="url(#soft)" />
       <rect x={988} y={594} width={11} height={60} fill="#6f6828" />
       <rect x={1001} y={594} width={11} height={60} fill="#5f5922" />
@@ -111,6 +132,7 @@ function HazmatReader() {
       <circle cx={1000} cy={512} r={14} fill="url(#suitG)" />
       <circle cx={1000} cy={512} r={14} fill="none" stroke="#6f6828" strokeWidth={2} />
       <circle cx={998} cy={516} r={6} fill="#8f8736" />
+      </g>
     </g>
   );
 }
@@ -131,29 +153,23 @@ function HazmatRunner() {
   );
 }
 
-// pencil-scribbled note, pinned to the nearest right column
+// pencil-scribbled note, pinned to the right wall at the reader's eye line
 function PinnedNote() {
   return (
-    <g transform="rotate(-4 1056 527)">
-      <rect x={1046} y={512} width={21} height={28} fill="#efe8d0" stroke="rgba(40,32,12,0.25)" />
-      <line x1={1050} y1={520} x2={1062} y2={520} stroke="#8a8060" strokeWidth={1.2} />
-      <line x1={1050} y1={526} x2={1060} y2={526} stroke="#8a8060" strokeWidth={1.2} />
-      <circle cx={1055} cy={533} r={2.6} fill="none" stroke="#8a8060" strokeWidth={1} />
-      <line x1={1055} y1={535.6} x2={1055} y2={539} stroke="#8a8060" strokeWidth={1} />
+    <g transform="rotate(-4 1114 493)">
+      <rect x={1106} y={483} width={20} height={27} fill="rgba(20,14,4,0.25)" />
+      <rect x={1104} y={480} width={20} height={27} fill="#efe8d0" stroke="rgba(40,32,12,0.25)" />
+      <line x1={1108} y1={488} x2={1120} y2={488} stroke="#8a8060" strokeWidth={1.2} />
+      <line x1={1108} y1={494} x2={1118} y2={494} stroke="#8a8060" strokeWidth={1.2} />
+      <circle cx={1113} cy={501} r={2.4} fill="none" stroke="#8a8060" strokeWidth={1} />
+      <line x1={1113} y1={503.4} x2={1113} y2={506.6} stroke="#8a8060" strokeWidth={1} />
+      <circle cx={1114} cy={482.5} r={1.4} fill="#3a3113" />
     </g>
   );
 }
 
-const CONTACT_SHADOWS = [
-  { cx: 742, cy: 459, rx: 11, ry: 2.5 },
-  { cx: 872, cy: 470, rx: 13, ry: 3 },
-  { cx: 696, cy: 499, rx: 19, ry: 4 },
-  { cx: 943, cy: 533, rx: 25, ry: 5 },
-  { cx: 605, cy: 579, rx: 34, ry: 7 },
-  { cx: 1073, cy: 648, rx: 48, ry: 10 },
-  { cx: 442, cy: 723, rx: 62, ry: 13 },
-  { cx: 1352, cy: 896, rx: 96, ry: 18 },
-];
+// wallpaper stripe depths — perspective-compressed toward the far plane
+const STRIPE_K = [0.035, 0.075, 0.12, 0.175, 0.24, 0.32, 0.415, 0.53, 0.66, 0.81, 0.94];
 
 function BackroomsEnv() {
   return (
@@ -161,25 +177,45 @@ function BackroomsEnv() {
       <svg className="h-full w-full" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden>
         <defs>
           <linearGradient id="ceilG" x1="0" y1="0" x2="0" y2="375" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#cab97f" />
-            <stop offset="1" stopColor="#857641" />
+            <stop offset="0" stopColor="#d8cca0" />
+            <stop offset="1" stopColor="#a2934f" />
           </linearGradient>
           <linearGradient id="wallL" x1="0" y1="0" x2="740" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#bda75c" />
-            <stop offset="1" stopColor="#6e5f28" />
+            <stop offset="0" stopColor="#c9b55e" />
+            <stop offset="1" stopColor="#8a7a3a" />
           </linearGradient>
           <linearGradient id="wallR" x1="860" y1="0" x2="1600" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#6e5f28" />
-            <stop offset="1" stopColor="#bda75c" />
+            <stop offset="0" stopColor="#8a7a3a" />
+            <stop offset="1" stopColor="#c9b55e" />
           </linearGradient>
           <linearGradient id="floorG" x1="0" y1="435" x2="0" y2="900" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#1f1908" />
-            <stop offset="0.35" stopColor="#453b18" />
-            <stop offset="1" stopColor="#57491f" />
+            <stop offset="0" stopColor="#2a2208" />
+            <stop offset="0.35" stopColor="#50431a" />
+            <stop offset="1" stopColor="#6b5b24" />
           </linearGradient>
-          <linearGradient id="pillarG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#b89f4c" />
-            <stop offset="1" stopColor="#6f6128" />
+          <linearGradient id="panelG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#fdf8d6" />
+            <stop offset="1" stopColor="#e2d69f" />
+          </linearGradient>
+          <linearGradient id="coneG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="rgba(253,246,205,0.13)" />
+            <stop offset="1" stopColor="rgba(253,246,205,0)" />
+          </linearGradient>
+          <linearGradient id="roomGL" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#6b5d2b" />
+            <stop offset="0.45" stopColor="#8f7e3c" />
+            <stop offset="0.68" stopColor="#4a3e15" />
+            <stop offset="1" stopColor="#241c08" />
+          </linearGradient>
+          <linearGradient id="roomGR" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#75662e" />
+            <stop offset="0.5" stopColor="#8d7c3a" />
+            <stop offset="0.7" stopColor="#514417" />
+            <stop offset="1" stopColor="#2a2109" />
+          </linearGradient>
+          <linearGradient id="roomDark" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#0e0b03" />
+            <stop offset="1" stopColor="#060401" />
           </linearGradient>
           <linearGradient id="suitG" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#bcb24e" />
@@ -194,18 +230,21 @@ function BackroomsEnv() {
             <stop offset="1" stopColor="rgba(253,246,210,0)" />
           </radialGradient>
           <radialGradient id="poolG">
-            <stop offset="0" stopColor="rgba(253,246,210,0.14)" />
+            <stop offset="0" stopColor="rgba(253,246,210,0.15)" />
             <stop offset="1" stopColor="rgba(253,246,210,0)" />
           </radialGradient>
-          <pattern id="carpet" width="72" height="72" patternUnits="userSpaceOnUse">
-            <circle cx="12" cy="16" r="1.6" fill="rgba(0,0,0,0.35)" />
-            <circle cx="44" cy="8" r="1.3" fill="rgba(0,0,0,0.3)" />
-            <circle cx="60" cy="34" r="1.7" fill="rgba(0,0,0,0.32)" />
-            <circle cx="26" cy="44" r="1.2" fill="rgba(0,0,0,0.3)" />
-            <circle cx="8" cy="58" r="1.5" fill="rgba(0,0,0,0.34)" />
-            <circle cx="52" cy="62" r="1.2" fill="rgba(0,0,0,0.28)" />
-            <circle cx="34" cy="24" r="1.1" fill="rgba(255,244,200,0.1)" />
-            <circle cx="64" cy="52" r="1.2" fill="rgba(255,244,200,0.08)" />
+          <pattern id="carpet" width="96" height="96" patternUnits="userSpaceOnUse">
+            <circle cx="14" cy="18" r="2.2" fill="rgba(0,0,0,0.32)" />
+            <circle cx="50" cy="9" r="1.8" fill="rgba(0,0,0,0.28)" />
+            <circle cx="72" cy="38" r="2.4" fill="rgba(0,0,0,0.3)" />
+            <circle cx="30" cy="52" r="1.7" fill="rgba(0,0,0,0.26)" />
+            <circle cx="10" cy="70" r="2" fill="rgba(0,0,0,0.3)" />
+            <circle cx="58" cy="76" r="1.8" fill="rgba(0,0,0,0.24)" />
+            <circle cx="84" cy="62" r="1.5" fill="rgba(0,0,0,0.28)" />
+            <circle cx="40" cy="30" r="1.4" fill="rgba(0,0,0,0.22)" />
+            <circle cx="24" cy="42" r="1.3" fill="rgba(240,222,160,0.1)" />
+            <circle cx="66" cy="20" r="1.4" fill="rgba(240,222,160,0.09)" />
+            <circle cx="78" cy="80" r="1.2" fill="rgba(240,222,160,0.09)" />
           </pattern>
           <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="9" />
@@ -217,73 +256,111 @@ function BackroomsEnv() {
           <clipPath id="floorClip"><polygon points="740,435 860,435 1600,900 0,900" /></clipPath>
         </defs>
 
-        {/* ceiling plane + tile grid + fixtures */}
+        {/* ceiling plane + tile grid + flush panels */}
         <polygon points="0,0 1600,0 860,375 740,375" fill="url(#ceilG)" />
         <g clipPath="url(#ceilClip)">
           {CEIL_ROWS.map((r) => (
-            <line key={`r${r.y}`} x1={800 - r.hw} y1={r.y} x2={800 + r.hw} y2={r.y} stroke="rgba(58,47,17,0.38)" strokeWidth={r.sw} />
+            <line key={`r${r.y}`} x1={800 - r.hw} y1={r.y} x2={800 + r.hw} y2={r.y} stroke="rgba(88,76,34,0.42)" strokeWidth={r.sw} />
           ))}
           {CEIL_JOISTS.map((x) => (
-            <line key={`j${x}`} x1={x} y1={0} x2={800 + (x - 800) * 0.075} y2={375} stroke="rgba(58,47,17,0.3)" strokeWidth={2} />
+            <line key={`j${x}`} x1={x} y1={0} x2={800 + (x - 800) * 0.075} y2={375} stroke="rgba(88,76,34,0.34)" strokeWidth={2} />
           ))}
         </g>
-        <LightFixture y={46} w={236} h={56} delay={0} dur={9} />
-        <LightFixture y={138} w={152} h={40} delay={-2.4} dur={7.4} />
-        <LightFixture y={250} w={90} h={24} delay={-4.1} dur={10.2} />
-        <LightFixture y={328} w={48} h={14} delay={-6.3} dur={8.3} />
+        <FlushPanel y={48} w={252} h={58} />
+        <FlushPanel y={152} w={156} h={40} flicker delay={-3.1} dur={6.4} />
+        <FlushPanel y={266} w={92} h={25} />
+        <FlushPanel y={340} w={50} h={14} />
 
-        {/* side walls + damp stains */}
+        {/* side walls: striped wallpaper, chair rail, baseboard */}
         <polygon points="0,0 740,375 740,435 0,900" fill="url(#wallL)" />
         <polygon points="1600,0 860,375 860,435 1600,900" fill="url(#wallR)" />
-        <ellipse cx={300} cy={620} rx={140} ry={90} fill="rgba(40,30,10,0.3)" filter="url(#soft2)" />
-        <ellipse cx={1290} cy={540} rx={120} ry={80} fill="rgba(40,30,10,0.3)" filter="url(#soft2)" />
-        <ellipse cx={620} cy={470} rx={80} ry={46} fill="rgba(40,30,10,0.24)" filter="url(#soft2)" />
-        <ellipse cx={980} cy={455} rx={60} ry={36} fill="rgba(40,30,10,0.24)" filter="url(#soft2)" />
-
-        {/* the hallway continues into the dark */}
-        <rect x={740} y={375} width={120} height={60} fill="url(#farG)" />
-        <rect x={752} y={387} width={96} height={36} fill="#241d0a" opacity={0.6} />
-        <rect x={788} y={398} width={24} height={6} fill="#d9cfa0" opacity={0.45} />
-        <rect x={740} y={375} width={120} height={60} fill={FOG(0.4)} />
-
-        {/* damp carpet + pools of light */}
-        <polygon points="740,435 860,435 1600,900 0,900" fill="url(#floorG)" />
-        <g clipPath="url(#floorClip)">
-          <rect x={0} y={435} width={1600} height={465} fill="url(#carpet)" opacity={0.55} />
-          <ellipse cx={800} cy={690} rx={230} ry={58} fill="url(#poolG)" />
-          <ellipse cx={800} cy={556} rx={150} ry={32} fill="url(#poolG)" />
-          <ellipse cx={800} cy={478} rx={88} ry={16} fill="url(#poolG)" />
-          {CONTACT_SHADOWS.map((s) => (
-            <ellipse key={`s${s.cx}`} cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} fill="rgba(10,8,2,0.35)" filter="url(#soft)" />
+        <g stroke="rgba(255,243,190,0.09)">
+          {STRIPE_K.map((k) => (
+            <line key={`sl${k}`} x1={PT_L(k).x} y1={PT_L(k).y} x2={PB_L(k).x} y2={PB_L(k).y} strokeWidth={1.5 + k * 3.5} />
+          ))}
+          {STRIPE_K.map((k) => (
+            <line key={`sr${k}`} x1={PT_R(k).x} y1={PT_R(k).y} x2={PB_R(k).x} y2={PB_R(k).y} strokeWidth={1.5 + k * 3.5} />
           ))}
         </g>
+        {/* tone below the chair rail */}
+        <polygon points="740,409.8 0,522 0,900 740,435" fill="rgba(62,50,16,0.16)" />
+        <polygon points="860,409.8 1600,522 1600,900 860,435" fill="rgba(62,50,16,0.16)" />
+        <line x1={740} y1={409.8} x2={0} y2={522} stroke="rgba(58,48,16,0.5)" strokeWidth={3} />
+        <line x1={860} y1={409.8} x2={1600} y2={522} stroke="rgba(58,48,16,0.5)" strokeWidth={3} />
+        {/* baseboard */}
+        <polygon points="740,432.3 0,859.5 0,900 740,435" fill="#4c4019" />
+        <polygon points="860,432.3 1600,859.5 1600,900 860,435" fill="#4c4019" />
+        <line x1={740} y1={432.3} x2={0} y2={859.5} stroke="rgba(255,244,190,0.14)" strokeWidth={1.6} />
+        <line x1={860} y1={432.3} x2={1600} y2={859.5} stroke="rgba(255,244,190,0.14)" strokeWidth={1.6} />
+        {/* damp stains climbing the walls */}
+        <ellipse cx={250} cy={560} rx={120} ry={70} fill="rgba(56,42,12,0.26)" filter="url(#soft2)" />
+        <ellipse cx={95} cy={700} rx={90} ry={60} fill="rgba(56,42,12,0.3)" filter="url(#soft2)" />
+        <ellipse cx={600} cy={480} rx={70} ry={40} fill="rgba(56,42,12,0.22)" filter="url(#soft2)" />
+        <ellipse cx={1300} cy={520} rx={110} ry={66} fill="rgba(56,42,12,0.26)" filter="url(#soft2)" />
+        <ellipse cx={1520} cy={640} rx={95} ry={60} fill="rgba(56,42,12,0.3)" filter="url(#soft2)" />
+        <ellipse cx={1010} cy={470} rx={55} ry={30} fill="rgba(56,42,12,0.2)" filter="url(#soft2)" />
 
-        {/* colonnade, actors, grime — painter's order far → near */}
-        <Pillar p={PILLARS[0]} />
-        <Pillar p={PILLARS[1]} />
-        <Pillar p={PILLARS[2]} />
-        <Pillar p={PILLARS[3]} />
-        <Pillar p={PILLARS[4]} />
-        <HazmatRunner />
-        <CeilingCrawler />
-        <Pillar p={PILLARS[5]} />
-        <PinnedNote />
-        <HazmatReader />
-        <Pillar p={PILLARS[6]} />
-        <Pillar p={PILLARS[7]} />
-        <Pillar p={PILLARS[8]} />
+        {/* openings into further rooms */}
+        <WallOpening wall="L" kNear={0.46} kFar={0.27} lit />
+        <WallOpening wall="L" kNear={0.7} kFar={0.58} lit={false} />
+        <WallOpening wall="R" kNear={0.2} kFar={0.1} lit />
+
+        {/* the hallway continues into the dark — and someone is standing there */}
+        <rect x={740} y={375} width={120} height={60} fill="url(#farG)" />
+        <rect x={752} y={387} width={96} height={36} fill="#241d0a" opacity={0.6} />
+        <rect x={786} y={397} width={28} height={38} fill="#0a0803" stroke="rgba(183,165,101,0.25)" strokeWidth={1} />
+        <g fill="#060502" opacity={0.9} filter="url(#soft)">
+          <circle cx={799.5} cy={410} r={2.8} />
+          <rect x={796.8} y={412.5} width={5.4} height={14} rx={2} />
+        </g>
+        <rect x={740} y={375} width={120} height={60} fill={FOG(0.4)} />
+
+        {/* panel bleed onto the walls */}
+        <ellipse cx={800} cy={77} rx={150} ry={26} fill="url(#lightGlow)" opacity={0.5} />
+        <ellipse cx={800} cy={172} rx={92} ry={18} fill="url(#lightGlow)" opacity={0.45} />
+        <ellipse cx={800} cy={278} rx={55} ry={11} fill="url(#lightGlow)" opacity={0.4} />
+        <ellipse cx={800} cy={347} rx={30} ry={6} fill="url(#lightGlow)" opacity={0.4} />
+
+        {/* damp carpet: mottling, stains, wear, pools of light */}
+        <polygon points="740,435 860,435 1600,900 0,900" fill="url(#floorG)" />
+        <g clipPath="url(#floorClip)">
+          <rect x={0} y={435} width={1600} height={465} fill="url(#carpet)" opacity={0.6} />
+          <ellipse cx={800} cy={690} rx={240} ry={70} fill="rgba(235,215,150,0.05)" />
+          <ellipse cx={800} cy={520} rx={120} ry={26} fill="rgba(235,215,150,0.05)" />
+          <ellipse cx={330} cy={780} rx={140} ry={44} fill="rgba(24,17,4,0.32)" filter="url(#soft)" />
+          <ellipse cx={1330} cy={720} rx={115} ry={36} fill="rgba(24,17,4,0.3)" filter="url(#soft)" />
+          <ellipse cx={620} cy={610} rx={80} ry={24} fill="rgba(24,17,4,0.24)" filter="url(#soft)" />
+          <ellipse cx={1080} cy={585} rx={60} ry={18} fill="rgba(24,17,4,0.22)" filter="url(#soft)" />
+          <ellipse cx={800} cy={830} rx={210} ry={48} fill="rgba(30,22,6,0.25)" filter="url(#soft)" />
+          <ellipse cx={800} cy={700} rx={230} ry={58} fill="url(#poolG)" />
+          <ellipse cx={800} cy={556} rx={150} ry={32} fill="url(#poolG)" />
+          <ellipse cx={800} cy={478} rx={88} ry={16} fill="url(#poolG)" />
+          <ellipse cx={800} cy={437} rx={48} ry={9} fill="url(#poolG)" />
+        </g>
+        {/* light shafts from the two nearest panels */}
+        <polygon points="674,106 926,106 1040,710 560,710" fill="url(#coneG)" />
+        <polygon points="722,192 878,192 920,560 680,560" fill="url(#coneG)" opacity={0.7} />
+
+        {/* junction shadows */}
         <path d="M0,900 L740,435" stroke="rgba(26,20,7,0.45)" strokeWidth={30} fill="none" filter="url(#soft)" />
         <path d="M1600,900 L860,435" stroke="rgba(26,20,7,0.45)" strokeWidth={30} fill="none" filter="url(#soft)" />
         <path d="M0,0 L740,375" stroke="rgba(40,32,12,0.22)" strokeWidth={16} fill="none" filter="url(#soft)" />
         <path d="M1600,0 L860,375" stroke="rgba(40,32,12,0.22)" strokeWidth={16} fill="none" filter="url(#soft)" />
+
+        {/* actors — painter's order far → near */}
+        <HazmatRunner />
+        <CeilingCrawler />
+        <PinnedNote />
+        <HazmatReader />
       </svg>
 
-      {/* atmosphere: far gloom, light haze, vignette, analog wear */}
-      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(30% 22% at 50% 45%, rgba(26,19,6,0.6), transparent 70%)" }} />
-      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(46% 30% at 50% 10%, rgba(253,246,210,0.1), transparent 70%)" }} />
-      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(115% 90% at 50% 42%, transparent 28%, rgba(14,11,4,0.68) 82%, rgba(6,5,2,0.88) 100%)" }} />
-      <div className="film-grain absolute inset-0 opacity-70" />
-      <div className="scanlines absolute inset-0 opacity-30" />
+      {/* atmosphere: far gloom, title scrim, warm haze, vignette, analog wear */}
+      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(30% 22% at 50% 45%, rgba(26,19,6,0.55), transparent 70%)" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(20,15,4,0.5) 0%, rgba(20,15,4,0.16) 36%, transparent 58%)" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(44% 26% at 50% 12%, rgba(253,246,205,0.1), transparent 70%)" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(115% 90% at 50% 42%, transparent 30%, rgba(16,12,4,0.55) 80%, rgba(7,5,2,0.82) 100%)" }} />
+      <div className="film-grain absolute inset-0 opacity-60" />
+      <div className="scanlines absolute inset-0 opacity-25" />
     </div>
   );
 }

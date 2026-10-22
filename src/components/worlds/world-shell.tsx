@@ -144,9 +144,9 @@ export function WorldArchive({ world }: { world: WorldDef }) {
   );
 }
 
-/** "Step through a neighbouring world" — a dock FIXED to the bottom of the
- *  viewport so the neighbouring-world navigation is always within reach while
- *  you browse a world. Studio-hidden worlds are filtered out of the dock. */
+/** "Step through a neighbouring world" — a closing section at the very bottom
+ *  of the page (in normal flow — the page scrolls, this does not pin).
+ *  Studio-hidden worlds are filtered out of the section. */
 export function RelatedWorlds({ world }: { world: WorldDef }) {
   const navigate = useApp((s) => s.navigate);
   const configWorlds = useStudioConfig((s) => s.worlds);
@@ -161,35 +161,39 @@ export function RelatedWorlds({ world }: { world: WorldDef }) {
   if (related.length === 0) return null;
 
   return (
-    <nav className="related-dock fixed inset-x-0 bottom-0 z-40" aria-label="Step through a neighbouring world">
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-2.5 sm:px-4">
-        <p className="hidden shrink-0 text-[10.5px] font-semibold uppercase tracking-[0.3em] opacity-60 md:block">
+    <section
+      className="relative z-10 border-t border-[var(--w-panel-border)]"
+      style={{ background: "color-mix(in srgb, var(--w-bg) 82%, black)" }}
+      aria-label="Step through a neighbouring world"
+    >
+      <div className="mx-auto max-w-7xl px-4 py-12">
+        <h2 className="mb-6 text-center text-[13px] font-semibold uppercase tracking-[0.35em] opacity-60">
           Step through a neighbouring world
-        </p>
-        <div className="related-dock-row flex flex-1 items-center gap-2 overflow-x-auto md:justify-center">
+        </h2>
+        <div className="flex flex-wrap justify-center gap-4">
           {related.map((w) => (
             <button
               key={w.id}
               onClick={() => navigate({ view: "world", world: w.id })}
-              className="group flex shrink-0 items-center gap-2.5 rounded-full border border-[var(--w-panel-border)] py-1.5 pl-3 pr-3.5 transition-all hover:-translate-y-0.5"
-              style={{ background: `linear-gradient(120deg, ${w.grad[0]}cc, ${w.grad[1]}22)` }}
+              className="group flex items-center gap-3 rounded-xl border border-[var(--w-panel-border)] px-4 py-3 transition-all hover:-translate-y-0.5"
+              style={{ background: `linear-gradient(120deg, ${w.grad[0]}, ${w.grad[1]}22)` }}
               title={`Enter ${w.name} — ${w.epithet}`}
             >
               <span
-                className="h-5 w-5 shrink-0 rounded-full"
-                style={{ background: `linear-gradient(135deg, ${w.grad[1]}, ${w.grad[2]})`, boxShadow: `0 0 10px -2px ${w.grad[1]}` }}
+                className="h-6 w-6 shrink-0 rounded-full"
+                style={{ background: `linear-gradient(135deg, ${w.grad[1]}, ${w.grad[2]})`, boxShadow: `0 0 12px -2px ${w.grad[1]}` }}
                 aria-hidden
               />
-              <span className="text-left leading-tight">
-                <span className="block text-[12.5px] font-semibold">{w.name}</span>
-                <span className="block text-[10px] opacity-55">{w.epithet}</span>
+              <span className="text-left">
+                <span className="block text-[14px] font-semibold">{w.name}</span>
+                <span className="block text-[11.5px] opacity-55">{w.epithet}</span>
               </span>
-              <ArrowRight className="h-3.5 w-3.5 opacity-40 transition-transform group-hover:translate-x-0.5 group-hover:opacity-90" />
+              <ArrowRight className="h-4 w-4 opacity-40 transition-transform group-hover:translate-x-1 group-hover:opacity-90" />
             </button>
           ))}
         </div>
       </div>
-    </nav>
+    </section>
   );
 }
 

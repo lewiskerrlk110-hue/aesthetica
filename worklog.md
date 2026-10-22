@@ -332,3 +332,18 @@ Stage Summary:
 - "Step through a neighbouring world" is now an always-reachable dock stuck to the bottom of the screen on every built-in world page (all tabs), theme-aware per world, Studio-hidden worlds excluded.
 - The Studio's Main Page tab now edits the homepage end to end: hero copy, optional hero background media with opacity, portals copy, and the worlds presentation mode — Grid mosaic or Carousel (arrows, dots, swipe, reduced-motion safe). Choice persists in SQLite and applies live; site left on Carousel to showcase it, one click back to Grid in Studio.
 - Fixed a latent PortalCard sizing quirk (block button shrink-to-fit) surfaced by the flex carousel.
+
+---
+Task ID: DOCK-UNPIN-1
+Agent: main (Z.ai)
+Task: User clarification on DOCK-MAINPAGE-1 — only show the "Step through a neighbouring world" section at the bottom of the page, NOT pinned/fixed over the entire viewport.
+
+Work Log:
+- world-shell.tsx: RelatedWorlds reverted from viewport-fixed dock (fixed inset-x-0 bottom-0 z-40) back to an in-flow closing <section> at the end of the page — centered uppercase heading + flex-wrap chips (name + epithet + gradient dot + arrow), border-top band in the world's panel tone; kept the Studio useStudioConfig hidden-world filtering and null return when no related worlds remain
+- world-page.tsx: floating World/Gallery/Archive tab pill restored from sticky bottom-24 (dock clearance) to its original sticky bottom-5; end-of-page spacer h-32 (fixed-dock reservation) back to plain h-16 breathing room
+- globals.css: removed the now-unused .related-dock / .related-dock-row fixed-dock chrome block (backdrop blur, top shadow, safe-area padding)
+- Verified via agent-browser on /#/world/vaporwave: mid-scroll elementsFromPoint at viewport bottom does NOT hit the section (pinned=false); at page end the section sits in flow (rect bottom 836/900, chips Retrowave/Y2K/Liminal Spaces); Y2K chip click navigates to #/world/y2k whose own section renders identically (Vaporwave/Synthwave/Dreamcore); eslint + tsc clean on changed files; zero page/console errors
+- Screenshots: docs/screenshots/related-worlds-inflow-bottom.png (page end), related-worlds-inflow-midscroll.png (mid-scroll, no pinned bar)
+
+Stage Summary:
+- "Step through a neighbouring world" is once again a normal section at the very bottom of each world page — the page scrolls freely with nothing pinned to the viewport; Studio-hidden worlds still excluded; dock CSS cleaned up.

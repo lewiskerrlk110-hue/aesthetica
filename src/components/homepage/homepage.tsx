@@ -8,7 +8,22 @@ import { useStudioWorlds, useStudioConfig } from "@/lib/worlds-config";
 import type { PortalWorldDef } from "@/lib/studio";
 import { SceneStage } from "@/components/worlds/custom-world";
 import { ArtworkCard, type ArtworkDTO } from "@/components/gallery/artwork-card";
-import { ArrowRight, Search, Upload, Compass, ChevronDown } from "lucide-react";
+import { ArrowRight, Search, Upload, Compass, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+
+// ————— Hero background media (Studio → Main Page) —————
+// Optional image/GIF/video layer over the cosmic canvas.
+function HeroMedia({ url, opacity }: { url: string; opacity: number }) {
+  const isVideo = /\.(mp4|webm|mov|ogv)(\?|$)/i.test(url);
+  return (
+    <div className="absolute inset-0" aria-hidden>
+      {isVideo ? (
+        <video src={url} autoPlay muted loop playsInline className="h-full w-full" style={{ objectFit: "cover", opacity }} />
+      ) : (
+        <img src={url} alt="" className="h-full w-full" style={{ objectFit: "cover", opacity }} />
+      )}
+    </div>
+  );
+}
 
 // ————— Portal mini-scenes (pure CSS/SVG, one per world) —————
 // NOTE: each case mirrors its world page's living environment. Whenever a
@@ -407,7 +422,7 @@ function PortalCard({ w }: { w: PortalWorldDef }) {
   const [blurb, setBlurb] = useState(false);
   return (
     <button
-      className="portal-card group block h-56 text-left md:h-64"
+      className="portal-card group block h-56 w-full text-left md:h-64"
       style={{ "--p-accent": w.accent, "--p-accent2": w.accent2 } as React.CSSProperties}
       onMouseEnter={() => setBlurb(true)}
       onMouseLeave={() => setBlurb(false)}
@@ -432,6 +447,87 @@ function PortalCard({ w }: { w: PortalWorldDef }) {
         </div>
       </div>
     </button>
+  );
+}
+
+// ————— Portal carousel (Studio → Main Page → presentation: carousel) —————
+// One grand portal at a time: swipe/drag, arrow buttons, dot navigation.
+// Honours prefers-reduced-motion by dropping smooth scrolling.
+function PortalCarousel({ worlds }: { worlds: PortalWorldDef[] }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+
+  const smooth = () =>
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? ("auto" as ScrollBehavior)
+      : ("smooth" as ScrollBehavior);
+
+  const step = () => {
+    const track = trackRef.current;
+    const card = track?.querySelector<HTMLElement>("[data-p-card]");
+    if (!track || !card) return 0;
+    const gap = parseFloat(getComputedStyle(track).columnGap || "20") || 20;
+    return card.offsetWidth + gap;
+  };
+
+  const go = (i: number) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const clamped = Math.max(0, Math.min(worlds.length - 1, i));
+    track.scrollTo({ left: clamped * step(), behavior: smooth() });
+    setActive(clamped);
+  };
+
+  const onScroll = () => {
+    const s = step();
+    if (!s || !trackRef.current) return;
+    setActive(Math.max(0, Math.min(worlds.length - 1, Math.round(trackRef.current.scrollLeft / s))));
+  };
+
+  const arrowCls =
+    "absolute top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white backdrop-blur transition-all hover:scale-105 hover:bg-black/80 disabled:pointer-events-none disabled:opacity-25 md:flex";
+
+  return (
+    <div className="relative">
+      {/* edge fades into the page background */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-[#0d0b14] to-transparent" aria-hidden />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-[#0d0b14] to-transparent" aria-hidden />
+
+      <div
+        ref={trackRef}
+        onScroll={onScroll}
+        role="region"
+        aria-label="World portals carousel"
+        className="portal-carousel flex snap-x snap-mandatory gap-5 overflow-x-auto px-[max(1rem,calc(50%-19rem))] pb-4 pt-2 md:px-[max(2rem,calc(50%-18rem))]"
+      >
+        {worlds.map((w, i) => (
+          <div key={w.id} data-p-card className="w-[82vw] max-w-[36rem] shrink-0 snap-center sm:w-[34rem]">
+            <PortalCard w={w} />
+          </div>
+        ))}
+      </div>
+
+      <button onClick={() => go(active - 1)} disabled={active === 0} aria-label="Previous world" className={`${arrowCls} left-4`}>
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <button onClick={() => go(active + 1)} disabled={active === worlds.length - 1} aria-label="Next world" className={`${arrowCls} right-4`}>
+        <ChevronRight className="h-5 w-5" />
+      </button>
+
+      <div className="mt-1 flex flex-wrap justify-center gap-2" role="tablist" aria-label="Choose a world">
+        {worlds.map((w, i) => (
+          <button
+            key={w.id}
+            role="tab"
+            aria-selected={active === i}
+            aria-label={`Go to ${w.name}`}
+            onClick={() => go(i)}
+            className="h-2 rounded-full transition-all duration-300"
+            style={{ width: active === i ? 24 : 8, background: active === i ? w.accent : "rgba(255,255,255,0.22)" }}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -483,6 +579,12 @@ export function Homepage() {
       {/* ——— HERO ——— */}
       <section className="relative flex min-h-[88vh] items-center justify-center overflow-hidden">
         <HeroCanvas />
+        {site.heroMediaUrl && (
+          <HeroMedia
+            url={site.heroMediaUrl}
+            opacity={Math.min(1, Math.max(0, parseFloat(site.heroMediaOpacity) || 0.55))}
+          />
+        )}
         <div
           className="absolute inset-0"
           style={{ background: "radial-gradient(ellipse 62% 52% at 50% 54%, rgba(5,3,10,0.52), rgba(5,3,10,0.18) 60%, transparent 78%)" }}
@@ -528,14 +630,20 @@ export function Homepage() {
           <h2 className="mt-3 text-3xl font-bold md:text-4xl">{site.portalsTitle}</h2>
           <p className="mx-auto mt-3 max-w-xl text-[15px] text-white/60">
             Each portal opens a different reality: its own light, typography, motion and archive.
-            Hover to preview. Enter to stay a while.
+            {site.portalsLayout === "carousel"
+              ? " Swipe or use the arrows — enter to stay a while."
+              : " Hover to preview. Enter to stay a while."}
           </p>
         </header>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {worlds.map((w) => (
-            <PortalCard key={w.id} w={w} />
-          ))}
-        </div>
+        {site.portalsLayout === "carousel" ? (
+          <PortalCarousel worlds={worlds} />
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {worlds.map((w) => (
+              <PortalCard key={w.id} w={w} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ——— FEATURED ——— */}

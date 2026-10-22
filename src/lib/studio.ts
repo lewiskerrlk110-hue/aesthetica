@@ -74,11 +74,19 @@ export interface SceneDoc {
   layers: SceneLayer[];
 }
 
+/** How the main page presents the world portals. */
+export type PortalsLayout = "grid" | "carousel";
+
 export interface SiteSettings {
   heroEyebrow: string;
   heroSub: string;
   portalsTitle: string;
   portalsKicker: string;
+  portalsLayout: PortalsLayout;
+  /** Hero background media (url). "" keeps the living cosmic canvas. */
+  heroMediaUrl: string;
+  /** Hero media opacity, stored as a string ("0"–"1") in SiteSetting.value. */
+  heroMediaOpacity: string;
 }
 
 export const DEFAULT_SITE: SiteSettings = {
@@ -87,6 +95,9 @@ export const DEFAULT_SITE: SiteSettings = {
     "Nine interconnected worlds of art, nostalgia and digital subculture — each a fully realised visual universe with its own archive, gallery and community. Nostalgia for imagined futures, and futures imagined once more.",
   portalsTitle: "All Worlds",
   portalsKicker: "Choose a door",
+  portalsLayout: "grid",
+  heroMediaUrl: "",
+  heroMediaOpacity: "0.55",
 };
 
 /** The world object the museum UI consumes — built-ins overridden by Studio data,

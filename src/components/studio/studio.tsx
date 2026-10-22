@@ -3,10 +3,10 @@
 // ─────────────────────────────────────────────
 // AESTHETICA STUDIO — the site editor.
 // Reach it at /#/studio (or the wrench button in the nav).
-// Worlds · Media · Site — protected by a shared PIN.
+// Worlds · Media · Main Page — protected by a shared PIN.
 // ─────────────────────────────────────────────
 import { useEffect, useState } from "react";
-import { Lock, LogOut, ExternalLink, LayoutDashboard, ImageIcon, Settings2 } from "lucide-react";
+import { Lock, LogOut, ExternalLink, LayoutDashboard, ImageIcon, Home } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { useStudioConfig } from "@/lib/worlds-config";
 import { WorldsManager } from "./worlds-manager";
@@ -115,7 +115,7 @@ export function Studio() {
   const tabs: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "worlds", label: "Worlds", icon: LayoutDashboard },
     { id: "media", label: "Media", icon: ImageIcon },
-    { id: "site", label: "Site", icon: Settings2 },
+    { id: "site", label: "Main Page", icon: Home },
   ];
 
   return (

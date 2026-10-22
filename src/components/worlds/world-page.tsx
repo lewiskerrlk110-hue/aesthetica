@@ -86,8 +86,8 @@ export function WorldPage({
           )}
         </section>
 
-        {/* TAB SWITCHER — floating */}
-        <div className="pointer-events-none sticky bottom-5 z-30 flex justify-center pb-2">
+        {/* TAB SWITCHER — floating (kept above the fixed neighbouring-worlds dock) */}
+        <div className="pointer-events-none sticky bottom-24 z-30 flex justify-center pb-2">
           <div className="w-panel pointer-events-auto flex items-center gap-1 !rounded-full px-2 py-1.5" style={{ boxShadow: "var(--w-shadow)" }}>
             <button
               onClick={() => navigate({ view: "world", world: world.id, tab: undefined })}
@@ -117,7 +117,8 @@ export function WorldPage({
         </div>
 
         <RelatedWorlds world={world} />
-        <div className="h-16" aria-hidden />
+        {/* reserve space so the fixed dock never covers the last row of content */}
+        <div className="h-32" aria-hidden />
       </div>
     </div>
   );

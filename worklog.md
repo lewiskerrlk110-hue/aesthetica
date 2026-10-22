@@ -311,3 +311,24 @@ Work Log:
 
 Stage Summary:
 - Frutiger Aero is live as World 09: registry entry, hand-built SVG city environment per reference, interactive Bubble Bay + Aqua Surface Lab, theme block, portal card, gallery/archive wired. Nav + homepage copy now reflect 9 worlds (code defaults + DB rows). Screenshots in docs/screenshots/. Commit follows.
+
+---
+Task ID: DOCK-MAINPAGE-1
+Agent: main (Z.ai)
+Task: (1) Fix the "Step through a neighbouring world" block to sit stuck to the bottom of the screen; (2) include the main page in the Studio with presentation options such as carousel or grid for displaying content.
+
+Work Log:
+- world-shell.tsx: rebuilt RelatedWorlds as a viewport-fixed bottom dock (.related-dock, z-40, backdrop blur, safe-area padding, border-top in world's panel tone); chips keep name+epithet+gradient dot, row horizontally scrolls on mobile (label hidden <md, row scrollbar-free); dock pulls the merged world list from useStudioConfig so Studio-hidden worlds disappear from it; returns null when no related worlds remain
+- world-page.tsx: floating World/Gallery/Archive pill moved sticky bottom-5 -> bottom-24 so it hovers above the dock (verified 42px clearance); end-of-page spacer h-16 -> h-32 so the fixed dock never covers the last gallery row
+- studio.ts: SiteSettings gained portalsLayout ("grid" | "carousel", default grid), heroMediaUrl ("" = cosmic canvas) and heroMediaOpacity (string, "0.55" default); site API PUT iterates DEFAULT_SITE keys so the new fields persist with no API change
+- site-settings.tsx: rewritten as the "Main Page" editor — Hero copy / Hero background (media preview, Choose media via MediaPicker, Remove, opacity slider) / Portals copy / "How the worlds are presented" picker with two selectable cards (Grid mosaic vs Carousel one-at-a-time) / single Save
+- studio.tsx: third tab renamed "Site" -> "Main Page" (Home icon)
+- homepage.tsx: HeroMedia layer (image/GIF/video, object-cover, opacity from settings) injected between HeroCanvas and the radial scrim; PortalCarousel added — scroll-snap track with centered padding (px-[max(1rem,calc(50%-19rem))]), 82vw/34rem cards, edge fades, md-only prev/next arrows (disabled at ends), accent-tinted dot tablist, prefers-reduced-motion -> auto scroll behavior; portals section switches grid/carousel on site.portalsLayout with matching hint copy; PortalCard button gained w-full (root-cause fix: display:block buttons shrink-to-fit — grid stretch had masked it, flex track exposed it as 2px-wide unpainted cards)
+- globals.css: .related-dock (fixed dock chrome) + .related-dock-row / .portal-carousel (hidden scrollbars, overscroll contain)
+- agent-browser E2E: dock fixed at viewport bottom on desktop (900/900) and mobile (844/844), stays pinned on scroll, chip click navigates (retrowave->synthwave), works on World/Gallery tabs, hidden-world filtering in place; Studio: Carousel picked + saved -> homepage shows 9-card carousel, next-arrow scrolls + dot 2 activates, dot 9 jumps to Frutiger; hero media picked from library + saved -> 1440x792 layer at 0.55 opacity over canvas, Remove + Save restores starfield; grid round-trip re-verified (9 cards 297x256) after the w-full fix; mobile: carousel card 320px, arrows hidden, dock row scrollable; zero page/console errors on /#/home, retrowave (+gallery), frutiger, studio; dev.log clean
+- Screenshots: related-dock.png, related-dock-frutiger.png, related-dock-mobile.png, home-carousel.png, home-carousel-mobile.png, home-hero-media.png, studio-main-page.png (docs/screenshots/)
+
+Stage Summary:
+- "Step through a neighbouring world" is now an always-reachable dock stuck to the bottom of the screen on every built-in world page (all tabs), theme-aware per world, Studio-hidden worlds excluded.
+- The Studio's Main Page tab now edits the homepage end to end: hero copy, optional hero background media with opacity, portals copy, and the worlds presentation mode — Grid mosaic or Carousel (arrows, dots, swipe, reduced-motion safe). Choice persists in SQLite and applies live; site left on Carousel to showcase it, one click back to Grid in Studio.
+- Fixed a latent PortalCard sizing quirk (block button shrink-to-fit) surfaced by the flex carousel.

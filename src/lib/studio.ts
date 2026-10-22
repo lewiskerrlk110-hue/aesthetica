@@ -12,6 +12,49 @@ export interface WorldThemePatch {
   panel?: string;
   panelBorder?: string;
   radius?: string;
+  // ——— typography & layout (Studio “Type & layout” tab) ———
+  /** FONT_LIBRARY key for display/headings. "" = world default. */
+  fontDisplay?: string;
+  /** FONT_LIBRARY key for body copy. "" = world default. */
+  fontBody?: string;
+  /** Hero title size multiplier, 0.5–2 (1 = built-in size). */
+  titleScale?: number;
+  /** Hero text alignment. */
+  heroAlign?: "left" | "center" | "right";
+  /** Hero min-height in vh (default 62). */
+  heroHeight?: number;
+  /** Hero vertical offset in vh, negative raises the block. */
+  heroOffsetY?: number;
+  /** Content column max-width in rem (default 80 = max-w-7xl). */
+  contentWidth?: number;
+}
+
+// ————— Font library —————
+// Every font is loaded once in layout.tsx via next/font and exposed as a
+// CSS variable; a Studio pick just re-points --w-font-* / --page-font-*.
+export interface FontDef {
+  key: string;
+  label: string;
+  hint: string;
+  stack: string;
+}
+
+export const FONT_LIBRARY: FontDef[] = [
+  { key: "orbitron", label: "Orbitron", hint: "techno display", stack: "var(--font-orbitron), sans-serif" },
+  { key: "audiowide", label: "Audiowide", hint: "retro wide", stack: "var(--font-audiowide), sans-serif" },
+  { key: "space-grotesk", label: "Space Grotesk", hint: "modern grotesk", stack: "var(--font-space-grotesk), sans-serif" },
+  { key: "outfit", label: "Outfit", hint: "geometric sans", stack: "var(--font-outfit), sans-serif" },
+  { key: "dm-sans", label: "DM Sans", hint: "clean body text", stack: "var(--font-dm-sans), sans-serif" },
+  { key: "ibm-plex-sans", label: "IBM Plex Sans", hint: "neutral workhorse", stack: "var(--font-ibm-plex-sans), sans-serif" },
+  { key: "ibm-plex-mono", label: "IBM Plex Mono", hint: "terminal mono", stack: "var(--font-ibm-plex-mono), monospace" },
+  { key: "fraunces", label: "Fraunces", hint: "soft editorial serif", stack: "var(--font-fraunces), serif" },
+  { key: "caveat", label: "Caveat", hint: "handwritten", stack: "var(--font-caveat), cursive" },
+];
+
+/** CSS font-family stack for a FONT_LIBRARY key, or null if unknown/empty. */
+export function fontStack(key?: string | null): string | null {
+  if (!key) return null;
+  return FONT_LIBRARY.find((f) => f.key === key)?.stack ?? null;
 }
 
 export interface BgSettings {
@@ -42,6 +85,8 @@ export interface SceneLayer {
   italic?: boolean;
   letterSpacing?: number; // em
   font?: "display" | "body" | "mono";
+  /** Exact FONT_LIBRARY family for this layer (wins over the display/body/mono trio). */
+  fontKey?: string;
   align?: "left" | "center" | "right";
   // shape
   variant?: "rect" | "ellipse";
@@ -87,6 +132,22 @@ export interface SiteSettings {
   heroMediaUrl: string;
   /** Hero media opacity, stored as a string ("0"–"1") in SiteSetting.value. */
   heroMediaOpacity: string;
+  // ——— typography (Studio “Main Page” tab) ———
+  /** FONT_LIBRARY key for homepage headings. "" = site default. */
+  fontDisplay: string;
+  /** FONT_LIBRARY key for homepage body copy. "" = site default. */
+  fontBody: string;
+  /** Homepage hero title size multiplier, stored as a string ("0.6"–"1.6"). */
+  heroTitleScale: string;
+  // ——— hero positioning (Studio “Main Page” tab) ———
+  /** Hero text alignment: left | center | right. */
+  heroAlign: string;
+  /** Hero min-height in vh, stored as a string ("60"–"120"). */
+  heroHeight: string;
+  /** Hero vertical offset in vh, stored as a string ("-25"–"25"). */
+  heroOffsetY: string;
+  /** Hero copy column max-width in rem, "" = default 56. */
+  heroCopyWidth: string;
 }
 
 export const DEFAULT_SITE: SiteSettings = {
@@ -98,6 +159,13 @@ export const DEFAULT_SITE: SiteSettings = {
   portalsLayout: "grid",
   heroMediaUrl: "",
   heroMediaOpacity: "0.55",
+  fontDisplay: "",
+  fontBody: "",
+  heroTitleScale: "1",
+  heroAlign: "center",
+  heroHeight: "88",
+  heroOffsetY: "0",
+  heroCopyWidth: "",
 };
 
 /** The world object the museum UI consumes — built-ins overridden by Studio data,
@@ -248,7 +316,7 @@ export function buildMergedWorlds(
 /** CSS custom properties a custom world needs to look native. */
 export function themeVarsFor(def: PortalWorldDef): Record<string, string> {
   const fg = def.fg;
-  return {
+  const vars: Record<string, string> = {
     "--w-bg": def.bg,
     "--w-bg2": def.theme?.bg2 ?? def.bg,
     "--w-fg": fg,
@@ -260,6 +328,12 @@ export function themeVarsFor(def: PortalWorldDef): Record<string, string> {
     "--w-radius": def.theme?.radius ?? "1rem",
     "--w-shadow": "0 18px 50px -12px rgba(0,0,0,0.55)",
   };
+  const fd = fontStack(def.theme?.fontDisplay);
+  if (fd) vars["--w-font-display"] = fd;
+  const fb = fontStack(def.theme?.fontBody);
+  if (fb) vars["--w-font-body"] = fb;
+  if (def.theme?.titleScale) vars["--w-title-scale"] = String(def.theme.titleScale);
+  return vars;
 }
 
 /** Emit a <style> sheet applying every studio theme override. */
@@ -280,6 +354,11 @@ export function themeOverrideCss(worlds: PortalWorldDef[]): string {
     if (t?.panel) vars.push(`--w-panel:${t.panel}`);
     if (t?.panelBorder) vars.push(`--w-panel-border:${t.panelBorder}`);
     if (t?.radius) vars.push(`--w-radius:${t.radius}`);
+    const fd = fontStack(t?.fontDisplay);
+    if (fd) vars.push(`--w-font-display:${fd}`);
+    const fb = fontStack(t?.fontBody);
+    if (fb) vars.push(`--w-font-body:${fb}`);
+    if (t?.titleScale) vars.push(`--w-title-scale:${t.titleScale}`);
     if (w.kind === "custom") {
       const v = themeVarsFor(w);
       for (const [k, val] of Object.entries(v)) if (k !== "--w-shadow") vars.push(`${k}:${val}`);

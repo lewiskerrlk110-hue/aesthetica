@@ -3,6 +3,7 @@
 import { useApp } from "@/lib/store";
 import { useEffect } from "react";
 import { type WorldDef } from "@/lib/aesthetics";
+import { useStudioConfig } from "@/lib/worlds-config";
 import { WorldGallery, WorldArchive, RelatedWorlds } from "./world-shell";
 
 export function WorldPage({
@@ -19,6 +20,12 @@ export function WorldPage({
   const route = useApp((s) => s.route);
   const navigate = useApp((s) => s.navigate);
   const tab = route.view === "world" ? route.tab : undefined;
+  // Studio "Type & layout" overrides for this world (positioning + title scale;
+  // fonts arrive via the injected --w-font-* CSS variables).
+  const studioTheme = useStudioConfig((s) => s.worlds.find((w) => w.id === world.id)?.theme);
+  const heroAlign = studioTheme?.heroAlign ?? "center";
+  const heroAlignCls =
+    heroAlign === "left" ? "items-start text-left" : heroAlign === "right" ? "items-end text-right" : "items-center text-center";
 
   // scroll content into view when switching tabs
   useEffect(() => {
@@ -39,7 +46,13 @@ export function WorldPage({
 
       <div className="relative z-10">
         {/* HERO */}
-        <section className="relative mx-auto flex min-h-[62vh] max-w-6xl flex-col items-center justify-center px-4 pb-16 pt-14 text-center">
+        <section
+          className={`relative mx-auto flex min-h-[62vh] max-w-6xl flex-col justify-center px-4 pb-16 pt-14 ${heroAlignCls}`}
+          style={{
+            minHeight: studioTheme?.heroHeight ? `${studioTheme.heroHeight}vh` : undefined,
+            transform: studioTheme?.heroOffsetY ? `translateY(${studioTheme.heroOffsetY}vh)` : undefined,
+          }}
+        >
           <button
             onClick={() => navigate({ view: "home" })}
             className="w-tag mb-8 !text-[11px]"
@@ -54,7 +67,7 @@ export function WorldPage({
             World 0{world.index}
           </p>
           <h1
-            className={`w-display mt-4 text-5xl font-black leading-none md:text-7xl ${
+            className={`w-display w-hero-title mt-4 font-black ${
               world.id === "retrowave" ? "neon-text" : world.id === "y2k" ? "holo-text" : world.id === "vaporwave" ? "vapor-text" : ""
             }`}
             style={
@@ -78,7 +91,11 @@ export function WorldPage({
         {features && <div className="relative z-10">{features}</div>}
 
         {/* GALLERY / ARCHIVE */}
-        <section id="w-content" className="relative z-10 mx-auto max-w-7xl scroll-mt-16 px-4 py-14">
+        <section
+          id="w-content"
+          className="relative z-10 mx-auto max-w-7xl scroll-mt-16 px-4 py-14"
+          style={{ maxWidth: studioTheme?.contentWidth ? `${studioTheme.contentWidth}rem` : undefined }}
+        >
           {tab === "archive" ? (
             <WorldArchive world={world} />
           ) : (

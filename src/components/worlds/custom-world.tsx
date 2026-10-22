@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────
 import { useEffect, useRef } from "react";
 import { useApp } from "@/lib/store";
-import { themeVarsFor, type PortalWorldDef, type SceneDoc, type SceneLayer } from "@/lib/studio";
+import { themeVarsFor, fontStack, type PortalWorldDef, type SceneDoc, type SceneLayer } from "@/lib/studio";
 import { WorldGallery } from "./world-shell";
 import type { WorldDef } from "@/lib/aesthetics";
 
@@ -54,12 +54,14 @@ export function LayerContent({ l }: { l: SceneLayer }) {
     );
   }
   if (l.type === "text") {
+    const libFont = fontStack(l.fontKey);
     const fam =
-      l.font === "mono"
+      libFont ??
+      (l.font === "mono"
         ? "var(--w-font-mono, ui-monospace, monospace)"
         : l.font === "body"
           ? "var(--w-font-body, sans-serif)"
-          : "var(--w-font-display, sans-serif)";
+          : "var(--w-font-display, sans-serif)");
     return (
       <div
         className="h-full w-full whitespace-pre-wrap"
@@ -201,15 +203,27 @@ export function CustomWorldPage({ def }: { def: PortalWorldDef }) {
       </div>
 
       <div className="relative z-10">
-        {/* HERO */}
-        <section className="relative mx-auto flex min-h-[62vh] max-w-6xl flex-col items-center justify-center px-4 pb-16 pt-14 text-center">
+        {/* HERO — Studio "Type & layout" aware (align / height / offset / title scale) */}
+        <section
+          className={`relative mx-auto flex min-h-[62vh] max-w-6xl flex-col justify-center px-4 pb-16 pt-14 ${
+            def.theme?.heroAlign === "left"
+              ? "items-start text-left"
+              : def.theme?.heroAlign === "right"
+                ? "items-end text-right"
+                : "items-center text-center"
+          }`}
+          style={{
+            minHeight: def.theme?.heroHeight ? `${def.theme.heroHeight}vh` : undefined,
+            transform: def.theme?.heroOffsetY ? `translateY(${def.theme.heroOffsetY}vh)` : undefined,
+          }}
+        >
           <button onClick={() => navigate({ view: "home" })} className="w-tag mb-8 !text-[11px]" aria-label="Back to all worlds">
             ← all worlds
           </button>
           <p className="text-[12px] font-bold uppercase tracking-[0.5em]" style={{ color: def.accent, textShadow: `0 0 18px ${def.accent}66` }}>
             World {num}
           </p>
-          <h1 className="w-display mt-4 text-5xl font-black leading-none md:text-7xl" style={{ color: def.fg, textShadow: "0 2px 24px rgba(0,0,0,0.45)" }}>
+          <h1 className="w-display w-hero-title mt-4 font-black" style={{ color: def.fg, textShadow: "0 2px 24px rgba(0,0,0,0.45)" }}>
             {def.name}
           </h1>
           <p className="mt-4 text-[17px] italic opacity-90" style={{ color: def.accent2, textShadow: "0 1px 10px rgba(0,0,0,0.55)" }}>
@@ -220,7 +234,11 @@ export function CustomWorldPage({ def }: { def: PortalWorldDef }) {
 
         {/* GALLERY */}
         {tab === "gallery" && (
-          <section id="w-content" className="relative z-10 mx-auto max-w-7xl scroll-mt-16 px-4 py-14">
+          <section
+            id="w-content"
+            className="relative z-10 mx-auto max-w-7xl scroll-mt-16 px-4 py-14"
+            style={{ maxWidth: def.theme?.contentWidth ? `${def.theme.contentWidth}rem` : undefined }}
+          >
             <WorldGallery world={defAsWorld} />
           </section>
         )}

@@ -382,6 +382,38 @@
   letter-spacing: -0.01em;
 }
 
+/* ---------- STUDIO type & layout controls ---------- */
+
+/* World hero title: replaces fixed text-5xl/md:text-7xl so the Studio's
+   titleScale (--w-title-scale, emitted by themeOverrideCss) can size it. */
+.w-hero-title {
+  font-size: calc(3rem * var(--w-title-scale, 1));
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+@media (min-width: 768px) {
+  .w-hero-title {
+    font-size: calc(4.5rem * var(--w-title-scale, 1));
+  }
+}
+
+/* Homepage hero title (site.heroTitleScale via --page-title-scale). */
+.page-hero-title {
+  font-size: calc(3.75rem * var(--page-title-scale, 1));
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+}
+@media (min-width: 768px) {
+  .page-hero-title {
+    font-size: calc(6rem * var(--page-title-scale, 1));
+  }
+}
+
+/* Homepage headings follow the site display font when one is picked. */
+.page-display {
+  font-family: var(--page-font-display, inherit);
+}
+
 .w-panel {
   background: var(--w-panel);
   border: 1px solid var(--w-panel-border);

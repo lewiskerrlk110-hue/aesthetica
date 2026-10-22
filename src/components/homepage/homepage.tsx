@@ -5,7 +5,7 @@ import { HeroCanvas } from "./hero-canvas";
 import { useApp } from "@/lib/store";
 import { WORLD_MAP, type WorldId } from "@/lib/aesthetics";
 import { useStudioWorlds, useStudioConfig } from "@/lib/worlds-config";
-import type { PortalWorldDef } from "@/lib/studio";
+import { fontStack, type PortalWorldDef } from "@/lib/studio";
 import { SceneStage } from "@/components/worlds/custom-world";
 import { ArtworkCard, type ArtworkDTO } from "@/components/gallery/artwork-card";
 import { ArrowRight, Search, Upload, Compass, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
@@ -555,6 +555,20 @@ export function Homepage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const featuredRef = useRef<HTMLDivElement>(null);
 
+  // Studio typography: site display/body fonts + hero title scale.
+  const pageFontDisplay = fontStack(site.fontDisplay);
+  const pageFontBody = fontStack(site.fontBody);
+  const pageTitleScale = Math.min(1.6, Math.max(0.6, parseFloat(site.heroTitleScale) || 1));
+  const pageVars = {
+    "--page-font-display": pageFontDisplay ?? undefined,
+    "--page-title-scale": pageTitleScale !== 1 ? String(pageTitleScale) : undefined,
+  } as React.CSSProperties;
+  // Studio hero positioning.
+  const heroAlign = (site.heroAlign as "left" | "center" | "right") || "center";
+  const heroMinH = Math.min(140, Math.max(50, parseInt(site.heroHeight, 10) || 88));
+  const heroOffsetY = Math.min(25, Math.max(-25, parseFloat(site.heroOffsetY) || 0));
+  const heroCopyMaxW = site.heroCopyWidth ? `${parseInt(site.heroCopyWidth, 10) || 56}rem` : undefined;
+
   useEffect(() => {
     fetch("/api/artworks?featured=1&limit=10")
       .then((r) => r.json())
@@ -575,9 +589,12 @@ export function Homepage() {
   };
 
   return (
-    <div className="bg-[#0d0b14] text-white">
+    <div className="bg-[#0d0b14] text-white" style={{ ...pageVars, fontFamily: pageFontBody ?? undefined }}>
       {/* ——— HERO ——— */}
-      <section className="relative flex min-h-[88vh] items-center justify-center overflow-hidden">
+      <section
+        className="relative flex items-center justify-center overflow-hidden"
+        style={{ minHeight: `${heroMinH}vh` }}
+      >
         <HeroCanvas />
         {site.heroMediaUrl && (
           <HeroMedia
@@ -590,19 +607,31 @@ export function Homepage() {
           style={{ background: "radial-gradient(ellipse 62% 52% at 50% 54%, rgba(5,3,10,0.52), rgba(5,3,10,0.18) 60%, transparent 78%)" }}
           aria-hidden
         />
-        <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
+        <div
+          className={`relative z-10 mx-auto max-w-4xl px-4 ${
+            heroAlign === "left"
+              ? "mr-auto ml-0 text-left lg:pl-[6vw]"
+              : heroAlign === "right"
+                ? "ml-auto mr-0 text-right lg:pr-[6vw]"
+                : "text-center"
+          }`}
+          style={{
+            transform: heroOffsetY ? `translateY(${heroOffsetY}vh)` : undefined,
+            maxWidth: heroCopyMaxW,
+          }}
+        >
           <p className="text-[12px] font-semibold uppercase tracking-[0.5em] text-white/70">
             {site.heroEyebrow}
           </p>
-          <h1 className="mt-5 text-6xl font-black leading-[0.95] tracking-tight md:text-8xl">
+          <h1 className="page-display page-hero-title mt-5 font-black">
             <span className="bg-gradient-to-r from-[#ff2e88] via-[#f7b4d0] via-50% to-[#9be8ff] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(255,46,136,0.35)]">
               AESTHETICA
             </span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-balance text-[16px] leading-relaxed text-white/80 md:text-lg">
+          <p className={`mx-auto mt-6 max-w-2xl text-balance text-[16px] leading-relaxed text-white/80 md:text-lg`}>
             {site.heroSub}
           </p>
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <div className={`mt-9 flex flex-wrap items-center gap-3 ${heroAlign === "left" ? "justify-start" : heroAlign === "right" ? "justify-end" : "justify-center"}`}>
             <button onClick={() => document.getElementById("portals")?.scrollIntoView({ behavior: "smooth" })} className="w-btn-primary w-btn !rounded-full !px-6 !py-3 !text-[15px] !text-white">
               <Compass className="h-4.5 w-4.5" />
               Begin the tour
@@ -612,7 +641,7 @@ export function Homepage() {
               Search the archive
             </button>
           </div>
-          <div className="mt-10 flex items-center justify-center gap-6 text-[12px] text-white/50">
+          <div className={`mt-10 flex items-center gap-6 text-[12px] text-white/50 ${heroAlign === "left" ? "justify-start" : heroAlign === "right" ? "justify-end" : "justify-center"}`}>
             <span>{stats ? `${stats.total}+ artworks` : "—"}</span>
             <span className="h-1 w-1 rounded-full bg-white/30" />
             <span>{worlds.length} worlds</span>
@@ -627,7 +656,7 @@ export function Homepage() {
       <section id="portals" className="relative mx-auto max-w-7xl px-4 py-20">
         <header className="mb-10 text-center">
           <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#7df2d8]">{site.portalsKicker}</p>
-          <h2 className="mt-3 text-3xl font-bold md:text-4xl">{site.portalsTitle}</h2>
+          <h2 className="page-display mt-3 text-3xl font-bold md:text-4xl">{site.portalsTitle}</h2>
           <p className="mx-auto mt-3 max-w-xl text-[15px] text-white/60">
             Each portal opens a different reality: its own light, typography, motion and archive.
             {site.portalsLayout === "carousel"
@@ -653,7 +682,7 @@ export function Homepage() {
             <div className="mb-7 flex items-end justify-between gap-4">
               <div>
                 <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#ff2e88]">Curated</p>
-                <h2 className="mt-2 text-3xl font-bold">Featured Works</h2>
+                <h2 className="page-display mt-2 text-3xl font-bold">Featured Works</h2>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => scrollFeatured(-1)} className="w-btn !px-3" aria-label="Scroll left">←</button>
@@ -676,7 +705,7 @@ export function Homepage() {
         <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr]">
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#9be8ff]">Curated paths</p>
-            <h2 className="mt-2 text-3xl font-bold">Collections</h2>
+            <h2 className="page-display mt-2 text-3xl font-bold">Collections</h2>
             <div className="mt-7 grid gap-4 sm:grid-cols-2">
               {COLLECTIONS.map((c) => {
                 const w = WORLD_MAP[c.world];

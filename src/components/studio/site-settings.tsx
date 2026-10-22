@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Save, LayoutGrid, GalleryHorizontal, ImagePlus, X } from "lucide-react";
 import { useStudioConfig } from "@/lib/worlds-config";
 import { MediaPicker } from "./media-library";
+import { FontPicker, AlignPicker, SliderRow, type AlignValue } from "./design-controls";
 import type { SiteSettings, PortalsLayout } from "@/lib/studio";
 
 const LAYOUT_OPTIONS: { value: PortalsLayout; icon: typeof LayoutGrid; title: string; desc: string }[] = [
@@ -138,6 +139,85 @@ export function SiteSettingsForm() {
           onPick={(url) => setDraft({ ...draft, heroMediaUrl: url })}
           acceptKinds={["image", "video"]}
         />
+      </section>
+
+      {/* ——— Typography ——— */}
+      <section className="space-y-5">
+        <h3 className="text-[12px] font-semibold uppercase tracking-[0.3em] text-white/45">Typography</h3>
+        <div>
+          <label className="studio-label">Display font — headings & wordmark</label>
+          <FontPicker
+            value={draft.fontDisplay}
+            onChange={(k) => setDraft({ ...draft, fontDisplay: k })}
+            defaultLabel="Site default"
+          />
+        </div>
+        <div>
+          <label className="studio-label">Body font — paragraphs & buttons</label>
+          <FontPicker
+            value={draft.fontBody}
+            onChange={(k) => setDraft({ ...draft, fontBody: k })}
+            defaultLabel="Site default"
+          />
+        </div>
+        <div className="max-w-md">
+          <SliderRow
+            label="Hero title size"
+            value={Math.min(1.6, Math.max(0.6, parseFloat(draft.heroTitleScale) || 1))}
+            min={0.6}
+            max={1.6}
+            step={0.05}
+            format={(v) => `${Math.round(v * 100)}%`}
+            onReset={() => setDraft({ ...draft, heroTitleScale: "1" })}
+            onChange={(v) => setDraft({ ...draft, heroTitleScale: String(v) })}
+          />
+          <p className="mt-1 text-[11px] text-white/35">Scales the AESTHETICA hero wordmark; 100% is the built-in size.</p>
+        </div>
+      </section>
+
+      {/* ——— Hero layout ——— */}
+      <section className="space-y-5">
+        <h3 className="text-[12px] font-semibold uppercase tracking-[0.3em] text-white/45">Hero positioning</h3>
+        <div>
+          <label className="studio-label">Text alignment</label>
+          <AlignPicker
+            value={(draft.heroAlign as AlignValue) || "center"}
+            onChange={(v) => setDraft({ ...draft, heroAlign: v })}
+          />
+        </div>
+        <div className="grid max-w-2xl gap-x-8 gap-y-4 sm:grid-cols-2">
+          <SliderRow
+            label="Hero height"
+            value={Math.min(140, Math.max(50, parseInt(draft.heroHeight, 10) || 88))}
+            min={50}
+            max={140}
+            unit="vh"
+            onReset={() => setDraft({ ...draft, heroHeight: "88" })}
+            onChange={(v) => setDraft({ ...draft, heroHeight: String(v) })}
+          />
+          <SliderRow
+            label="Vertical offset"
+            value={Math.min(25, Math.max(-25, parseFloat(draft.heroOffsetY) || 0))}
+            min={-25}
+            max={25}
+            step={0.5}
+            unit="vh"
+            onReset={() => setDraft({ ...draft, heroOffsetY: "0" })}
+            onChange={(v) => setDraft({ ...draft, heroOffsetY: String(v) })}
+          />
+          <SliderRow
+            label="Copy column width"
+            value={Math.min(72, Math.max(32, parseInt(draft.heroCopyWidth, 10) || 56))}
+            min={32}
+            max={72}
+            unit="rem"
+            onReset={() => setDraft({ ...draft, heroCopyWidth: "" })}
+            onChange={(v) => setDraft({ ...draft, heroCopyWidth: String(v) })}
+          />
+        </div>
+        <p className="text-[11.5px] text-white/40">
+          Alignment re-flows the eyebrow, wordmark, copy and buttons; offset nudges the whole hero block up or down.
+        </p>
       </section>
 
       {/* ——— Portals presentation ——— */}

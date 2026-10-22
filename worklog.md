@@ -483,3 +483,22 @@ Work Log:
 
 Stage Summary:
 - Studio now staff-only with real accounts: lewis / aesthetica-owner is the seeded owner (change it in Staff → Your account, or set STAFF_OWNER_USER/STAFF_OWNER_PASS before first boot); owners add staff in the Staff tab; sessions are signed cookies re-validated against the DB per request; no public link or default-PIN hint remains
+
+---
+Task ID: STAFF-PORTAL-1
+Agent: main (Z.ai)
+Task: Staff Portal sign-in with email identity; keep staff emails hidden from the public site AND from GitHub.
+
+Work Log:
+- Prisma: StaffUser.username → email (unique); table rebuilt via targeted DROP+push (no full DB reset — site data intact)
+- studio-auth.ts: email-validated identity (EMAIL_RE), sessions sign the email, ensureSeedStaff now bootstrap-only via STAFF_OWNER_EMAIL/STAFF_OWNER_PASS env — default-deny, zero hardcoded credentials in source
+- /api/studio/auth + /api/studio/staff*: accept/return email; roster emails visible only behind staff auth; self-removal + last-owner guards carried over; owner-only add/remove enforced
+- LoginGate redesigned into a branded "AESTHETICA — STAFF PORTAL" card (aurora backdrop, email+password, Enter submits); header chip shows handle + role with full email in tooltip
+- staff-panel.tsx: account card shows the signed-in email; owner "team" card adds staff by email (validated) with role select; roster rows show handle + email + role; remove confirmations use email
+- Owner bootstrap lives in .env (gitignored): STAFF_OWNER_EMAIL + STAFF_OWNER_PASS — never in source, never in the repo
+- GitHub hygiene: db/custom.db untracked (git rm --cached) and /db/ + *.db gitignored — staff emails and all runtime data stay local-only; confirmed 0 occurrences of the owner email in tracked files, homepage HTML, public APIs, and client bundles (only the public GitHub username appears, in repo URLs)
+- Verified: owner email login works, demo editor assigned by email → signed in, staff-add blocked 403, password rotation OK, removal revokes instantly (401), unauthed roster 401, mobile portal fits 390px (358px card), homepage 0 console errors
+- Screenshots: docs/screenshots/portal-signin.png, portal-signed-in.png, portal-staff-roster.png, portal-signin-mobile.png
+
+Stage Summary:
+- Staff Portal at #/studio (unlinked from public UI): email + password sign-in, owner bootstrapped from private .env, staff assigned by email in the Staff tab; emails stay server-side in an untracked local database — invisible to visitors and absent from the repository; previous username-based credentials are dead (login resolves by email now)

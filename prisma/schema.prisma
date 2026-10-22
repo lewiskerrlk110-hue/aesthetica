@@ -160,9 +160,11 @@ model ArchiveArticle {
 
 // Recognised logins for the Studio. "owner" manages the staff list;
 // "editor" is staff who can edit the site but not manage accounts.
+// Emails are identity-only and live in the local (untracked) database —
+// never rendered publicly, never committed to the repository.
 model StaffUser {
   id           String   @id @default(cuid())
-  username     String   @unique
+  email        String   @unique
   passwordHash String // scrypt: "s1:<salt hex>:<hash hex>"
   role         String   @default("editor") // owner | editor
   createdAt    DateTime @default(now())

@@ -20,7 +20,7 @@ export async function DELETE(
   if (!target) {
     return NextResponse.json({ error: "Account not found." }, { status: 404 });
   }
-  if (me && target.username === me.username) {
+  if (me && target.email === me.email) {
     return NextResponse.json({ error: "You cannot remove your own account." }, { status: 400 });
   }
   if (target.role === "owner") {

@@ -55,3 +55,8 @@ server.log
 # local deliverables / backups
 /download/
 /upload/
+
+# runtime database — holds staff logins & site data; stays local only
+/db/
+*.db
+*.db-journal

@@ -3,7 +3,8 @@
 // ─────────────────────────────────────────────
 // AESTHETICA STUDIO — the site editor (staff only).
 // Reach it at /#/studio — no public link anywhere on the site.
-// Recognised logins only: staff accounts are managed in the Staff tab.
+// The Staff Portal sign-in takes recognised email + password.
+// Staff emails stay server-side: never rendered publicly, never committed.
 // ─────────────────────────────────────────────
 import { useEffect, useState } from "react";
 import { Lock, LogOut, ExternalLink, LayoutDashboard, ImageIcon, Home, Users } from "lucide-react";
@@ -18,7 +19,7 @@ import { StaffPanel, type StaffMe } from "./staff-panel";
 type Tab = "worlds" | "media" | "site" | "staff";
 
 export function LoginGate({ onUnlock }: { onUnlock: (me: StaffMe) => void }) {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -29,39 +30,52 @@ export function LoginGate({ onUnlock }: { onUnlock: (me: StaffMe) => void }) {
     const r = await fetch("/api/studio/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ email, password }),
     });
     const d = await r.json().catch(() => ({}) as { error?: string; user?: StaffMe });
     setBusy(false);
     if (r.ok && d.user) {
       onUnlock(d.user);
     } else {
-      setError(d.error || "Unrecognised login — this studio is for staff only.");
+      setError(d.error || "Unrecognised login — this portal is for staff only.");
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0b0a10] px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-7 shadow-2xl">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0b0a10] px-4">
+      {/* faint aurora backdrop for the portal */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-25"
+        style={{
+          background:
+            "radial-gradient(600px 320px at 22% 18%, rgba(255,46,136,0.35), transparent 60%), radial-gradient(560px 300px at 78% 82%, rgba(125,242,216,0.22), transparent 60%)",
+        }}
+      />
+      <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] p-7 shadow-2xl backdrop-blur-sm">
         <div className="mb-5 flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff2e88] via-[#7df2d8] to-[#9be8ff] text-[15px] font-black text-black">Æ</span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff2e88] via-[#7df2d8] to-[#9be8ff] text-[16px] font-black text-black shadow-[0_0_28px_-6px_rgba(255,46,136,0.7)]">Æ</span>
           <div>
-            <h1 className="text-[17px] font-bold text-white">AESTHETICA Studio</h1>
-            <p className="text-[12px] text-white/45">Staff access only — recognised logins required.</p>
+            <h1 className="text-[17px] font-bold text-white">AESTHETICA</h1>
+            <p className="text-[12px] font-semibold tracking-[0.18em] text-white/55">STAFF PORTAL</p>
           </div>
         </div>
-        <label className="studio-label" htmlFor="studio-user">Username</label>
+        <p className="mb-5 text-[12.5px] leading-relaxed text-white/45">
+          Sign in with your staff email to edit the museum. This portal is hidden from the public —
+          accounts are created by the owner.
+        </p>
+        <label className="studio-label" htmlFor="studio-email">Staff email</label>
         <input
-          id="studio-user"
-          type="text"
+          id="studio-email"
+          type="email"
           className="studio-input"
-          value={username}
+          value={email}
           autoFocus
           autoCapitalize="none"
-          autoComplete="username"
+          autoComplete="email"
           onKeyDown={(e) => e.key === "Enter" && !busy && submit()}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Your staff username"
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
         />
         <label className="studio-label mt-3" htmlFor="studio-pass">Password</label>
         <input
@@ -77,15 +91,14 @@ export function LoginGate({ onUnlock }: { onUnlock: (me: StaffMe) => void }) {
         {error && <p className="mt-2 text-[12.5px] text-[#ff5c7a]">{error}</p>}
         <button
           onClick={submit}
-          disabled={busy || !username || !password}
+          disabled={busy || !email || !password}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#ff2e88] to-[#7df2d8] py-2.5 text-[14px] font-semibold text-black disabled:opacity-50"
         >
           <Lock className="h-4 w-4" />
-          {busy ? "Checking…" : "Sign in to the Studio"}
+          {busy ? "Checking…" : "Sign in"}
         </button>
-        <p className="mt-4 text-[11.5px] leading-relaxed text-white/35">
-          This editor is reserved for the museum's staff. If you need access, ask the owner to
-          create an account for you in the Staff tab.
+        <p className="mt-4 text-center text-[11.5px] text-white/30">
+          Recognised staff only · all sign-ins are verified server-side
         </p>
       </div>
     </div>
@@ -138,6 +151,7 @@ export function Studio() {
   }
 
   const editingDef = editing ? worlds.find((w) => w.id === editing) : null;
+  const displayHandle = me.email.split("@")[0] || me.email;
 
   const logout = async () => {
     await fetch("/api/studio/auth", { method: "DELETE" });
@@ -176,12 +190,12 @@ export function Studio() {
           <div className="ml-auto flex items-center gap-1.5">
             <span
               className="hidden items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 sm:flex"
-              title={`Signed in as ${me.username} (${me.role})`}
+              title={`Signed in as ${me.email} (${me.role})`}
             >
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-[#ff2e88] to-[#7df2d8] text-[9px] font-black text-black">
-                {me.username.slice(0, 1).toUpperCase()}
+                {displayHandle.slice(0, 1).toUpperCase()}
               </span>
-              <span className="text-[12px] font-medium text-white/80">{me.username}</span>
+              <span className="text-[12px] font-medium text-white/80">{displayHandle}</span>
               <span className={`rounded px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider ${
                 me.role === "owner" ? "bg-[#ff2e88]/20 text-[#ff8ec2]" : "bg-white/10 text-white/60"
               }`}>

@@ -19,13 +19,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "New password must be at least 8 characters." }, { status: 400 });
   }
 
-  const user = await db.staffUser.findUnique({ where: { username: me.username } });
+  const user = await db.staffUser.findUnique({ where: { email: me.email } });
   if (!user || !verifyPassword(current, user.passwordHash)) {
     return NextResponse.json({ error: "Current password is incorrect." }, { status: 401 });
   }
 
   await db.staffUser.update({
-    where: { username: me.username },
+    where: { email: me.email },
     data: { passwordHash: hashPassword(next) },
   });
   return NextResponse.json({ ok: true });

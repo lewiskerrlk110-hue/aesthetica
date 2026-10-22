@@ -2,17 +2,18 @@
 
 // Staff management for the Studio: your-account card (change password) for
 // everyone, plus the team roster (add / remove accounts) for the owner.
+// Staff emails are only ever shown here, behind staff auth — never publicly.
 import { useCallback, useEffect, useState } from "react";
 import { UserPlus, ShieldCheck, Trash2, KeyRound, Loader2 } from "lucide-react";
 
 export interface StaffMe {
-  username: string;
+  email: string;
   role: string; // owner | editor
 }
 
 interface StaffRow {
   id: string;
-  username: string;
+  email: string;
   role: string;
   createdAt: string;
 }
@@ -77,7 +78,7 @@ function AccountCard({ me }: { me: StaffMe }) {
         </span>
       </div>
       <p className="mb-4 text-[12.5px] leading-relaxed text-white/45">
-        Signed in as <span className="font-semibold text-white/80">{me.username}</span>. Change your
+        Signed in as <span className="font-semibold text-white/80">{me.email}</span>. Change your
         password here — it applies the next time you sign in; your current session keeps working.
       </p>
       <div className="grid gap-3">
@@ -116,7 +117,7 @@ function AccountCard({ me }: { me: StaffMe }) {
 
 function TeamCard({ me }: { me: StaffMe }) {
   const [rows, setRows] = useState<StaffRow[] | null>(null);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"editor" | "owner">("editor");
   const [busy, setBusy] = useState(false);
@@ -143,13 +144,13 @@ function TeamCard({ me }: { me: StaffMe }) {
     const r = await fetch("/api/studio/staff", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, role }),
+      body: JSON.stringify({ email, password, role }),
     });
     const d = await r.json().catch(() => ({}) as { error?: string });
     setBusy(false);
     if (r.ok) {
-      setMsg({ ok: true, text: `${username} can now sign in to the Studio.` });
-      setUsername("");
+      setMsg({ ok: true, text: `${email} can now sign in to the Studio.` });
+      setEmail("");
       setPassword("");
       setRole("editor");
       void load();
@@ -160,16 +161,18 @@ function TeamCard({ me }: { me: StaffMe }) {
 
   const remove = async (row: StaffRow) => {
     setMsg(null);
-    if (!window.confirm(`Remove ${row.username}'s access to the Studio?`)) return;
+    if (!window.confirm(`Remove ${row.email}'s access to the Studio?`)) return;
     const r = await fetch(`/api/studio/staff/${row.id}`, { method: "DELETE" });
     const d = await r.json().catch(() => ({}) as { error?: string });
     if (r.ok) {
-      setMsg({ ok: true, text: `${row.username} no longer has access.` });
+      setMsg({ ok: true, text: `${row.email} no longer has access.` });
       void load();
     } else {
       setMsg({ ok: false, text: d.error || "Could not remove the account." });
     }
   };
+
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
 
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
@@ -179,16 +182,18 @@ function TeamCard({ me }: { me: StaffMe }) {
         <span className="ml-auto text-[11px] uppercase tracking-wider text-white/35">owner tools</span>
       </div>
       <p className="mb-4 text-[12.5px] leading-relaxed text-white/45">
-        Create recognised logins for staff. Editors can change every part of the site but cannot
-        manage accounts. Removing an account revokes its access immediately.
+        Assign staff with their email and a password. Editors can change every part of the site but
+        cannot manage accounts. Removing an account revokes its access immediately. Staff emails are
+        kept server-side only — never shown to visitors and never committed to the repository.
       </p>
 
       {/* add form */}
       <div className="mb-5 grid gap-3 rounded-xl border border-white/8 bg-black/25 p-4 sm:grid-cols-[1fr_1fr_auto]">
         <div>
-          <label className={labelCls} htmlFor="staff-user">Username</label>
-          <input id="staff-user" type="text" className={inputCls} value={username}
-            onChange={(e) => setUsername(e.target.value)} placeholder="e.g. curator" />
+          <label className={labelCls} htmlFor="staff-email">Staff email</label>
+          <input id="staff-email" type="email" className={inputCls} value={email}
+            autoCapitalize="none"
+            onChange={(e) => setEmail(e.target.value)} placeholder="colleague@example.com" />
         </div>
         <div>
           <label className={labelCls} htmlFor="staff-pass">Password</label>
@@ -205,7 +210,7 @@ function TeamCard({ me }: { me: StaffMe }) {
           </div>
           <button
             onClick={add}
-            disabled={busy || !username || password.length < 8}
+            disabled={busy || !emailOk || password.length < 8}
             className="inline-flex h-[38px] items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#ff2e88] to-[#7df2d8] px-4 text-[13px] font-semibold text-black disabled:opacity-50"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
@@ -221,23 +226,24 @@ function TeamCard({ me }: { me: StaffMe }) {
         <div className="flex items-center gap-2 text-[12.5px] text-white/40">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading the roster…
         </div>
+      ) : rows.length === 0 ? (
+        <p className="text-[12.5px] text-white/40">No staff accounts yet — add the first one above.</p>
       ) : (
         <ul className="grid gap-2">
           {rows.map((row) => {
-            const self = row.username === me.username;
+            const handle = row.email.split("@")[0] || row.email;
+            const self = row.email === me.email;
             return (
               <li key={row.id} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ff2e88] to-[#7df2d8] text-[12px] font-black text-black">
-                  {row.username.slice(0, 1).toUpperCase()}
+                  {handle.slice(0, 1).toUpperCase()}
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-[13.5px] font-semibold">
-                    {row.username}
+                    {handle}
                     {self && <span className="ml-2 text-[11px] font-normal text-white/40">(you)</span>}
                   </p>
-                  <p className="text-[11px] text-white/40">
-                    joined {new Date(row.createdAt).toLocaleDateString()} · can {row.role === "owner" ? "edit everything + manage staff" : "edit the site"}
-                  </p>
+                  <p className="truncate text-[11px] text-white/40">{row.email}</p>
                 </div>
                 <span className={`ml-auto shrink-0 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                   row.role === "owner" ? "bg-[#ff2e88]/20 text-[#ff8ec2]" : "bg-white/10 text-white/60"
@@ -247,7 +253,7 @@ function TeamCard({ me }: { me: StaffMe }) {
                 <button
                   onClick={() => remove(row)}
                   disabled={self}
-                  title={self ? "You cannot remove your own account" : `Remove ${row.username}`}
+                  title={self ? "You cannot remove your own account" : `Remove ${handle}`}
                   className="rounded-lg p-2 text-white/40 transition-colors hover:bg-[#ff2e88]/15 hover:text-[#ff8ec2] disabled:pointer-events-none disabled:opacity-25"
                 >
                   <Trash2 className="h-4 w-4" />

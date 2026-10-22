@@ -3,6 +3,7 @@ import {
   STUDIO_COOKIE,
   ensureSeedStaff,
   isAuthed,
+  isValidEmail,
   makeSessionToken,
   sessionUser,
   verifyPassword,
@@ -13,36 +14,36 @@ export async function GET() {
   const user = await sessionUser();
   return NextResponse.json({
     ok: user !== null,
-    user: user ? { username: user.username, role: user.role } : null,
+    user: user ? { email: user.email, role: user.role } : null,
   });
 }
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as {
-    username?: string;
+    email?: string;
     password?: string;
   };
-  const username = (body.username || "").trim();
+  const email = (body.email || "").trim().toLowerCase();
   const password = body.password || "";
-  if (!username || !password) {
-    return NextResponse.json({ error: "Enter your username and password." }, { status: 400 });
+  if (!email || !password) {
+    return NextResponse.json({ error: "Enter your staff email and password." }, { status: 400 });
   }
 
   await ensureSeedStaff();
 
-  const user = await db.staffUser.findUnique({ where: { username } });
+  const user = await db.staffUser.findUnique({ where: { email } });
   if (!user || !verifyPassword(password, user.passwordHash)) {
     return NextResponse.json(
-      { error: "Unrecognised login — this studio is for staff only." },
+      { error: "Unrecognised login — this portal is for staff only." },
       { status: 401 },
     );
   }
 
   const resp = NextResponse.json({
     ok: true,
-    user: { username: user.username, role: user.role },
+    user: { email: user.email, role: user.role },
   });
-  resp.cookies.set(STUDIO_COOKIE, makeSessionToken(user.username), {
+  resp.cookies.set(STUDIO_COOKIE, makeSessionToken(user.email), {
     httpOnly: true,
     sameSite: "lax",
     path: "/",

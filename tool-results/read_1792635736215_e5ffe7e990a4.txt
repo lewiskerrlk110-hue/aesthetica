@@ -1,0 +1,597 @@
+     1→"use client";
+     2→
+     3→import { useEffect, useRef, useState, useCallback } from "react";
+     4→import { DREAM_PROMPTS, DREAM_MOODS } from "@/lib/aesthetics";
+     5→import { authHeaders } from "@/lib/identity";
+     6→import { useApp } from "@/lib/store";
+     7→import { useToast } from "@/hooks/use-toast";
+     8→import {
+     9→  BookHeart, Plus, Trash2, Pencil, Share2, Lock, Globe2, Search as SearchIcon,
+    10→  Heart, Wind, CloudRain, Sunrise, MapPin, Radio, Send,
+    11→} from "lucide-react";
+    12→
+    13→// ═══════════════ THE DREAM JOURNAL ═══════════════
+    14→// Private by default. All writes scoped server-side to the
+    15→// device identity; publishing is an explicit act.
+    16→
+    17→interface JournalEntry {
+    18→  id: string;
+    19→  title: string;
+    20→  body: string;
+    21→  mood: string | null;
+    22→  location: string | null;
+    23→  tags: string;
+    24→  published: boolean;
+    25→  shareId: string;
+    26→  createdAt: string;
+    27→  updatedAt: string;
+    28→  mine: boolean;
+    29→}
+    30→
+    31→export function DreamJournal() {
+    32→  const { toast } = useToast();
+    33→  const navigate = useApp((s) => s.navigate);
+    34→  const [entries, setEntries] = useState<JournalEntry[]>([]);
+    35→  const [published, setPublished] = useState<JournalEntry[]>([]);
+    36→  const [editing, setEditing] = useState<Partial<JournalEntry> | null>(null);
+    37→  const [query, setQuery] = useState("");
+    38→  const [loading, setLoading] = useState(true);
+    39→  const [shareUrl, setShareUrl] = useState<string | null>(null);
+    40→  const prompt = DREAM_PROMPTS[new Date().getDate() % DREAM_PROMPTS.length];
+    41→
+    42→  const load = useCallback(async () => {
+    43→    setLoading(true);
+    44→    const [mineRes, pubRes] = await Promise.all([
+    45→      fetch("/api/journal?scope=mine", { headers: authHeaders() }),
+    46→      fetch("/api/journal?scope=published"),
+    47→    ]);
+    48→    if (mineRes.ok) setEntries((await mineRes.json()).entries || []);
+    49→    if (pubRes.ok) setPublished((await pubRes.json()).entries || []);
+    50→    setLoading(false);
+    51→  }, []);
+    52→
+    53→  useEffect(() => {
+    54→    const t = setTimeout(load, 0);
+    55→    return () => clearTimeout(t);
+    56→  }, [load]);
+    57→
+    58→  const save = async () => {
+    59→    if (!editing?.title?.trim() || !editing?.body?.trim()) {
+    60→      toast({ title: "The dream needs a title and a few lines", variant: "destructive" });
+    61→      return;
+    62→    }
+    63→    const isNew = !editing.id;
+    64→    const res = await fetch(isNew ? "/api/journal" : `/api/journal/${editing.id}`, {
+    65→      method: isNew ? "POST" : "PUT",
+    66→      headers: authHeaders(),
+    67→      body: JSON.stringify(editing),
+    68→    });
+    69→    const data = await res.json();
+    70→    if (!res.ok) {
+    71→      toast({ title: "Could not save", description: data.error, variant: "destructive" });
+    72→      return;
+    73→    }
+    74→    toast({ title: isNew ? "Entry tucked into the journal" : "Entry updated", description: "Saved privately. Only you can read it." });
+    75→    setEditing(null);
+    76→    load();
+    77→  };
+    78→
+    79→  const remove = async (id: string) => {
+    80→    const res = await fetch(`/api/journal/${id}`, { method: "DELETE", headers: authHeaders() });
+    81→    if (res.ok) {
+    82→      toast({ title: "Entry released from the journal" });
+    83→      load();
+    84→    }
+    85→  };
+    86→
+    87→  const togglePublish = async (e: JournalEntry) => {
+    88→    const res = await fetch(`/api/journal/${e.id}`, {
+    89→      method: "PUT",
+    90→      headers: authHeaders(),
+    91→      body: JSON.stringify({ published: !e.published }),
+    92→    });
+    93→    const data = await res.json();
+    94→    if (res.ok) {
+    95→      if (data.entry.published) {
+    96→        const url = `${window.location.origin}${window.location.pathname}#/shared/${data.entry.shareId}`;
+    97→        setShareUrl(url);
+    98→        try { await navigator.clipboard.writeText(url); } catch { /* noop */ }
+    99→        toast({ title: "Shared — link copied", description: "Anyone with the link can read this entry." });
+   100→      } else {
+   101→        toast({ title: "Entry is private again" });
+   102→      }
+   103→      load();
+   104→    }
+   105→  };
+   106→
+   107→  const filtered = entries.filter(
+   108→    (e) =>
+   109→      !query.trim() ||
+   110→      e.title.toLowerCase().includes(query.toLowerCase()) ||
+   111→      e.body.toLowerCase().includes(query.toLowerCase()) ||
+   112→      (e.tags || "").toLowerCase().includes(query.toLowerCase()),
+   113→  );
+   114→
+   115→  return (
+   116→    <section aria-label="The Dream Journal" className="relative z-10 mx-auto max-w-6xl px-4 py-16">
+   117→      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+   118→        <div>
+   119→          <p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.35em] text-[var(--w-accent)]">
+   120→            <BookHeart className="h-4 w-4" /> Signature feature
+   121→          </p>
+   122→          <h2 className="w-display mt-2 text-3xl font-bold text-[var(--w-fg)] md:text-4xl">The Dream Journal</h2>
+   123→          <p className="mt-2 max-w-xl text-[14.5px] leading-relaxed text-[var(--w-fg-dim)]">
+   124→            A physical notebook found inside the dream. Entries are <strong>private by default</strong> —
+   125→            publishing is always your explicit choice.
+   126→          </p>
+   127→        </div>
+   128→        <button className="w-btn-primary w-btn" onClick={() => setEditing({ title: "", body: "", mood: DREAM_MOODS[0], location: "", tags: "" })}>
+   129→          <Plus className="h-4 w-4" /> New entry
+   130→        </button>
+   131→      </header>
+   132→
+   133→      {/* Editor */}
+   134→      {editing && (
+   135→        <div className="paper mb-8 p-6 md:p-8" role="form" aria-label="Journal entry editor">
+   136→          <div className="mb-3 flex items-center justify-between">
+   137→            <p className="font-[var(--font-caveat)] text-lg text-[#5a7ea8]">Today's prompt: “{prompt}”</p>
+   138→            <button onClick={() => setEditing(null)} className="text-[13px] text-[#5a7ea8] hover:underline">close</button>
+   139→          </div>
+   140→          <input
+   141→            className="mb-3 w-full border-b border-[#78c8f5]/40 bg-transparent pb-1.5 font-[var(--font-fraunces)] text-2xl font-semibold text-[#21324a] outline-none placeholder:text-[#21324a]/30"
+   142→            placeholder="Title the dream…"
+   143→            value={editing.title || ""}
+   144→            onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+   145→            maxLength={140}
+   146→            aria-label="Entry title"
+   147→          />
+   148→          <textarea
+   149→            className="min-h-[220px] w-full resize-y bg-transparent font-[var(--font-caveat)] text-[21px] leading-[36px] text-[#21324a] outline-none placeholder:text-[#21324a]/30"
+   150→            style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent 0 35px, rgba(120,200,245,.35) 35px 36px)" }}
+   151→            placeholder="What did the sky look like? Was anyone else there? What happened just before you woke up?"
+   152→            value={editing.body || ""}
+   153→            onChange={(e) => setEditing({ ...editing, body: e.target.value })}
+   154→            maxLength={8000}
+   155→            aria-label="Entry body"
+   156→          />
+   157→          <div className="mt-4 flex flex-wrap items-center gap-3">
+   158→            <select
+   159→              className="rounded-lg border border-[#21324a]/20 bg-white/60 px-2.5 py-1.5 text-[13px] text-[#21324a]"
+   160→              value={editing.mood || ""}
+   161→              onChange={(e) => setEditing({ ...editing, mood: e.target.value })}
+   162→              aria-label="Mood"
+   163→            >
+   164→              <option value="">mood…</option>
+   165→              {DREAM_MOODS.map((m) => <option key={m} value={m}>{m}</option>)}
+   166→            </select>
+   167→            <input
+   168→              className="w-44 rounded-lg border border-[#21324a]/20 bg-white/60 px-2.5 py-1.5 text-[13px] text-[#21324a]"
+   169→              placeholder="place (e.g. the meadow)"
+   170→              value={editing.location || ""}
+   171→              onChange={(e) => setEditing({ ...editing, location: e.target.value })}
+   172→              aria-label="Dream location"
+   173→            />
+   174→            <input
+   175→              className="w-48 rounded-lg border border-[#21324a]/20 bg-white/60 px-2.5 py-1.5 text-[13px] text-[#21324a]"
+   176→              placeholder="tags, comma separated"
+   177→              value={editing.tags || ""}
+   178→              onChange={(e) => setEditing({ ...editing, tags: e.target.value })}
+   179→              aria-label="Tags"
+   180→            />
+   181→            <button className="ml-auto rounded-full bg-[#e26fa8] px-5 py-2 text-[13.5px] font-semibold text-white shadow-md transition-transform hover:scale-[1.03]" onClick={save}>
+   182→              {editing.id ? "Save changes" : "Keep it"}
+   183→            </button>
+   184→          </div>
+   185→        </div>
+   186→      )}
+   187→
+   188→      {shareUrl && (
+   189→        <div className="mb-6 flex items-center gap-2 rounded-xl bg-[#78c8f5]/25 px-4 py-3 text-[13px] text-[#21324a]">
+   190→          <Share2 className="h-4 w-4 shrink-0" />
+   191→          <span className="truncate">{shareUrl}</span>
+   192→        </div>
+   193→      )}
+   194→
+   195→      <div className="mb-4 flex items-center gap-2">
+   196→        <SearchIcon className="h-4 w-4 text-[var(--w-fg-dim)]" />
+   197→        <input
+   198→          className="w-input max-w-sm text-[13.5px]"
+   199→          placeholder="Search your entries…"
+   200→          value={query}
+   201→          onChange={(e) => setQuery(e.target.value)}
+   202→          aria-label="Search journal entries"
+   203→        />
+   204→        <span className="text-[12px] text-[var(--w-fg-dim)]">{entries.length} private · {published.length} shared by others</span>
+   205→      </div>
+   206→
+   207→      <div className="grid gap-5 md:grid-cols-2">
+   208→        {/* my entries */}
+   209→        <div className="space-y-4">
+   210→          <h3 className="flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-widest text-[var(--w-fg-dim)]">
+   211→            <Lock className="h-3.5 w-3.5" /> Your entries
+   212→          </h3>
+   213→          {loading && <div className="img-skeleton h-24 rounded-xl" />}
+   214→          {!loading && filtered.length === 0 && (
+   215→            <div className="paper p-5 text-center">
+   216→              <p className="font-[var(--font-caveat)] text-[20px] text-[#21324a]/70">No dreams written yet.</p>
+   217→              <p className="mt-1 text-[13px] text-[#21324a]/55">The notebook is patient. What did the sky look like?</p>
+   218→            </div>
+   219→          )}
+   220→          {filtered.map((e) => (
+   221→            <article key={e.id} className="paper group relative p-5">
+   222→              <div className="flex items-start justify-between gap-2">
+   223→                <h4 className="font-[var(--font-fraunces)] text-lg font-semibold text-[#21324a]">{e.title}</h4>
+   224→                <div className="flex shrink-0 gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+   225→                  <button onClick={() => setEditing(e)} className="rounded p-1.5 hover:bg-[#21324a]/10" aria-label="Edit entry"><Pencil className="h-3.5 w-3.5 text-[#21324a]" /></button>
+   226→                  <button onClick={() => remove(e.id)} className="rounded p-1.5 hover:bg-[#21324a]/10" aria-label="Delete entry"><Trash2 className="h-3.5 w-3.5 text-[#c05a5a]" /></button>
+   227→                </div>
+   228→              </div>
+   229→              <p className="mt-1.5 line-clamp-3 font-[var(--font-caveat)] text-[17px] leading-snug text-[#21324a]/80">{e.body}</p>
+   230→              <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-[#21324a]/60">
+   231→                {e.mood && <span className="rounded-full bg-[#e26fa8]/15 px-2 py-0.5">{e.mood}</span>}
+   232→                {e.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</span>}
+   233→                <span>{new Date(e.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>
+   234→              </div>
+   235→              <button
+   236→                onClick={() => togglePublish(e)}
+   237→                className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-semibold transition-colors ${
+   238→                  e.published ? "bg-[#86d8d2]/40 text-[#1d5c58]" : "bg-[#21324a]/8 text-[#21324a]/70 hover:bg-[#21324a]/15"
+   239→                }`}
+   240→              >
+   241→                {e.published ? <><Globe2 className="h-3 w-3" /> Shared — make private</> : <><Share2 className="h-3 w-3" /> Share via link</>}
+   242→              </button>
+   243→            </article>
+   244→          ))}
+   245→        </div>
+   246→
+   247→        {/* published stream */}
+   248→        <div className="space-y-4">
+   249→          <h3 className="flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-widest text-[var(--w-fg-dim)]">
+   250→            <Globe2 className="h-3.5 w-3.5" /> Published by other dreamers
+   251→          </h3>
+   252→          {published.length === 0 && (
+   253→            <div className="w-panel p-5 text-center text-[13.5px] text-[var(--w-fg-dim)]">
+   254→              No published entries yet. Yours could be the first gentle thing a stranger reads today.
+   255→            </div>
+   256→          )}
+   257→          {published.slice(0, 6).map((e) => (
+   258→            <article key={e.id} className="w-panel p-5">
+   259→              <h4 className="font-[var(--font-fraunces)] text-lg font-semibold">{e.title}</h4>
+   260→              <p className="mt-1.5 line-clamp-4 font-[var(--font-caveat)] text-[17px] leading-snug opacity-85">{e.body}</p>
+   261→              <div className="mt-2.5 flex items-center gap-2 text-[11px] opacity-55">
+   262→                {e.mood && <span className="rounded-full bg-[var(--w-accent)]/15 px-2 py-0.5">{e.mood}</span>}
+   263→                <span>a dreamer</span>
+   264→              </div>
+   265→            </article>
+   266→          ))}
+   267→        </div>
+   268→      </div>
+   269→      <p className="mt-6 text-center text-[12px] text-[var(--w-fg-dim)]">
+   270→        Privacy is enforced on the server: private entries are never returned to other devices, and share links stop working the moment you make an entry private again.{" "}
+   271→        <button className="underline underline-offset-2 hover:opacity-80" onClick={() => navigate({ view: "profile" })}>Your journal lives on this device's key.</button>
+   272→      </p>
+   273→    </section>
+   274→  );
+   275→}
+   276→
+   277→// ═══════════════ POSTCARDS FROM NOWHERE ═══════════════
+   278→interface PostcardDTO { id: string; title: string; caption: string; imageUrl: string; tags: string; hearts: number }
+   279→
+   280→export function Postcards() {
+   281→  const [cards, setCards] = useState<PostcardDTO[]>([]);
+   282→  const [flipped, setFlipped] = useState<Record<string, boolean>>({});
+   283→  useEffect(() => {
+   284→    fetch("/api/dreamseed?type=postcards").then((r) => r.json()).then((d) => setCards(d.postcards || [])).catch(() => {});
+   285→  }, []);
+   286→
+   287→  const flip = (id: string) => setFlipped((f) => ({ ...f, [id]: !f[id] }));
+   288→
+   289→  return (
+   290→    <section aria-label="Postcards from Nowhere" className="relative z-10 mx-auto max-w-6xl px-4 py-14">
+   291→      <header className="mb-8">
+   292→        <p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.35em] text-[var(--w-accent2)]">Interactive postcards</p>
+   293→        <h2 className="w-display mt-2 text-3xl font-bold text-[var(--w-fg)]">Postcards From Nowhere</h2>
+   294→        <p className="mt-2 max-w-xl text-[14.5px] text-[var(--w-fg-dim)]">Surreal dream landscapes with captions on the back. Flip one over — someone sent it from a place that does not exist.</p>
+   295→      </header>
+   296→      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+   297→        {cards.map((c) => (
+   298→          <button
+   299→            key={c.id}
+   300→            onClick={() => flip(c.id)}
+   301→            className="group relative h-72 text-left [perspective:1200px]"
+   302→            aria-pressed={flipped[c.id]}
+   303→            aria-label={`Postcard: ${c.title}`}
+   304→          >
+   305→            <div className="relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]" style={{ transform: flipped[c.id] ? "rotateY(180deg)" : undefined }}>
+   306→              <div className="absolute inset-0 overflow-hidden rounded-2xl border-8 border-[#fff8ef] bg-white shadow-[0_18px_44px_-16px_rgba(60,90,130,0.5)] [backface-visibility:hidden]">
+   307→                <img src={c.imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+   308→                <p className="absolute bottom-3 left-3 rounded-full bg-white/85 px-3 py-1 font-[var(--font-caveat)] text-[17px] text-[#21324a]">{c.title}</p>
+   309→              </div>
+   310→              <div className="absolute inset-0 flex flex-col justify-between rounded-2xl border-8 border-[#fff8ef] bg-[#fff8ef] p-5 text-[#21324a] shadow-[0_18px_44px_-16px_rgba(60,90,130,0.5)] [backface-visibility:hidden] [transform:rotateY(180deg)]">
+   311→                <p className="font-[var(--font-caveat)] text-[22px] leading-snug">{c.caption}</p>
+   312→                <div className="flex items-center justify-between text-[12px] text-[#21324a]/60">
+   313→                  <span>♥ {c.hearts}</span>
+   314→                  <span>click to flip back</span>
+   315→                </div>
+   316→              </div>
+   317→            </div>
+   318→          </button>
+   319→        ))}
+   320→      </div>
+   321→    </section>
+   322→  );
+   323→}
+   324→
+   325→// ═══════════════ MEMORY FRAGMENTS ═══════════════
+   326→interface FragmentDTO { id: string; text: string; authorName: string; isSample: boolean; hearts: number }
+   327→
+   328→export function MemoryFragments() {
+   329→  const { toast } = useToast();
+   330→  const [fragments, setFragments] = useState<FragmentDTO[]>([]);
+   331→  const [draft, setDraft] = useState("");
+   332→  const [sending, setSending] = useState(false);
+   333→
+   334→  const load = useCallback(() => {
+   335→    fetch("/api/fragments").then((r) => r.json()).then((d) => setFragments(d.fragments || [])).catch(() => {});
+   336→  }, []);
+   337→  useEffect(() => {
+   338→    const t = setTimeout(load, 0);
+   339→    return () => clearTimeout(t);
+   340→  }, [load]);
+   341→
+   342→  const submit = async () => {
+   343→    if (!draft.trim()) return;
+   344→    setSending(true);
+   345→    try {
+   346→      const res = await fetch("/api/fragments", { method: "POST", headers: authHeaders(), body: JSON.stringify({ text: draft.trim() }) });
+   347→      const data = await res.json();
+   348→      if (!res.ok) throw new Error(data.error);
+   349→      setDraft("");
+   350→      toast({ title: "Fragment released into the sky" });
+   351→      load();
+   352→    } catch (e) {
+   353→      toast({ title: "Could not submit", description: e instanceof Error ? e.message : "", variant: "destructive" });
+   354→    } finally {
+   355→      setSending(false);
+   356→    }
+   357→  };
+   358→
+   359→  return (
+   360→    <section aria-label="Memory Fragments" className="relative z-10 mx-auto max-w-6xl px-4 py-14">
+   361→      <header className="mb-8">
+   362→        <p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.35em] text-[var(--w-accent)]">Floating notes</p>
+   363→        <h2 className="w-display mt-2 text-3xl font-bold text-[var(--w-fg)]">Memory Fragments</h2>
+   364→        <p className="mt-2 max-w-xl text-[14.5px] text-[var(--w-fg-dim)]">
+   365→          Small, evocative pieces of writing that drift across the meadow. Items marked
+   366→          <span className="mx-1 rounded bg-[var(--w-accent)]/15 px-1.5 py-0.5 text-[11px]">sample</span>
+   367→          are the museum's seed writing — everything else is a real visitor contribution.
+   368→        </p>
+   369→      </header>
+   370→
+   371→      <div className="mb-8 flex gap-2">
+   372→        <input
+   373→          className="w-input text-[14px]"
+   374→          placeholder="Leave a fragment in the sky… (280 characters)"
+   375→          value={draft}
+   376→          maxLength={280}
+   377→          onChange={(e) => setDraft(e.target.value)}
+   378→          onKeyDown={(e) => e.key === "Enter" && submit()}
+   379→          aria-label="New memory fragment"
+   380→        />
+   381→        <button className="w-btn-primary w-btn shrink-0" onClick={submit} disabled={sending}>
+   382→          <Send className="h-4 w-4" /> Release
+   383→        </button>
+   384→      </div>
+   385→
+   386→      <div className="columns-1 gap-5 sm:columns-2 lg:columns-3 [&>*]:mb-5">
+   387→        {fragments.map((f, i) => (
+   388→          <div
+   389→            key={f.id}
+   390→            className="ambient-soft break-inside-avoid rounded-xl border border-[var(--w-panel-border)] bg-[var(--w-panel)] px-5 py-4 backdrop-blur"
+   391→            style={{ animationDelay: `${-(i % 7)}s`, rotate: `${((i * 7) % 5) - 2}deg` }}
+   392→          >
+   393→            <p className="font-[var(--font-caveat)] text-[19px] leading-snug text-[var(--w-fg)]">“{f.text}”</p>
+   394→            <div className="mt-2.5 flex items-center gap-2 text-[11.5px] text-[var(--w-fg-dim)]">
+   395→              {f.isSample && <span className="rounded bg-[var(--w-accent)]/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wider">sample</span>}
+   396→              <span>— {f.authorName}</span>
+   397→            </div>
+   398→          </div>
+   399→        ))}
+   400→      </div>
+   401→    </section>
+   402→  );
+   403→}
+   404→
+   405→// ═══════════════ THE CLOUD ATLAS ═══════════════
+   406→interface CloudLocDTO { id: string; name: string; description: string; imageUrl: string; tags: string }
+   407→
+   408→export function CloudAtlas() {
+   409→  const [locs, setLocs] = useState<CloudLocDTO[]>([]);
+   410→  useEffect(() => {
+   411→    fetch("/api/dreamseed?type=locations").then((r) => r.json()).then((d) => setLocs(d.locations || [])).catch(() => {});
+   412→  }, []);
+   413→  return (
+   414→    <section aria-label="The Cloud Atlas" className="relative z-10 mx-auto max-w-6xl px-4 py-14">
+   415→      <header className="mb-8">
+   416→        <p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.35em] text-[var(--w-accent2)]">Imaginary cartography</p>
+   417→        <h2 className="w-display mt-2 text-3xl font-bold text-[var(--w-fg)]">The Cloud Atlas</h2>
+   418→        <p className="mt-2 max-w-xl text-[14.5px] text-[var(--w-fg-dim)]">
+   419→          An archive of locations that appear in dreams — documented by the community, illustrated by the museum.
+   420→          Every place here is fiction, clearly held as fiction.
+   421→        </p>
+   422→      </header>
+   423→      <div className="grid gap-5 md:grid-cols-2">
+   424→        {locs.map((l, i) => (
+   425→          <article key={l.id} className={`w-panel group flex flex-col overflow-hidden sm:flex-row ${i % 2 ? "sm:flex-row-reverse" : ""}`}>
+   426→            <div className="h-40 w-full shrink-0 overflow-hidden sm:h-auto sm:w-44">
+   427→              <img src={l.imageUrl} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+   428→            </div>
+   429→            <div className="flex-1 p-5">
+   430→              <h3 className="w-display text-lg font-bold">{l.name}</h3>
+   431→              <p className="mt-1.5 text-[13.5px] leading-relaxed opacity-80">{l.description}</p>
+   432→              <div className="mt-3 flex flex-wrap gap-1.5">
+   433→                {l.tags.split(",").filter(Boolean).map((t) => <span key={t} className="w-tag !cursor-default">#{t}</span>)}
+   434→              </div>
+   435→            </div>
+   436→          </article>
+   437→        ))}
+   438→      </div>
+   439→    </section>
+   440→  );
+   441→}
+   442→
+   443→// ═══════════════ THE SLEEPY RADIO ═══════════════
+   444→// Fully synthesized ambience (WebAudio) — never autoplays.
+   445→const STATIONS = [
+   446→  { id: "wind", name: "Meadow Wind", icon: Wind, desc: "Soft gusts through tall grass", build: "wind" },
+   447→  { id: "rain", name: "Cloud Rain", icon: CloudRain, desc: "A warm shower on the bus roof", build: "rain" },
+   448→  { id: "dawn", name: "First Light", icon: Sunrise, desc: "A gentle synth pad at sunrise", build: "pad" },
+   449→] as const;
+   450→
+   451→export function SleepyRadio() {
+   452→  const [on, setOn] = useState(false);
+   453→  const [station, setStation] = useState<(typeof STATIONS)[number]["id"]>("wind");
+   454→  const [volume, setVolume] = useState(0.4);
+   455→  const ctxRef = useRef<AudioContext | null>(null);
+   456→  const gainRef = useRef<GainNode | null>(null);
+   457→  const stopRef = useRef<(() => void) | null>(null);
+   458→  const { toast } = useToast();
+   459→
+   460→  const stop = () => {
+   461→    stopRef.current?.();
+   462→    stopRef.current = null;
+   463→    ctxRef.current?.close().catch(() => {});
+   464→    ctxRef.current = null;
+   465→    setOn(false);
+   466→  };
+   467→
+   468→  const play = async (id: (typeof STATIONS)[number]["id"]) => {
+   469→    stop();
+   470→    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+   471→    const ac = new AC();
+   472→    ctxRef.current = ac;
+   473→    const master = ac.createGain();
+   474→    master.gain.value = volume;
+   475→    master.connect(ac.destination);
+   476→    gainRef.current = master;
+   477→
+   478→    const stops: (() => void)[] = [];
+   479→
+   480→    if (id === "wind" || id === "rain") {
+   481→      // filtered noise = wind / rain
+   482→      const bufferSize = 2 * ac.sampleRate;
+   483→      const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+   484→      const data = buffer.getChannelData(0);
+   485→      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+   486→      const src = ac.createBufferSource();
+   487→      src.buffer = buffer;
+   488→      src.loop = true;
+   489→      const filter = ac.createBiquadFilter();
+   490→      filter.type = id === "wind" ? "lowpass" : "highpass";
+   491→      filter.frequency.value = id === "wind" ? 420 : 1400;
+   492→      const lfo = ac.createOscillator();
+   493→      lfo.frequency.value = id === "wind" ? 0.18 : 0.5;
+   494→      const lfoGain = ac.createGain();
+   495→      lfoGain.gain.value = id === "wind" ? 220 : 380;
+   496→      lfo.connect(lfoGain).connect(filter.frequency);
+   497→      const ng = ac.createGain();
+   498→      ng.gain.value = id === "wind" ? 0.5 : 0.32;
+   499→      src.connect(filter).connect(ng).connect(master);
+   500→      src.start();
+   501→      lfo.start();
+   502→      stops.push(() => { src.stop(); lfo.stop(); });
+   503→    }
+   504→
+   505→    if (id === "pad") {
+   506→      // gentle major-9 pad
+   507→      const freqs = [220, 277.18, 329.63, 493.88];
+   508→      freqs.forEach((f, i) => {
+   509→        const o = ac.createOscillator();
+   510→        o.type = "sine";
+   511→        o.frequency.value = f;
+   512→        const g = ac.createGain();
+   513→        g.gain.value = 0;
+   514→        o.connect(g).connect(master);
+   515→        o.start();
+   516→        g.gain.linearRampToValueAtTime(0.05 / (i + 1), ac.currentTime + 2.5);
+   517→        // slow shimmer
+   518→        const lfo = ac.createOscillator();
+   519→        lfo.frequency.value = 0.1 + i * 0.07;
+   520→        const lg = ac.createGain();
+   521→        lg.gain.value = 0.018;
+   522→        lfo.connect(lg).connect(g.gain);
+   523→        lfo.start();
+   524→        stops.push(() => { o.stop(); lfo.stop(); });
+   525→      });
+   526→    }
+   527→
+   528→    stopRef.current = () => stops.forEach((s) => s());
+   529→    setOn(true);
+   530→  };
+   531→
+   532→  const changeVolume = (v: number) => {
+   533→    setVolume(v);
+   534→    if (gainRef.current) gainRef.current.gain.value = v;
+   535→  };
+   536→
+   537→  return (
+   538→    <section aria-label="The Sleepy Radio" className="relative z-10 mx-auto max-w-3xl px-4 py-14">
+   539→      <div className="w-panel p-6">
+   540→        <header className="mb-5 flex items-center gap-3">
+   541→          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--w-accent)]/15">
+   542→            <Radio className="h-5 w-5 text-[var(--w-accent)]" />
+   543→          </span>
+   544→          <div>
+   545→            <h2 className="w-display text-xl font-bold">The Sleepy Radio</h2>
+   546→            <p className="text-[12.5px] text-[var(--w-fg-dim)]">A vintage cassette player for resting eyes. Synthesized ambience — never autoplays, always yours to start.</p>
+   547→          </div>
+   548→        </header>
+   549→        <div className="grid gap-2 sm:grid-cols-3">
+   550→          {STATIONS.map((s) => (
+   551→            <button
+   552→              key={s.id}
+   553→              onClick={() => (on && station === s.id ? stop() : play(s.id))}
+   554→              aria-pressed={on && station === s.id}
+   555→              className={`flex flex-col items-start gap-1 rounded-xl border p-3.5 text-left transition-all ${
+   556→                on && station === s.id ? "border-[var(--w-accent)] bg-[var(--w-accent)]/12" : "border-[var(--w-panel-border)] hover:border-[var(--w-accent)]/50"
+   557→              }`}
+   558→            >
+   559→              <s.icon className="h-4.5 w-4.5 text-[var(--w-accent2)]" />
+   560→              <span className="text-[13.5px] font-semibold">{s.name}</span>
+   561→              <span className="text-[11.5px] leading-snug text-[var(--w-fg-dim)]">{s.desc}</span>
+   562→            </button>
+   563→          ))}
+   564→        </div>
+   565→        <div className="mt-5 flex items-center gap-4">
+   566→          <button
+   567→            onClick={() => (on ? stop() : play(station))}
+   568→            className="w-btn-primary w-btn"
+   569→            aria-label={on ? "Turn the radio off" : "Turn the radio on"}
+   570→          >
+   571→            {on ? "Stop" : "Play"}
+   572→          </button>
+   573→          <label className="flex flex-1 items-center gap-2.5 text-[12px] text-[var(--w-fg-dim)]">
+   574→            Volume
+   575→            <input
+   576→              type="range"
+   577→              min={0}
+   578→              max={1}
+   579→              step={0.01}
+   580→              value={volume}
+   581→              onChange={(e) => changeVolume(parseFloat(e.target.value))}
+   582→              className="flex-1 accent-[var(--w-accent)]"
+   583→              aria-label="Radio volume"
+   584→            />
+   585→          </label>
+   586→          <span className={`h-2.5 w-2.5 rounded-full transition-all ${on ? "bg-[var(--w-accent)] shadow-[0_0_10px_var(--w-accent)]" : "bg-white/20"}`} aria-hidden />
+   587→        </div>
+   588→        <p className="mt-4 text-[11.5px] leading-relaxed text-[var(--w-fg-dim)]">
+   589→          Sound is synthesized in your browser from filtered noise and soft oscillators —
+   590→          it is an atmosphere, not a recording. If you publish a journal entry it is text only;
+   591→          audio never leaves your device.
+   592→        </p>
+   593→      </div>
+   594→    </section>
+   595→  );
+   596→}
+   597→

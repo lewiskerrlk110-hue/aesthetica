@@ -204,3 +204,23 @@ Stage Summary:
 - All homepage portal cards now visually match their world pages' current looks (synthwave/vaporwave/backrooms rebuilt, retrowave augmented, y2k/cyberpunk already in sync)
 - PortalScene now carries an explicit sync rule in a code comment: restyle a world page -> update its portal case in the same change
 - Committed and pushed to github.com/lewiskerrlk110-hue/aesthetica (main)
+
+---
+Task ID: DC-1
+Agent: main (Z.ai)
+Task: Restyle the Dreamcore world from the user's uploaded reference video (upload/Download.mp4 — @anotherworldcore twilight reel: night motel + bright planet, neon-striped gas station, house on a tethered floating island, giant glowing cumulus, rainbow meadow, grass cliff/sea-tower houses, "Bar of Dreams" neon kiosk)
+
+Work Log:
+- Extracted 9 frames at 1fps and analysed the reel: distilled its signature into one continuous dusk scene — twilight sky with stars + one bright evening star, giant pink-gold cumulus lit from the horizon, faint pastel rainbow, vivid dusk-green hills, wildflower meadow, water reflecting the glow, a lone pink-roofed house in an impossible place, and neon roadside Americana
+- Rewrote DreamEnv (src/components/worlds/dreamcore.tsx): canvas twilight scene (4-stop indigo-to-pink sky, 92-star field, evening star with halo + cross glint, 12-blob cumulus with dark under-shadow / pink lit base / golden core / top highlights, 2 drifting distant clouds, 6-band pastel rainbow fragment, 2 hill layers with pink rim-lit crests, 64 swaying wildflowers with glow dots, pond with pink reflection gradient + shimmer streaks + 2 expanding ripple rings, 14 dream motes) + DOM/SVG overlays: tethered island (jagged earth underside, roots, grass cap with rim light, pink-roofed house with glowing window + mint door, flowers, rope exiting the top of the frame, dc-sway pendulum animation) and the Bar of Dreams kiosk (pink/cream/cyan striped canopy like the reel's gas station, warm glowing window with shelves + pastel bottles, counter, 3 stools, light pool on grass, Caveat neon sign with glow + dc-glow pulse, sparkle)
+- globals.css: [data-world="dreamcore"] flipped light day theme to dusk (bg #141b3d, bg2 #1e2856, fg #ece6fa, accent #ff9ed2, accent2 #7fd4dc, dark panels rgba(26,33,72,.68) with pink borders); added dc-sway (pendulum, transform-origin above frame) + dc-glow keyframes, both registered in .fx-off and prefers-reduced-motion kill lists; .paper notebook and postcards intentionally kept as physical cream artefacts (readable, thematically "found objects")
+- dreamcore-features.tsx: share-link banner retuned to theme tokens (was hardcoded light); fixed pre-existing TS bug + real bug — SleepyRadio checked id === "pad" but the "First Light" station's id is "dawn", so the station silently produced no audio; now id === "dawn"
+- aesthetics.ts dreamcore entry: short + portalBlurb rewritten ("A meadow at the edge of the map, past midnight — glowing clouds, a tethered island, a bar of dreams."), grad [#141b3d,#ff9ed2,#7fd4dc], accent/accent2/bg/fg synced
+- homepage.tsx dreamcore PortalScene rebuilt: mini twilight sky + evening star + star dots, pink-gold cloud blob, meadow, tethered island SVG with rope, mini Bar of Dreams (striped canopy + glowing window + neon label), pond smear, flower dots
+- Verified via agent-browser: desktop 1440x900 + mobile 390x844 zero page errors and no horizontal overflow; journal editor opens/saves/deletes (paper readable, toast confirms privacy); postcard flips; Gallery/Archive tabs readable on dark panels; FX toggle verified — dc-sway/dc-glow animation-name goes dc-sway <-> none via .fx-off; "First Light" radio station starts with no errors; suspected background/backgroundSize warning traced to Fast Refresh hot-reload artifacts (absent on clean reload, absent on liminal control)
+- Refreshed docs/screenshots/dreamcore.png and docs/screenshots/home.png
+
+Stage Summary:
+- Dreamcore now mirrors the reference reel: a starry twilight meadow at the edge of the map with the great pink-gold cloud, a house tethered to the heavens, and the neon Bar of Dreams glowing at the meadow's edge
+- Whole theme flipped from bright day to dusk indigo with pink/teal accents; homepage portal card updated to match
+- Bonus: fixed the silent "First Light" radio station

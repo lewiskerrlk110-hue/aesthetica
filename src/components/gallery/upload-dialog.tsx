@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import { Upload, Image as ImageIcon, Loader2 } from "lucide-react";
 import { authHeaders } from "@/lib/identity";
 import { useApp } from "@/lib/store";
-import { WORLDS, MEDIUM_LABELS } from "@/lib/aesthetics";
+import { MEDIUM_LABELS } from "@/lib/aesthetics";
+import { useStudioWorlds } from "@/lib/worlds-config";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -13,6 +14,7 @@ import { Slider } from "@/components/ui/slider";
 // → stored as data URL in SQLite (persistent, no external storage needed).
 export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
   const navigate = useApp((s) => s.navigate);
+  const worlds = useStudioWorlds();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
       if (!res.ok) throw new Error(data.error || "Upload failed");
       toast({
         title: "Added to the archive",
-        description: `"${title}" is now part of the ${WORLDS.find((w) => w.id === aesthetic)?.name} gallery.`,
+        description: `"${title}" is now part of the ${worlds.find((w) => w.id === aesthetic)?.name ?? aesthetic} gallery.`,
       });
       navigate({ view: "world", world: aesthetic as never });
     } catch (e) {
@@ -83,7 +85,7 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
     }
   };
 
-  const world = WORLDS.find((w) => w.id === aesthetic)!;
+  const world = worlds.find((w) => w.id === aesthetic);
 
   return (
     <div className="w-page">
@@ -154,7 +156,7 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
                   value={aesthetic}
                   onChange={(e) => setAesthetic(e.target.value)}
                 >
-                  {WORLDS.map((w) => (
+                  {worlds.map((w) => (
                     <option key={w.id} value={w.id} className="bg-neutral-900">
                       {w.name}
                     </option>
@@ -179,7 +181,7 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
                 className="w-input"
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
-                placeholder={`e.g. ${world.name.toLowerCase()}, neon, dream`}
+                placeholder={`e.g. ${world?.name.toLowerCase() ?? "aesthetic"}, neon, dream`}
               />
             </label>
             <div>

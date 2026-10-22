@@ -153,3 +153,53 @@ model ArchiveArticle {
   kind      String @default("history") // history | interpretation
   order     Int    @default(0)
 }
+
+// ─────────────────────────────────────────────
+// STUDIO — the site editor
+// ─────────────────────────────────────────────
+
+// Uploaded media library (images, GIFs, videos, audio)
+model StudioAsset {
+  id        String   @id @default(cuid())
+  url       String // /uploads/<file>
+  filename  String // original name
+  stored    String // stored filename on disk
+  kind      String   @default("image") // image | video | audio
+  mime      String
+  size      Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// Overrides for the eight built-in worlds (ordering, copy, theme, bg media)
+model WorldOverride {
+  slug        String  @id // matches built-in WorldId
+  order       Int?
+  hidden      Boolean @default(false)
+  name        String?
+  epithet     String?
+  portalBlurb String?
+  theme       String? // JSON WorldThemePatch
+  bgMediaUrl  String?
+  bgSettings  String? // JSON BgSettings
+}
+
+// User-created worlds driven by a JSON scene graph
+model CustomWorld {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  epithet     String   @default("")
+  portalBlurb String   @default("")
+  order       Int      @default(100)
+  hidden      Boolean  @default(false)
+  theme       String   @default("{}") // JSON WorldThemePatch
+  scene       String   @default("{}") // JSON SceneDoc { bg, layers[] }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Site-level settings (key-value JSON strings)
+model SiteSetting {
+  key   String @id
+  value String
+}

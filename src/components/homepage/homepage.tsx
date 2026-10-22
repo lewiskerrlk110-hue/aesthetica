@@ -3,7 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import { HeroCanvas } from "./hero-canvas";
 import { useApp } from "@/lib/store";
-import { WORLDS, WORLD_MAP, type WorldId } from "@/lib/aesthetics";
+import { WORLD_MAP, type WorldId } from "@/lib/aesthetics";
+import { useStudioWorlds, useStudioConfig } from "@/lib/worlds-config";
+import type { PortalWorldDef } from "@/lib/studio";
+import { SceneStage } from "@/components/worlds/custom-world";
 import { ArtworkCard, type ArtworkDTO } from "@/components/gallery/artwork-card";
 import { ArrowRight, Search, Upload, Compass, ChevronDown } from "lucide-react";
 
@@ -11,10 +14,9 @@ import { ArrowRight, Search, Upload, Compass, ChevronDown } from "lucide-react";
 // NOTE: each case mirrors its world page's living environment. Whenever a
 // world is restyled (new reference look), update its case here too so the
 // homepage portal card stays in sync with the world page.
-function PortalScene({ world }: { world: WorldId }) {
-  const w = WORLD_MAP[world];
+function PortalScene({ w }: { w: PortalWorldDef }) {
   const common = "absolute inset-0";
-  switch (world) {
+  switch (w.id) {
     case "retrowave":
       return (
         <div className={common}>
@@ -335,11 +337,17 @@ function PortalScene({ world }: { world: WorldId }) {
           </svg>
         </div>
       );
+    default:
+      // Studio-built custom worlds: render their live scene graph, scaled to the card
+      return (
+        <div className={common}>
+          <SceneStage doc={w.scene} className="absolute inset-0" />
+        </div>
+      );
   }
 }
 
-function PortalCard({ world }: { world: WorldId }) {
-  const w = WORLD_MAP[world];
+function PortalCard({ w }: { w: PortalWorldDef }) {
   const navigate = useApp((s) => s.navigate);
   const [blurb, setBlurb] = useState(false);
   return (
@@ -350,14 +358,14 @@ function PortalCard({ world }: { world: WorldId }) {
       onMouseLeave={() => setBlurb(false)}
       onFocus={() => setBlurb(true)}
       onBlur={() => setBlurb(false)}
-      onClick={() => navigate({ view: "world", world })}
+      onClick={() => navigate({ view: "world", world: w.id })}
       aria-label={`Enter ${w.name} — ${w.epithet}`}
     >
-      <PortalScene world={world} />
+      <PortalScene w={w} />
       <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 z-20 p-4">
         <p className="text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: w.accent }}>
-          World 0{w.index}
+          World {String(w.index).padStart(2, "0")}
         </p>
         <h3 className="w-display mt-0.5 text-xl font-bold text-white">{w.name}</h3>
         <p className="text-[12px] italic text-white/60">{w.epithet}</p>
@@ -389,6 +397,8 @@ const COLLECTIONS: { title: string; desc: string; query: string; world: WorldId 
 export function Homepage() {
   const navigate = useApp((s) => s.navigate);
   const setSearchOpen = useApp((s) => s.setSearchOpen);
+  const worlds = useStudioWorlds();
+  const site = useStudioConfig((s) => s.site);
   const [featured, setFeatured] = useState<ArtworkDTO[]>([]);
   const [recent, setRecent] = useState<ArtworkDTO[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -425,7 +435,7 @@ export function Homepage() {
         />
         <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
           <p className="text-[12px] font-semibold uppercase tracking-[0.5em] text-white/70">
-            A living museum of internet aesthetics
+            {site.heroEyebrow}
           </p>
           <h1 className="mt-5 text-6xl font-black leading-[0.95] tracking-tight md:text-8xl">
             <span className="bg-gradient-to-r from-[#ff2e88] via-[#f7b4d0] via-50% to-[#9be8ff] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(255,46,136,0.35)]">
@@ -433,9 +443,7 @@ export function Homepage() {
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-[16px] leading-relaxed text-white/80 md:text-lg">
-            Eight interconnected worlds of art, nostalgia and digital subculture —
-            each a fully realised visual universe with its own archive, gallery and community.
-            Nostalgia for imagined futures, and futures imagined once more.
+            {site.heroSub}
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <button onClick={() => document.getElementById("portals")?.scrollIntoView({ behavior: "smooth" })} className="w-btn-primary w-btn !rounded-full !px-6 !py-3 !text-[15px] !text-white">
@@ -450,7 +458,7 @@ export function Homepage() {
           <div className="mt-10 flex items-center justify-center gap-6 text-[12px] text-white/50">
             <span>{stats ? `${stats.total}+ artworks` : "—"}</span>
             <span className="h-1 w-1 rounded-full bg-white/30" />
-            <span>8 worlds</span>
+            <span>{worlds.length} worlds</span>
             <span className="h-1 w-1 rounded-full bg-white/30" />
             <span>1 archive</span>
           </div>
@@ -461,16 +469,16 @@ export function Homepage() {
       {/* ——— PORTALS ——— */}
       <section id="portals" className="relative mx-auto max-w-7xl px-4 py-20">
         <header className="mb-10 text-center">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#7df2d8]">Choose a door</p>
-          <h2 className="mt-3 text-3xl font-bold md:text-4xl">The Eight Worlds</h2>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.4em] text-[#7df2d8]">{site.portalsKicker}</p>
+          <h2 className="mt-3 text-3xl font-bold md:text-4xl">{site.portalsTitle}</h2>
           <p className="mx-auto mt-3 max-w-xl text-[15px] text-white/60">
             Each portal opens a different reality: its own light, typography, motion and archive.
             Hover to preview. Enter to stay a while.
           </p>
         </header>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {WORLDS.map((w) => (
-            <PortalCard key={w.id} world={w.id} />
+          {worlds.map((w) => (
+            <PortalCard key={w.id} w={w} />
           ))}
         </div>
       </section>
@@ -599,7 +607,7 @@ export function Homepage() {
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          {WORLDS.map((w) => (
+          {worlds.filter((w) => w.kind === "builtin").map((w) => (
             <button
               key={w.id}
               onClick={() => navigate({ view: "world", world: w.id, tab: "archive" })}
@@ -611,7 +619,7 @@ export function Homepage() {
                   {w.name} <ArrowRight className="h-3.5 w-3.5 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </span>
                 <span className="mt-1 line-clamp-2 block text-[13.5px] leading-relaxed text-white/55">
-                  {w.archive[0].heading} — {w.archive[0].body.slice(0, 130)}…
+                  {w.archive?.[0] ? `${w.archive[0].heading} — ${w.archive[0].body.slice(0, 130)}…` : w.short}
                 </span>
               </span>
             </button>
@@ -626,7 +634,7 @@ export function Homepage() {
           <Upload className="mx-auto h-8 w-8 text-white/70" />
           <h2 className="mt-4 text-3xl font-bold md:text-4xl">Add your vision to the museum</h2>
           <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/65">
-            Upload artwork into any of the eight worlds. Your pieces join the gallery with full
+            Upload artwork into any of the {worlds.length} worlds. Your pieces join the gallery with full
             tagging, likes, comments and collections — no account needed, this device is your key.
           </p>
           <button onClick={() => navigate({ view: "upload" })} className="w-btn-primary w-btn mt-8 !rounded-full !px-8 !py-3.5 !text-[15px] !text-white">
@@ -645,12 +653,13 @@ export function Homepage() {
               <span className="text-[13px] tracking-[0.25em] text-white/70">AESTHETICA</span>
             </div>
             <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-[12.5px] text-white/50" aria-label="Footer">
-              {WORLDS.map((w) => (
+              {worlds.map((w) => (
                 <button key={w.id} onClick={() => navigate({ view: "world", world: w.id })} className="transition-colors hover:text-white">
                   {w.name}
                 </button>
               ))}
               <button onClick={() => navigate({ view: "profile" })} className="transition-colors hover:text-white">Profile</button>
+              <button onClick={() => navigate({ view: "studio" })} className="transition-colors hover:text-white">Studio</button>
             </nav>
             <p className="text-[11.5px] text-white/35">A living museum · art, history & community · MMXXVI</p>
           </div>

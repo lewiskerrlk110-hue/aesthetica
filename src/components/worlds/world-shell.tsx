@@ -28,7 +28,7 @@ export function WorldGallery({ world }: { world: WorldDef }) {
   }, [world.id, sort, identRef]);
 
   const filtered = filter === "all" ? arts : arts.filter((a) => a.medium === filter);
-  const filters = GALLERY_FILTERS[world.id];
+  const filters = GALLERY_FILTERS[world.id as WorldId] ?? ["all", "photograph", "render", "poster"];
 
   const handleLike = async (a: ArtworkDTO) => {
     const updated = await like(a);

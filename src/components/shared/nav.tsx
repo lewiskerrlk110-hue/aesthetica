@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useApp, type Route } from "@/lib/store";
-import { WORLDS, WORLD_MAP } from "@/lib/aesthetics";
+import { useStudioWorlds } from "@/lib/worlds-config";
 import { getIdentity, setName as saveName } from "@/lib/identity";
-import { Search, Upload, User, Home, Sparkles, ChevronDown } from "lucide-react";
+import { Search, Upload, User, Home, Sparkles, ChevronDown, Wrench } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 export function Nav() {
   const { route, navigate, searchOpen, setSearchOpen, fxReduced, setFxReduced } = useApp();
+  const worlds = useStudioWorlds();
   const [ident, setIdent] = useState({ id: "", name: "" });
   const [nameDraft, setNameDraft] = useState("");
 
@@ -29,7 +30,7 @@ export function Nav() {
   }, [route]);
 
   const onHome = route.view === "home";
-  const world = route.view === "world" ? WORLD_MAP[route.world] : null;
+  const world = route.view === "world" ? worlds.find((w) => w.id === route.world) : null;
 
   const go = (r: Route) => navigate(r);
 
@@ -58,7 +59,7 @@ export function Nav() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-72 border-white/15 bg-black/90 backdrop-blur-xl">
-              {WORLDS.map((w) => (
+              {worlds.map((w) => (
                 <DropdownMenuItem
                   key={w.id}
                   onClick={() => go({ view: "world", world: w.id })}
@@ -114,6 +115,14 @@ export function Nav() {
           >
             <Upload className="h-4 w-4" />
             <span className="hidden sm:inline">Add Artwork</span>
+          </button>
+          <button
+            onClick={() => go({ view: "studio" })}
+            className={`hidden items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors md:flex ${route.view === "studio" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"}`}
+            title="Open the Studio — edit every part of the site"
+          >
+            <Wrench className="h-4 w-4" />
+            <span className="hidden lg:inline">Studio</span>
           </button>
           <button
             onClick={() => setFxReduced(!fxReduced)}

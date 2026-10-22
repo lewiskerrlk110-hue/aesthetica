@@ -265,3 +265,30 @@ Work Log:
 Stage Summary:
 - The Backrooms now reads as the iconic Level 0: striped mono-yellow walls with trim, flush buzzing fluorescents in a drop-ceiling grid, doorless openings into further rooms (one lit, one black), damp mottled carpet with light shafts, an explorer reading a found note, a runner deeper in, something long-limbed on the ceiling, and a figure waiting in the far dark
 - Homepage portal card synchronized with the new scene look
+
+---
+Task ID: STUDIO-1
+Agent: main (Z.ai)
+Task: Build "AESTHETICA Studio" — a full site editor at /#/studio so the user can edit every part of the museum: reorder/hide worlds, rename and recolor them, add background media, build entirely new worlds from a layer-based scene graph, upload images/GIFs/videos, and edit homepage copy.
+
+Work Log:
+- Skipped re-running the platform init script (it extracts a scaffold tarball over the project — would clobber the committed repo; environment already initialized)
+- Prisma schema: added StudioAsset, WorldOverride (per-builtin overrides), CustomWorld (scene-graph worlds), SiteSetting (key-value site copy); db:push + client regenerate; restarted dev server to clear stale Prisma client (500s on /api/studio/worlds resolved)
+- src/lib/studio.ts: shared types (SceneLayer/SceneDoc/PortalWorldDef/WorldThemePatch/BgSettings), buildMergedWorlds merge engine (statics + overrides + customs, order-sorted, re-indexed), themeOverrideCss injector, slugify/starterScene helpers
+- src/lib/studio-auth.ts + /api/studio/auth: shared-PIN gate (env STUDIO_PIN, default "aesthetica"), HMAC token cookie
+- API: /api/studio/upload (multipart → /public/uploads, 60MB cap, image/video/audio), /api/studio/assets(+[id] delete), /api/studio/worlds (public GET merged config; POST create custom), /api/studio/worlds/[slug] (PATCH override/custom with null-clearing theme merge, DELETE reset-or-delete), /api/studio/order (bulk reorder), /api/studio/site (GET/PUT homepage copy)
+- src/lib/worlds-config.ts: zustand config store fetched on boot with static-registry fallback
+- custom-world.tsx: generic SceneStage renderer (geometry %, fonts in cqh container-query units, per-layer rotate/parallax/blend/animation via CSS vars, videos autoplay-muted-loop) + CustomWorldPage (scene behind hero, World/Gallery tabs) — used full-bleed and scaled-down inside portal cards
+- page.tsx: ThemeOverrides <style> injection, custom-world route fallback, BuiltinWorld background-media overlay layer (z between env and content), Studio route (standalone chrome), config-aware document.title
+- homepage.tsx: portals/footer/archive sections render the merged world list; PortalScene default case renders custom worlds' live scenes; site settings drive hero eyebrow/sub + portals kicker/title; dynamic world counts; footer Studio link
+- nav.tsx: dropdown from merged list, current-world label from config, wrench Studio button
+- upload-dialog.tsx: world selector now lists custom worlds; world-shell.tsx GALLERY_FILTERS guarded for unknown ids
+- globals.css: .studio-stage (container-type:size), s-parallax var-driven transform, 6 scene keyframes (float/drift/flicker/pulse/spin/sway) with fx-off + prefers-reduced-motion guards, studio input/label/color/scrollbar chrome
+- Studio UI: studio.tsx (PIN gate + Worlds/Media/Site tabs), worlds-manager.tsx (dnd-kit drag reorder persisted to /api/studio/order, hide/show eye toggles, create custom world), world-editor.tsx (identity/theme-colors-with-live-preview/background-media-with-opacity-blend-fit/scene-builder tabs, render-time draft resync), scene-editor.tsx (drag-to-move + 8-handle resize, layer list with z reorder/duplicate/delete, full inspector: text/media/shape/gradient fields, opacity/parallax/animation/blend, keyboard delete+arrow nudge), media-library.tsx (drag-drop upload, kind filters, delete, reusable MediaPicker), site-settings.tsx
+- Verified end-to-end with agent-browser: PIN unlock, accent color change → portal card live-updated, custom world "SolARPunk" created → scene built via UI (text edit, media pick, pointer drag X 20→36) → saved → /#/world/solarpunk renders all layers, portal card shows live mini-scene as World 09, site-settings kicker edit reflected on homepage, Y2K hide removed it from homepage (8 cards), drag-reorder persisted (synthwave→#1 then restored), backrooms bg-media overlay rendered then reset. Zero page/console errors on #/, backrooms, solarpunk, studio (fresh loads)
+- Screenshots: studio.png, studio-scene-editor.png, solarpunk.png, home-portals.png
+
+Stage Summary:
+- Studio live at /#/studio (PIN: aesthetica, override via STUDIO_PIN env). Built-ins keep hand-crafted canvas art but gain copy/color/order/visibility/background-media editing; custom worlds are fully user-built from layers. All mutations persist in SQLite and go live instantly.
+- Known scope: builtin world scenes themselves remain code (not layer-editable); uploads stored on local disk — Vercel deploys will need Blob/Turso migration as previously discussed; pre-existing /api/dreamseed?type=notes 500 (BackroomsNote.createdAt) untouched.
+- Left as a living demo: custom world SolARPunk (deletable in Studio) + test-media.jpg in the library.

@@ -1,15 +1,15 @@
 "use client";
 
 import { create } from "zustand";
-import type { WorldId } from "./aesthetics";
 
 export type Route =
   | { view: "home" }
-  | { view: "world"; world: WorldId; tab?: string }
+  | { view: "world"; world: string; tab?: string }
   | { view: "artwork"; id: string; back?: string }
   | { view: "search"; q?: string }
   | { view: "profile" }
   | { view: "upload" }
+  | { view: "studio" }
   | { view: "shared"; shareId: string };
 
 interface AppState {
@@ -29,7 +29,7 @@ function parseHash(): Route {
   if (seg[0] === "world" && seg[1]) {
     return {
       view: "world",
-      world: seg[1] as WorldId,
+      world: seg[1],
       tab: seg[2] || undefined,
     };
   }
@@ -37,6 +37,7 @@ function parseHash(): Route {
   if (seg[0] === "search") return { view: "search", q: new URLSearchParams(query || "").get("q") || "" };
   if (seg[0] === "profile") return { view: "profile" };
   if (seg[0] === "upload") return { view: "upload" };
+  if (seg[0] === "studio") return { view: "studio" };
   if (seg[0] === "shared" && seg[1]) return { view: "shared", shareId: seg[1] };
   return { view: "home" };
 }
@@ -53,6 +54,8 @@ function toHash(route: Route): string {
       return "#/profile";
     case "upload":
       return "#/upload";
+    case "studio":
+      return "#/studio";
     case "shared":
       return `#/shared/${route.shareId}`;
     default:

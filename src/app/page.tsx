@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useApp, initRouter } from "@/lib/store";
-import { WORLD_MAP, type WorldId } from "@/lib/aesthetics";
+import type { WorldId } from "@/lib/aesthetics";
+import { useStudioConfig, initStudioConfig } from "@/lib/worlds-config";
+import { themeOverrideCss, type PortalWorldDef } from "@/lib/studio";
 import { Nav } from "@/components/shared/nav";
 import { Homepage } from "@/components/homepage/homepage";
 import { SearchOverlay, SearchResults } from "@/components/gallery/search";
@@ -17,6 +19,8 @@ import { DreamcorePage } from "@/components/worlds/dreamcore";
 import { CyberpunkPage } from "@/components/worlds/cyberpunk";
 import { LiminalPage } from "@/components/worlds/liminal";
 import { BackroomsPage } from "@/components/worlds/backrooms";
+import { CustomWorldPage } from "@/components/worlds/custom-world";
+import { Studio } from "@/components/studio/studio";
 
 // Shared-entry artwork viewer: any route can open an artwork modal.
 function GlobalViewer() {
@@ -36,30 +40,94 @@ function GlobalViewer() {
   );
 }
 
-function WorldRouter() {
-  const route = useApp((s) => s.route);
-  if (route.view !== "world") return null;
-  const world = route.world as WorldId;
-  switch (world) {
+// Studio theme overrides — injected as CSS so color edits apply live.
+function ThemeOverrides() {
+  const worlds = useStudioConfig((s) => s.worlds);
+  const css = themeOverrideCss(worlds);
+  return <style>{css}</style>;
+}
+
+// Studio-assigned background media for built-in worlds: a media wash
+// layered between the world's living environment and its content.
+function BgOverlay({ def }: { def: PortalWorldDef }) {
+  if (!def.bgMediaUrl) return null;
+  const s = def.bgSettings || { opacity: 0.5, blend: "normal", fit: "cover", dim: 0.25 };
+  const isVideo = /\.(mp4|webm|mov|ogv)(\?|$)/i.test(def.bgMediaUrl);
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[5]" aria-hidden>
+      <div className="absolute inset-0" style={{ background: "#000", opacity: s.dim }} />
+      {isVideo ? (
+        <video
+          src={def.bgMediaUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 h-full w-full"
+          style={{ objectFit: s.fit, opacity: s.opacity, mixBlendMode: s.blend !== "normal" ? (s.blend as React.CSSProperties["mixBlendMode"]) : undefined }}
+        />
+      ) : (
+         
+        <img
+          src={def.bgMediaUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full"
+          style={{ objectFit: s.fit, opacity: s.opacity, mixBlendMode: s.blend !== "normal" ? (s.blend as React.CSSProperties["mixBlendMode"]) : undefined }}
+        />
+      )}
+    </div>
+  );
+}
+
+function BuiltinWorld({ slug, def }: { slug: string; def?: PortalWorldDef }) {
+  let page: React.ReactNode;
+  switch (slug as WorldId) {
     case "retrowave":
-      return <RetrowavePage />;
+      page = <RetrowavePage />;
+      break;
     case "synthwave":
-      return <SynthwavePage />;
+      page = <SynthwavePage />;
+      break;
     case "vaporwave":
-      return <VaporwavePage />;
+      page = <VaporwavePage />;
+      break;
     case "y2k":
-      return <Y2KPage />;
+      page = <Y2KPage />;
+      break;
     case "dreamcore":
-      return <DreamcorePage />;
+      page = <DreamcorePage />;
+      break;
     case "cyberpunk":
-      return <CyberpunkPage />;
+      page = <CyberpunkPage />;
+      break;
     case "liminal":
-      return <LiminalPage />;
+      page = <LiminalPage />;
+      break;
     case "backrooms":
-      return <BackroomsPage />;
+      page = <BackroomsPage />;
+      break;
     default:
       return <Homepage />;
   }
+  if (def?.bgMediaUrl) {
+    return (
+      <div className="relative">
+        <BgOverlay def={def} />
+        {page}
+      </div>
+    );
+  }
+  return page;
+}
+
+function WorldRouter() {
+  const route = useApp((s) => s.route);
+  const worlds = useStudioConfig((s) => s.worlds);
+  if (route.view !== "world") return null;
+  const slug = route.world;
+  const def = worlds.find((w) => w.id === slug);
+  if (def?.kind === "custom") return <CustomWorldPage def={def} />;
+  return <BuiltinWorld slug={slug} def={def} />;
 }
 
 // Shared dream journal links: read-only published entry
@@ -100,10 +168,12 @@ function SharedEntry() {
 
 export default function Home() {
   const route = useApp((s) => s.route);
+  const worlds = useStudioConfig((s) => s.worlds);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const cleanup = initRouter();
+    initStudioConfig();
     const id = requestAnimationFrame(() => setReady(true));
     return () => {
       cancelAnimationFrame(id);
@@ -113,15 +183,18 @@ export default function Home() {
 
   // keep document title in sync with the world you're in
   useEffect(() => {
-    if (route.view === "world" && WORLD_MAP[route.world as WorldId]) {
-      const w = WORLD_MAP[route.world as WorldId];
-      document.title = `${w.name} — ${w.epithet} · AESTHETICA`;
+    if (route.view === "world") {
+      const w = worlds.find((x) => x.id === route.world);
+      if (w) document.title = `${w.name} — ${w.epithet} · AESTHETICA`;
+      else document.title = "AESTHETICA — A Living Museum of Internet Aesthetics";
+    } else if (route.view === "studio") {
+      document.title = "Studio · AESTHETICA";
     } else if (route.view === "profile") {
       document.title = "Your Profile · AESTHETICA";
     } else {
       document.title = "AESTHETICA — A Living Museum of Internet Aesthetics";
     }
-  }, [route]);
+  }, [route, worlds]);
 
   if (!ready) {
     return (
@@ -131,13 +204,17 @@ export default function Home() {
     );
   }
 
-  // Shared entries and upload render standalone (no nav chrome clash)
+  // Shared entries, uploads and the Studio render standalone (no nav chrome clash)
   if (route.view === "shared") {
     return <SharedEntry />;
+  }
+  if (route.view === "studio") {
+    return <Studio />;
   }
 
   return (
     <div className="min-h-screen">
+      <ThemeOverrides />
       <Nav />
       <main>
         {route.view === "home" && <Homepage />}

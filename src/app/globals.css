@@ -828,3 +828,113 @@
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
 }
+
+/* ---------- STUDIO — scene graph renderer ---------- */
+/* A studio-stage scales its contents: geometry in %, font sizes in cqh.
+   Parallax layers read --px/--py set on the stage by the renderer. */
+
+.studio-stage {
+  container-type: size;
+  position: relative;
+  overflow: hidden;
+  --px: 0;
+  --py: 0;
+}
+
+.s-parallax {
+  transform: translate3d(
+    calc(var(--px, 0) * var(--d, 0) * 42px),
+    calc(var(--py, 0) * var(--d, 0) * 42px),
+    0
+  );
+  transition: transform 0.25s ease-out;
+  will-change: transform;
+}
+
+@keyframes s-float {
+  0%, 100% { transform: translateY(-3%); }
+  50% { transform: translateY(3%); }
+}
+@keyframes s-drift {
+  0% { transform: translate(-2%, 1%); }
+  25% { transform: translate(2%, -1%); }
+  50% { transform: translate(1%, 2%); }
+  75% { transform: translate(-1%, -2%); }
+  100% { transform: translate(-2%, 1%); }
+}
+@keyframes s-flicker {
+  0%, 100% { opacity: 1; }
+  8% { opacity: 0.4; }
+  10% { opacity: 1; }
+  32% { opacity: 1; }
+  34% { opacity: 0.55; }
+  36% { opacity: 1; }
+  70% { opacity: 0.85; }
+  72% { opacity: 1; }
+}
+@keyframes s-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+@keyframes s-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes s-sway {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50% { transform: rotate(1.6deg); }
+}
+
+.s-anim-float { animation: s-float ease-in-out infinite; }
+.s-anim-drift { animation: s-drift ease-in-out infinite; }
+.s-anim-flicker { animation: s-flicker steps(1, end) infinite; }
+.s-anim-pulse { animation: s-pulse ease-in-out infinite; }
+.s-anim-spin { animation: s-spin linear infinite; }
+.s-anim-sway { animation: s-sway ease-in-out infinite; transform-origin: 50% 90%; }
+
+.fx-off .s-anim-float, .fx-off .s-anim-drift, .fx-off .s-anim-flicker,
+.fx-off .s-anim-pulse, .fx-off .s-anim-spin, .fx-off .s-anim-sway {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .s-anim-float, .s-anim-drift, .s-anim-flicker,
+  .s-anim-pulse, .s-anim-spin, .s-anim-sway {
+    animation: none !important;
+  }
+  .s-parallax { transform: none !important; }
+}
+
+/* ---------- STUDIO — editor chrome ---------- */
+
+.studio-input {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.45rem 0.6rem;
+  font-size: 13px;
+  color: #f4f1fa;
+  outline: none;
+}
+.studio-input:focus { border-color: rgba(255, 46, 136, 0.65); }
+.studio-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 4px;
+}
+.studio-color {
+  width: 100%;
+  height: 30px;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 3px;
+  cursor: pointer;
+}
+.studio-scroll::-webkit-scrollbar { width: 9px; height: 9px; }
+.studio-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 99px; }
+.studio-scroll::-webkit-scrollbar-track { background: transparent; }

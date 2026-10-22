@@ -224,3 +224,23 @@ Stage Summary:
 - Dreamcore now mirrors the reference reel: a starry twilight meadow at the edge of the map with the great pink-gold cloud, a house tethered to the heavens, and the neon Bar of Dreams glowing at the meadow's edge
 - Whole theme flipped from bright day to dusk indigo with pink/teal accents; homepage portal card updated to match
 - Bonus: fixed the silent "First Light" radio station
+
+---
+Task ID: DC-SKY-1
+Agent: main (Z.ai)
+Task: Give the Dreamcore world an animated day/night cycle with controls to make it daytime
+
+Work Log:
+- Rebuilt DreamEnv (src/components/worlds/dreamcore.tsx) around a 24-hour palette system: 9 keyframe palettes (deep night 0/4.6, dawn 6.4, morning 8.4, high noon 13, golden hour 17.6, sunset 19.9, twilight 21.2, nightfall 22.8) interpolated with smoothstep between adjacent keys; the 21:2 twilight keyframe mirrors the reference-reel scene value-for-value so the default look is unchanged
+- Canvas fully parameterized by the interpolated palette: 4-stop sky gradient, horizon glow, starfield brightness (fades to 0 by day), evening star crossfade, dream-day sun on a 05:48-20:06 arc (warm low / pale high, drawn behind the cumulus, positioned at 0.79w clear of the hero text), cumulus under-shadow/body/lit/highlight stops, distant clouds, rainbow alpha, hill fills + rim-light alphas, meadow gradient, pond water/reflection/shimmer, dream-mote brightness
+- DOM overlays tinted from the same palette: tethered island (earth/grass/roof gradients, rim light, house wall, window glow strength), rope, Bar of Dreams kiosk (body/counter/poles lighten by day, warm window dims, neon sign drops to a pastel script, light pool fades) — all via mix/rgbaMix helpers over P.day
+- New SkyConsole (heroExtra, visible in the hero): 0-24h slider with HH:MM label + aria-valuetext, preset chips (Midnight/Dawn/Noon/Dusk, active chip accent-ringed), and a Turn the sky button that auto-cycles a full 24h in 48s via rAF (wraps at midnight, Pause the sky freezes state); hint line swaps with play state
+- Features tree memoized (useMemo []) so per-frame tod updates only re-render the environment; tod state + rAF loop live at page level
+- src/lib/canvas.ts: useCanvasLoop now keeps a redrawStaticRef — in reduced-motion mode a changing draw callback (slider/preset) refreshes the single static frame; previously the static canvas never repainted on prop changes (benefits all worlds)
+- Added top scrim (rgba(10,12,30) alpha = palette.scrim, 0 at night up to 0.36 at noon) so the hero title stays readable against a bright day sky; bottom grounding gradient now palette-driven
+- Verified via agent-browser at 1440x900 + 390x844: zero page errors, default 21:12 scene pixel-faithful to the previous look; noon preset flips the whole scene to dream-day; autoplay advanced 13:00 -> 14:42 in ~3.2s (exact 24h/48s rate) and Pause freezes the value; midnight preset shows the brighter starfield; FX-off (reduced) + Noon still repaints the canvas (validating the hook fix); no horizontal overflow on mobile; eslint clean, tsc clean on touched files
+- Refreshed docs/screenshots/dreamcore.png (canonical dusk) and added docs/screenshots/dreamcore-day.png (noon with the console)
+
+Stage Summary:
+- Dreamcore now runs on a living 24-hour sky: drag the slider or hit Turn the sky and the whole world — clouds, meadow, sun/stars, tethered island, Bar of Dreams — turns through dawn, dream-day noon, golden hour and back to starlight
+- The reference-reel twilight remains the default and the homepage portal look; daytime is one click away

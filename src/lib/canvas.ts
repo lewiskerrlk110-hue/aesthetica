@@ -11,10 +11,15 @@ export function useCanvasLoop(
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawRef = useRef(draw);
   const reducedRef = useRef(options?.reduced ?? false);
+  const redrawStaticRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     drawRef.current = draw;
     reducedRef.current = options?.reduced ?? false;
+    // Reduced motion renders a single static frame: when the scene's inputs
+    // change (e.g. a time-of-day slider), refresh that frame even though the
+    // rAF loop stays disabled.
+    if (reducedRef.current) redrawStaticRef.current?.();
   });
 
   useEffect(() => {
@@ -56,6 +61,7 @@ export function useCanvasLoop(
       resize();
       drawRef.current(ctx, w, h, 4000, 0);
     };
+    redrawStaticRef.current = drawStatic;
 
     resize();
 

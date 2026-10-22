@@ -8,6 +8,9 @@ import { ArtworkCard, type ArtworkDTO } from "@/components/gallery/artwork-card"
 import { ArrowRight, Search, Upload, Compass, ChevronDown } from "lucide-react";
 
 // ————— Portal mini-scenes (pure CSS/SVG, one per world) —————
+// NOTE: each case mirrors its world page's living environment. Whenever a
+// world is restyled (new reference look), update its case here too so the
+// homepage portal card stays in sync with the world page.
 function PortalScene({ world }: { world: WorldId }) {
   const w = WORLD_MAP[world];
   const common = "absolute inset-0";
@@ -17,30 +20,144 @@ function PortalScene({ world }: { world: WorldId }) {
         <div className={common}>
           <div className="absolute inset-0" style={{ background: `linear-gradient(#1a0a2e 0%, #54123f 55%, ${w.accent} 100%)` }} />
           <div className="absolute left-1/2 top-[30%] h-14 w-14 -translate-x-1/2 rounded-full" style={{ background: `linear-gradient(#ffe6a0,${w.accent})`, boxShadow: `0 0 34px 6px ${w.accent}` }} />
+          {/* distant city silhouette with amber lights (matches page canvas) */}
+          {[4, 12, 21, 33, 58, 69, 79, 90].map((l, i) => (
+            <div key={i} className="absolute" style={{ left: `${l}%`, bottom: "45%", width: "8%", height: `${8 + ((i * 29) % 18)}%`, background: "rgba(12,4,26,0.9)" }} />
+          ))}
+          {[9, 20, 37, 62, 74, 86, 95].map((l, i) => (
+            <div key={`l${i}`} className="absolute h-[2px] w-[2px] bg-[#ffb347]" style={{ left: `${l}%`, bottom: `${47 + ((i * 17) % 15)}%`, opacity: 0.75 }} />
+          ))}
           <svg className="absolute bottom-0 h-[45%] w-full" preserveAspectRatio="none" viewBox="0 0 100 40">
             {Array.from({ length: 9 }, (_, i) => <line key={i} x1={50 + (i - 4) * 22} y1="0" x2={50 + (i - 4) * 110} y2="40" stroke={w.accent} strokeWidth="0.5" opacity="0.8" />)}
             {[2, 6, 12, 22, 40].map((y, i) => <line key={i} x1="0" y1={y} x2="100" y2={y} stroke={w.accent2} strokeWidth="0.4" opacity="0.8" />)}
+            <rect x="0" y="0" width="100" height="7" fill="#ff2e88" opacity="0.22" />
           </svg>
         </div>
       );
     case "synthwave":
       return (
         <div className={common}>
-          <div className="absolute inset-0" style={{ background: `linear-gradient(${w.bg} 0%, #31065c 70%, ${w.accent} 130%)` }} />
-          <div className="absolute left-1/2 top-[26%] h-12 w-12 -translate-x-1/2 rounded-full ambient-spin" style={{ background: w.accent, boxShadow: `0 0 28px 4px ${w.accent}` }} />
-          <svg className="absolute bottom-0 h-[42%] w-full" preserveAspectRatio="none" viewBox="0 0 100 40">
-            <polyline points="0,38 18,20 34,38 52,16 70,38 86,22 100,34 100,40 0,40" fill="none" stroke={w.accent2} strokeWidth="0.7" />
-            <polyline points="0,30 20,16 40,30 60,14 80,30 100,18" fill="none" stroke={w.accent} strokeWidth="0.5" opacity="0.7" />
+          {/* sky — deep purple falling into hot magenta (page SynthEnv, classic mood) */}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(#2b0a4d 0%, #d61c95 58%, #ff5ad4 100%)" }} />
+          {[8, 20, 33, 47, 62, 78, 90].map((l, i) => (
+            <div key={`s${i}`} className="absolute h-[2px] w-[2px] bg-[#ffeaff]" style={{ left: `${l}%`, top: `${4 + ((i * 23) % 20)}%`, opacity: 0.5 + ((i * 13) % 4) * 0.12 }} />
+          ))}
+          {/* the sun — white-hot core, widening stripe cuts */}
+          <svg className="absolute left-1/2 top-[5%] h-[56%] w-auto -translate-x-1/2" viewBox="0 0 200 200" aria-hidden>
+            <defs>
+              <radialGradient id="pv-sw-sun" cx="0.5" cy="0.3" r="0.85">
+                <stop offset="0" stopColor="#fff6fd" />
+                <stop offset="0.45" stopColor="#ff5ad4" />
+                <stop offset="1" stopColor="#d61c95" />
+              </radialGradient>
+              <mask id="pv-sw-mask">
+                <rect width="200" height="200" fill="#fff" />
+                <rect x="0" y="116" width="200" height="6" fill="#000" />
+                <rect x="0" y="134" width="200" height="8" fill="#000" />
+                <rect x="0" y="154" width="200" height="11" fill="#000" />
+                <rect x="0" y="177" width="200" height="14" fill="#000" />
+              </mask>
+            </defs>
+            <circle cx="100" cy="100" r="96" fill="url(#pv-sw-sun)" mask="url(#pv-sw-mask)" />
           </svg>
+          {/* skyline silhouettes with lit windows */}
+          {[[5, 8, 12], [14, 6, 9], [22, 9, 16], [58, 7, 13], [67, 9, 17], [79, 6, 10], [88, 8, 14]].map(([l, wp, hp], i) => (
+            <div key={`b${i}`} className="absolute" style={{ left: `${l}%`, bottom: "38%", width: `${wp}%`, height: `${hp}%`, background: "rgba(34,8,63,0.92)" }}>
+              <div className="absolute left-[28%] top-[30%] h-[3px] w-[3px]" style={{ background: i % 2 ? "#7de8ff" : "#ff5ad4", boxShadow: `0 0 4px ${i % 2 ? "#7de8ff" : "#ff5ad4"}` }} />
+              {i % 3 === 0 && <div className="absolute left-[62%] top-[58%] h-[3px] w-[3px] bg-[#ff5ad4]" style={{ boxShadow: "0 0 4px #ff5ad4" }} />}
+            </div>
+          ))}
+          {/* ground, perspective grid + neon road with streaming dashes */}
+          <svg className="absolute bottom-0 h-[38%] w-full" preserveAspectRatio="none" viewBox="0 0 100 40">
+            <rect width="100" height="40" fill="#08010f" />
+            <rect width="100" height="8" fill="#ff5ad4" opacity="0.35" />
+            {Array.from({ length: 13 }, (_, i) => (
+              <line key={`v${i}`} x1={50 + (i - 6) * 1.8} y1="0" x2={50 + (i - 6) * 9.5} y2="40" stroke="#ff4fd8" strokeWidth="0.35" opacity="0.55" />
+            ))}
+            {[1, 3, 7, 14, 26].map((y, i) => (
+              <line key={`h${i}`} x1="0" y1={y} x2="100" y2={y} stroke="#ff4fd8" strokeWidth="0.3" opacity="0.45" />
+            ))}
+            <line x1="47.6" y1="0" x2="17" y2="40" stroke="#ff5ad4" strokeWidth="0.9" opacity="0.95" />
+            <line x1="52.4" y1="0" x2="83" y2="40" stroke="#ff5ad4" strokeWidth="0.9" opacity="0.95" />
+            {[[50, 2, 1.6], [50, 5.5, 2.4], [50, 11, 3.6], [50, 19, 5], [50, 30, 6.5]].map(([x, y, hh], i) => (
+              <rect key={`d${i}`} x={x - 0.5} y={y} width="1" height={hh} fill="#ff5ad4" opacity="0.9" />
+            ))}
+          </svg>
+          {/* two cruisers holding their lanes (page positions 57.4% / 44.8%) */}
+          <div className="absolute" style={{ left: "57.4%", bottom: "9%", width: 30, transform: "translateX(-50%)" }}>
+            <div className="h-[7px] rounded-t-[3px] bg-[#12031f]" style={{ boxShadow: "0 2px 6px rgba(255,46,200,0.85)", borderBottom: "1.5px solid #ff2ec8" }}>
+              <div className="mx-auto mt-[1px] h-[2.5px] w-3/5 rounded-t-sm bg-[#ff77e0]/50" />
+            </div>
+          </div>
+          <div className="absolute" style={{ left: "44.8%", bottom: "21%", width: 24, transform: "translateX(-50%)" }}>
+            <div className="h-[6px] rounded-t-[3px] bg-[#12031f]" style={{ boxShadow: "0 2px 5px rgba(35,230,255,0.8)", borderBottom: "1.5px solid #23e6ff" }}>
+              <div className="mx-auto mt-[1px] h-[2px] w-3/5 rounded-t-sm bg-[#7de8ff]/50" />
+            </div>
+          </div>
         </div>
       );
     case "vaporwave":
       return (
         <div className={common}>
-          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, #3d2266, #6d4a8f 60%, ${w.accent2})` }} />
-          <div className="absolute bottom-0 left-0 right-0 h-[38%]" style={{ background: "repeating-conic-gradient(#3d2b5c 0% 25%, #57407e 0% 50%) 50%/22px 22px", transform: "perspective(120px) rotateX(38deg)", transformOrigin: "top" }} />
-          <div className="ambient-soft absolute left-[24%] top-[18%] h-16 w-12 rounded-[50%] bg-[#f5ede0] shadow-lg" />
-          <div className="absolute right-[16%] top-[30%] rounded border border-[#7df2d8] bg-black/40 px-2 py-1 font-mono text-[8px] text-[#7df2d8]">system.exe</div>
+          {/* sunset sky + banded sun (page VaporEnv) */}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,#7b4fb0 0%,#a86fd0 34%,#dfa0da 58%,#f6c1dd 82%)" }} />
+          <svg className="absolute left-1/2 top-[7%] h-[40%] w-auto -translate-x-1/2" viewBox="0 0 200 200" aria-hidden style={{ filter: "drop-shadow(0 0 14px #ff9ed288)" }}>
+            <defs>
+              <radialGradient id="pv-vp-sun" cx="0.42" cy="0.36" r="0.75">
+                <stop offset="0" stopColor="#ffe0f0" />
+                <stop offset="0.55" stopColor="#ffa8d8" />
+                <stop offset="1" stopColor="#ef74be" />
+              </radialGradient>
+              <mask id="pv-vp-mask">
+                <rect width="200" height="200" fill="#fff" />
+                <rect x="0" y="118" width="200" height="9" fill="#000" />
+                <rect x="0" y="139" width="200" height="11" fill="#000" />
+                <rect x="0" y="162" width="200" height="13" fill="#000" />
+                <rect x="0" y="187" width="200" height="13" fill="#000" />
+              </mask>
+            </defs>
+            <circle cx="100" cy="100" r="88" fill="url(#pv-vp-sun)" mask="url(#pv-vp-mask)" />
+          </svg>
+          {/* wireframe mountains */}
+          <svg className="absolute inset-x-0 bottom-[30%] h-[24%] w-full" preserveAspectRatio="none" viewBox="0 0 100 30">
+            <path d="M0 20 L12 8 L24 17 L38 5 L52 16 L64 9 L78 18 L90 10 L100 17" fill="#4a2f86" fillOpacity="0.5" stroke="#5d3f9e" strokeWidth="0.6" />
+            <path d="M0 26 L15 18 L30 25 L48 15 L64 24 L80 17 L100 23 L100 30 L0 30 Z" fill="#3a2470" fillOpacity="0.65" stroke="#5d3f9e" strokeWidth="0.5" />
+          </svg>
+          {/* marble columns */}
+          {[[74, 22, 26], [84, 18, 20], [91, 14, 15]].map(([l, hh, wp], i) => (
+            <div key={`c${i}`} className="absolute" style={{ left: `${l}%`, bottom: "26%", height: `${hh}%`, width: `${wp / 3}%`, background: "linear-gradient(90deg,#f6c8e6,#d898cc 55%,#a464aa)", opacity: 1 - i * 0.14, boxShadow: "inset 0 3px 0 #f6d4ec" }} />
+          ))}
+          {/* checkerboard floor */}
+          <div className="absolute inset-x-[-20%] bottom-[-14%] h-[42%]" style={{ background: "repeating-conic-gradient(#8a5fb8 0% 25%, #bd8ed4 0% 50%) 50% / 34px 34px", transform: "perspective(150px) rotateX(52deg)", transformOrigin: "top", maskImage: "linear-gradient(to bottom, black 55%, transparent)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent)" }} />
+          {/* floating solids */}
+          <div className="ambient-float absolute left-[12%] top-[24%] h-6 w-6 rounded-full" style={{ background: "radial-gradient(circle at 32% 28%, #eafcf8, #7de8d8 45%, #3aa898 85%)", animationDelay: "-3s" }} />
+          <svg className="ambient-float absolute left-[24%] top-[14%] h-6 w-6" viewBox="0 0 100 100" style={{ animationDelay: "-5s" }} aria-hidden>
+            <polygon points="50 4 96 50 50 96 4 50" fill="#ef74be" stroke="#ffd7ee" strokeWidth="4" />
+            <polygon points="50 22 78 50 50 78 22 50" fill="#d860ac" />
+          </svg>
+          <svg className="ambient-float absolute right-[22%] top-[16%] h-5 w-5" viewBox="0 0 100 100" style={{ animationDelay: "-6s" }} aria-hidden>
+            <path d="M50 6 L95 84 L5 84 Z" fill="#f07ac0" stroke="#ffe0f0" strokeWidth="4" />
+            <path d="M50 38 L68 70 L32 70 Z" fill="#c488d4" />
+          </svg>
+          {/* marble bust on plinth */}
+          <svg className="absolute bottom-[22%] left-1/2 h-[34%] w-auto -translate-x-1/2" viewBox="0 0 170 240" aria-hidden>
+            <defs>
+              <linearGradient id="pv-vp-marble" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#fbeef8" />
+                <stop offset="0.55" stopColor="#ddc9de" />
+                <stop offset="1" stopColor="#b394bc" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="85" cy="233" rx="62" ry="6" fill="#1a0e30" opacity="0.4" />
+            <path d="M38 138 L45 96 Q49 86 55 84 L55 76 Q46 68 46 52 Q46 30 63 30 Q80 30 80 52 Q80 68 71 76 L71 84 Q77 86 81 96 L88 138 Z" fill="url(#pv-vp-marble)" />
+            <ellipse cx="63" cy="52" rx="17" ry="20" fill="#fbeef8" />
+            <polygon points="45,192 125,192 118,185 52,185" fill="#efe0ee" />
+            <rect x="45" y="192" width="80" height="34" fill="#c4a0c8" />
+            <rect x="63" y="199" width="44" height="15" fill="#140b22" />
+            <text x="85" y="210" textAnchor="middle" fontSize="10" fill="#f5ecff" style={{ fontFamily: "var(--font-ibm-plex-mono), monospace" }}>未来はここにある</text>
+          </svg>
+          {/* vertical neon */}
+          <span className="absolute right-[3%] top-[22%] font-mono text-[9px] tracking-[0.3em] text-[#ffd7ee]" style={{ writingMode: "vertical-rl", textShadow: "0 0 8px #ff9ed2, 0 0 16px #e070b8" }}>過去未来</span>
         </div>
       );
     case "y2k":
@@ -122,12 +239,80 @@ function PortalScene({ world }: { world: WorldId }) {
     case "backrooms":
       return (
         <div className={common}>
-          <div className="absolute inset-0 bg-[#b5a24a]" />
-          <div className="absolute inset-x-[24%] top-[30%] bottom-0 bg-[#cbb95c]" style={{ clipPath: "polygon(22% 0, 78% 0, 100% 100%, 0 100%)" }} />
-          <div className="ambient-flicker absolute inset-x-0 top-0 flex justify-around">
-            {Array.from({ length: 5 }, (_, i) => <div key={i} className="h-2.5 w-10 bg-[#fdf3c0]" style={{ opacity: 0.55 + (i % 3) * 0.18 }} />)}
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 h-[16%] bg-[#6e6230]" />
+          {/* Level 0 colonnade (page BackroomsEnv): one-point perspective,
+              tiled ceiling with louvered fluorescents, pillars into the gloom,
+              damp carpet, hazmat explorer */}
+          <svg className="h-full w-full" viewBox="0 0 300 224" preserveAspectRatio="xMidYMid slice" aria-hidden>
+            <defs>
+              <linearGradient id="pv-br-ceil" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#cab97f" />
+                <stop offset="1" stopColor="#857641" />
+              </linearGradient>
+              <linearGradient id="pv-br-floor" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#1f1908" />
+                <stop offset="1" stopColor="#57491f" />
+              </linearGradient>
+              <linearGradient id="pv-br-pillar" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stopColor="#d0ba6e" />
+                <stop offset="1" stopColor="#9a8746" />
+              </linearGradient>
+            </defs>
+            <rect width="300" height="224" fill="#bda75c" />
+            {/* far end of the hall */}
+            <rect x="136" y="86" width="28" height="42" fill="#d8c88a" />
+            <rect x="143" y="98" width="14" height="30" fill="#4c4019" />
+            {/* ceiling */}
+            <polygon points="0,0 300,0 236,60 64,60" fill="url(#pv-br-ceil)" />
+            {[-60, 30, 110, 190, 268, 350].map((x, i) => (
+              <line key={`j${i}`} x1={x} y1="0" x2={150 + (x - 150) * 0.19} y2="60" stroke="#6e5f28" strokeWidth="1" opacity="0.7" />
+            ))}
+            {/* louvered fluorescents receding, nearest flickers */}
+            <g className="ambient-flicker" style={{ animationDuration: "7s" }}>
+              <ellipse cx="150" cy="8" rx="52" ry="8" fill="#fdf6d2" opacity="0.25" />
+              <rect x="106" y="4" width="88" height="7" rx="1.5" fill="#3e3616" />
+              {[0, 1, 2, 3].map((b) => (
+                <rect key={b} x={110 + b * 21} y="5.5" width="17" height="4" rx="1" fill="#fdf6d2" />
+              ))}
+            </g>
+            <rect x="126" y="22" width="48" height="5" rx="1" fill="#3e3616" />
+            {[0, 1, 2, 3].map((b) => (
+              <rect key={`m${b}`} x={128 + b * 11.5} y="23" width="9.5" height="3" rx="0.5" fill="#fdf6d2" opacity="0.9" />
+            ))}
+            <rect x="139" y="36" width="22" height="3" rx="0.5" fill="#3e3616" />
+            {[0, 1, 2, 3].map((b) => (
+              <rect key={`f${b}`} x={140 + b * 5.4} y="36.8" width="4.4" height="1.8" rx="0.3" fill="#fdf6d2" opacity="0.75" />
+            ))}
+            {/* damp carpet */}
+            <polygon points="64,60 236,60 300,224 0,224" fill="url(#pv-br-floor)" />
+            {/* pillars receding into the gloom, far first */}
+            {([
+              [141, 5, 92, 116, 0.55],
+              [163, 5, 92, 116, 0.55],
+              [124, 8, 84, 126, 0.48],
+              [178, 8, 84, 126, 0.48],
+              [96, 13, 72, 142, 0.38],
+              [204, 13, 72, 142, 0.38],
+              [40, 22, 52, 168, 0.24],
+              [248, 22, 52, 168, 0.24],
+              [-14, 40, 22, 210, 0.1],
+              [276, 40, 22, 210, 0.1],
+            ] as const).map(([x, wp, yt, yb, fog], i) => (
+              <g key={`p${i}`}>
+                <rect x={x} y={yt} width={wp} height={yb - yt} fill="url(#pv-br-pillar)" />
+                <rect x={x + wp} y={yt} width={Math.max(1.5, wp * 0.22)} height={yb - yt} fill="#4c4019" />
+                <rect x={x} y={yt} width={wp} height={yb - yt} fill={`rgba(33,25,9,${fog})`} />
+              </g>
+            ))}
+            {/* hazmat explorer reading a note by the near-right pillar */}
+            <g className="bl-bob" style={{ animationDuration: "5s" }}>
+              <ellipse cx="238" cy="164" rx="12" ry="2.6" fill="rgba(8,6,2,0.4)" />
+              <rect x="233" y="128" width="13" height="26" rx="4" fill="#8f8838" />
+              <rect x="236" y="131" width="7" height="17" rx="2.5" fill="#6e6730" />
+              <circle cx="239.5" cy="122" r="5" fill="#8f8838" />
+              <circle cx="238" cy="124" r="2" fill="#8f8736" />
+              <rect x="248" y="126" width="7" height="9" fill="#efe8d0" transform="rotate(-6 251 130)" />
+            </g>
+          </svg>
         </div>
       );
   }

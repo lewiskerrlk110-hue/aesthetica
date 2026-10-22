@@ -185,3 +185,22 @@ Work Log:
 Stage Summary:
 - Homepage hero is now "The Constellation of Eight Worlds" — a living universe that literally contains the museum's eight worlds as flaring stars around a central galaxy
 - Committed and pushed to github.com/lewiskerrlk110-hue/aesthetica (main)
+
+---
+Task ID: PORTAL-SYNC-1
+Agent: main (Z.ai)
+Task: Match the homepage portal preview cards with the current world page styles, and keep them in sync for future world restyles
+
+Work Log:
+- Surveyed all 8 PortalScene cases against their world pages: y2k + cyberpunk already synced from their restyles; synthwave, vaporwave and backrooms previews still showed pre-restyle scenes; retrowave preview lacked the page's city silhouette; dreamcore/liminal pages unrestyled (previews already match)
+- homepage.tsx: added a maintenance comment on PortalScene — update the case whenever a world page is restyled
+- synthwave preview rebuilt (mirrors SynthEnv classic mood): #2b0a4d→#d61c95→#ff5ad4 sky, twinkling dots, big banded sun (SVG radial + mask stripe cuts, same construction as page), 7 skyline silhouettes with glowing cyan/pink windows, dark ground with magenta perspective grid, neon road rails converging (47.6/52.4 → 17/83) + centre lane dashes, two mini cruisers at the page's lane positions (57.4% / 44.8%)
+- vaporwave preview rebuilt (mirrors VaporEnv): #7b4fb0→#f6c1dd sunset sky, banded pink sun (page BandedSun pattern), purple wireframe mountain ridges, 3 marble columns right, perspective checkerboard floor (#8a5fb8/#bd8ed4, masked fade), floating solids (teal sphere, pink diamond, Penrose), marble bust on plinth with 未来はここにある, vertical neon 過去未来
+- backrooms preview rebuilt (mirrors BackroomsEnv Level 0 colonnade): one-point perspective SVG — ceiling gradient + joists, 3 receding louvered fluorescent fixtures (nearest flickers), far hall opening, dark carpet floor, 10 pillars receding with fog overlays and #4c4019 sides, tiny hazmat explorer reading a pinned note (bl-bob)
+- retrowave preview upgraded: added 8-block city silhouette with amber window dots + horizon road-glow band to match the page canvas
+- Verified via agent-browser at 1440x900: portals grid renders all 8 cards correctly, zero console/page errors, eslint clean
+
+Stage Summary:
+- All homepage portal cards now visually match their world pages' current looks (synthwave/vaporwave/backrooms rebuilt, retrowave augmented, y2k/cyberpunk already in sync)
+- PortalScene now carries an explicit sync rule in a code comment: restyle a world page -> update its portal case in the same change
+- Committed and pushed to github.com/lewiskerrlk110-hue/aesthetica (main)

@@ -557,3 +557,21 @@ Work Log:
 
 Stage Summary:
 - The redundant "Signed in as" menu is gone from the top-right of every page. The nav now shows the actual signed-in account: avatar + display handle (hover for the email) linking to Profile & collection, a Studio shortcut for staff, and a one-click Sign out. Guest state is a single Sign in button.
+
+---
+Task ID: STUDIO-REORG-1
+Agent: main (Z.ai)
+Task: "update studio to allow reorganising the site on the main page and in the worlds also if the background has an uploaded media remove the old background"
+
+Work Log:
+- Schema: WorldOverride + sections (JSON SectionsConfig) — additive db push, data intact; dev server restarted on the new Prisma client
+- lib/studio.ts: SectionsConfig + parseSections/stringifySections sanitisers, HOME_SECTIONS + WORLD_SECTIONS canon lists, SiteSettings.homeSections ("" = default), PortalWorldDef.sections wired through buildMergedWorlds
+- New shared Studio component sections-editor.tsx: drag-to-reorder list (dnd-kit) with per-row show/hide eyes + "restore default layout", used by both levels
+- Main page: "Main page sections" card in the Main Page tab (portals / featured / collections / recent / archive / upload CTA); homepage renders the configured order via CSS order on a flex-column root (hero first, footer last, "Begin the tour" scrolls to the first visible section); hidden sections skipped
+- Worlds: new "Sections" tab in the world editor (built-ins) — reorder/hide features block, Gallery and Archive tabs (relative order = tab order + landing tab) and the Related-worlds strip; world-page.tsx renders blocks in the configured order, adapts the floating switcher (World button only when features visible, switcher hidden when fewer than two destinations), honours hidden tabs with safe fallbacks
+- lib/media-cleanup.ts (server): releaseUploadedMedia deletes the uploaded file + StudioAsset row unless still referenced (scans all world overrides, site settings, custom-world scenes, artworks, fragments); releaseRemovedSceneMedia diffs scene JSON rewrites; wired into worlds PATCH (bg swap/clear), worlds DELETE (reset/delete), site PUT (hero swap/clear), custom-world scene updates and deletions
+- Verified via curl + agent-browser: replacing/clearing a world bg and the hero media removes the old upload from disk + DB; two worlds sharing one upload keep it until the last reference clears; sections payload sanitised server-side (bogus ids dropped, canonical order completed); drag-reorder in the Main Page card moved Upload CTA above Featured (live), eye-hide + save hid Featured on the public homepage, visual order portals→upload→collections→recent→archive confirmed by geometry; world page with order [archive, gallery] landed on the Archive with switcher [World, Archive, Gallery] and the related strip hidden; restore-default + save returned both pages to stock; 0 console errors; test uploads all released (public/uploads back to its two original files)
+- Screenshots: docs/screenshots/reorg-homepage.png, reorg-world-archive-first.png
+
+Stage Summary:
+- The Studio now reorganises both levels of the site: the homepage's six content sections (order + visibility) from the Main Page tab, and each built-in world's page blocks (features / gallery / archive tabs / related strip) from a new Sections tab — every change previews live and lands for visitors on save. Uploaded backgrounds are self-cleaning: replacing, clearing, resetting or deleting a world (or the hero media) removes the orphaned file unless something else still uses it.

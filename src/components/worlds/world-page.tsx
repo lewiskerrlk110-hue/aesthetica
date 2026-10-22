@@ -117,7 +117,6 @@ export function WorldPage({
         </div>
 
         <RelatedWorlds world={world} />
-        <div className="h-16" aria-hidden />
       </div>
     </div>
   );

@@ -347,3 +347,17 @@ Work Log:
 
 Stage Summary:
 - "Step through a neighbouring world" is once again a normal section at the very bottom of each world page — the page scrolls freely with nothing pinned to the viewport; Studio-hidden worlds still excluded; dock CSS cleaned up.
+
+---
+Task ID: DOCK-FLUSH-1
+Agent: main (Z.ai)
+Task: Pin the "Step through a neighbouring world" section flush to the bottom (it sat slightly above the bottom) and make it slightly transparent.
+
+Work Log:
+- world-page.tsx: removed the h-16 spacer after RelatedWorlds — the section is now the last element of the page, so when fully scrolled its bottom edge sits exactly at the viewport bottom (verified rect.bottom 900 == innerHeight 900, flushToBottom true, docEnd true)
+- world-shell.tsx: section band made slightly transparent — background changed from color-mix(var(--w-bg) 82%, black) to color-mix(var(--w-bg) 58%, transparent) + backdrop-blur-[10px]; the fixed world environment (mountains, checker floor, aqua sky) now glows through the glassy band while chips stay readable
+- Verified: vaporwave (dark) and frutiger (light) both flush at page end with correct chips; mid-scroll elementsFromPoint check confirms nothing is pinned (pinnedMidScroll false); zero page/console errors; eslint + tsc clean on changed files
+- Screenshots: docs/screenshots/related-worlds-flush.png, related-worlds-flush-frutiger.png
+
+Stage Summary:
+- The neighbouring-worlds section now ends the page flush with the screen bottom as a translucent frosted band that lets each world's backdrop shine through; still in normal flow (nothing pinned while browsing).

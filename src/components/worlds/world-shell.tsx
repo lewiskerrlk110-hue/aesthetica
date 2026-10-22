@@ -162,8 +162,8 @@ export function RelatedWorlds({ world }: { world: WorldDef }) {
 
   return (
     <section
-      className="relative z-10 border-t border-[var(--w-panel-border)]"
-      style={{ background: "color-mix(in srgb, var(--w-bg) 82%, black)" }}
+      className="related-worlds relative z-10 border-t border-[var(--w-panel-border)] backdrop-blur-[10px]"
+      style={{ background: "color-mix(in srgb, var(--w-bg) 58%, transparent)" }}
       aria-label="Step through a neighbouring world"
     >
       <div className="mx-auto max-w-7xl px-4 py-12">

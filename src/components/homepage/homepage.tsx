@@ -5,7 +5,7 @@ import { HeroCanvas } from "./hero-canvas";
 import { useApp } from "@/lib/store";
 import { WORLD_MAP, type WorldId } from "@/lib/aesthetics";
 import { useStudioWorlds, useStudioConfig } from "@/lib/worlds-config";
-import { fontStack, type PortalWorldDef } from "@/lib/studio";
+import { fontStack, effectClass, type PortalWorldDef } from "@/lib/studio";
 import { SceneStage } from "@/components/worlds/custom-world";
 import { ArtworkCard, type ArtworkDTO } from "@/components/gallery/artwork-card";
 import { ArrowRight, Search, Upload, Compass, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
@@ -555,10 +555,11 @@ export function Homepage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const featuredRef = useRef<HTMLDivElement>(null);
 
-  // Studio typography: site display/body fonts + hero title scale.
+  // Studio typography: site display/body fonts + hero title scale + wordmark effect.
   const pageFontDisplay = fontStack(site.fontDisplay);
   const pageFontBody = fontStack(site.fontBody);
   const pageTitleScale = Math.min(1.6, Math.max(0.6, parseFloat(site.heroTitleScale) || 1));
+  const wordmarkFx = site.heroTitleEffect && site.heroTitleEffect !== "none" ? effectClass(site.heroTitleEffect) : "";
   const pageVars = {
     "--page-font-display": pageFontDisplay ?? undefined,
     "--page-title-scale": pageTitleScale !== 1 ? String(pageTitleScale) : undefined,
@@ -624,7 +625,12 @@ export function Homepage() {
             {site.heroEyebrow}
           </p>
           <h1 className="page-display page-hero-title mt-5 font-black">
-            <span className="bg-gradient-to-r from-[#ff2e88] via-[#f7b4d0] via-50% to-[#9be8ff] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(255,46,136,0.35)]">
+            <span
+              className={
+                wordmarkFx ||
+                "bg-gradient-to-r from-[#ff2e88] via-[#f7b4d0] via-50% to-[#9be8ff] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(255,46,136,0.35)]"
+              }
+            >
               AESTHETICA
             </span>
           </h1>

@@ -3,6 +3,24 @@
 // Client-safe: no server-only imports here.
 // ─────────────────────────────────────────────
 
+/** Visual treatments for a world's hero title (the retrowave-logo vibe). */
+export type TitleEffect = "none" | "chrome" | "neon" | "holo" | "vapor" | "outline";
+
+export const TITLE_EFFECTS: { value: TitleEffect; label: string; desc: string }[] = [
+  { value: "none", label: "None", desc: "flat colour" },
+  { value: "chrome", label: "Chrome", desc: "80s gradient metal" },
+  { value: "neon", label: "Neon", desc: "glow-tube halo" },
+  { value: "holo", label: "Holographic", desc: "iridescent sheen" },
+  { value: "vapor", label: "Vapor", desc: "pastel drift" },
+  { value: "outline", label: "Outline", desc: "hollow neon tube" },
+];
+
+/** CSS class for a title effect key ("" for none/unknown). */
+export function effectClass(effect?: string | null): string {
+  if (!effect || effect === "none") return "";
+  return `ae-fx-${effect}`;
+}
+
 export interface WorldThemePatch {
   bg?: string;
   bg2?: string;
@@ -27,28 +45,66 @@ export interface WorldThemePatch {
   heroOffsetY?: number;
   /** Content column max-width in rem (default 80 = max-w-7xl). */
   contentWidth?: number;
+  /** Hero title visual effect: chrome | neon | holo | vapor | outline | none. */
+  titleEffect?: string;
+  /** FONT_LIBRARY key for the epithet/tagline (e.g. a retro script). "" = world default. */
+  epithetFont?: string;
 }
 
 // ————— Font library —————
 // Every font is loaded once in layout.tsx via next/font and exposed as a
 // CSS variable; a Studio pick just re-points --w-font-* / --page-font-*.
+export type FontGenre = "retro" | "techno" | "y2k" | "dream" | "eerie" | "fresh" | "script" | "clean";
+
+export const FONT_GENRES: Record<FontGenre, { label: string; color: string }> = {
+  retro: { label: "Retro", color: "#ff2e88" },
+  techno: { label: "Techno", color: "#9be8ff" },
+  y2k: { label: "Y2K", color: "#b8a6ff" },
+  dream: { label: "Dream", color: "#cdb4ff" },
+  eerie: { label: "Eerie", color: "#ffb347" },
+  fresh: { label: "Fresh", color: "#7df2d8" },
+  script: { label: "Script", color: "#ff9ecb" },
+  clean: { label: "Clean", color: "rgba(255,255,255,0.5)" },
+};
+
 export interface FontDef {
   key: string;
   label: string;
   hint: string;
   stack: string;
+  genre?: FontGenre;
 }
 
 export const FONT_LIBRARY: FontDef[] = [
-  { key: "orbitron", label: "Orbitron", hint: "techno display", stack: "var(--font-orbitron), sans-serif" },
-  { key: "audiowide", label: "Audiowide", hint: "retro wide", stack: "var(--font-audiowide), sans-serif" },
-  { key: "space-grotesk", label: "Space Grotesk", hint: "modern grotesk", stack: "var(--font-space-grotesk), sans-serif" },
-  { key: "outfit", label: "Outfit", hint: "geometric sans", stack: "var(--font-outfit), sans-serif" },
-  { key: "dm-sans", label: "DM Sans", hint: "clean body text", stack: "var(--font-dm-sans), sans-serif" },
-  { key: "ibm-plex-sans", label: "IBM Plex Sans", hint: "neutral workhorse", stack: "var(--font-ibm-plex-sans), sans-serif" },
-  { key: "ibm-plex-mono", label: "IBM Plex Mono", hint: "terminal mono", stack: "var(--font-ibm-plex-mono), monospace" },
-  { key: "fraunces", label: "Fraunces", hint: "soft editorial serif", stack: "var(--font-fraunces), serif" },
-  { key: "caveat", label: "Caveat", hint: "handwritten", stack: "var(--font-caveat), cursive" },
+  // — retro / chrome / neon —
+  { key: "michroma", label: "Michroma", hint: "wide chrome caps — 80s logo lettering", stack: "var(--font-michroma), sans-serif", genre: "retro" },
+  { key: "monoton", label: "Monoton", hint: "neon tube outlines — boardwalk signs", stack: "var(--font-monoton), cursive", genre: "retro" },
+  { key: "audiowide", label: "Audiowide", hint: "retro wide techno", stack: "var(--font-audiowide), sans-serif", genre: "retro" },
+  { key: "orbitron", label: "Orbitron", hint: "techno display", stack: "var(--font-orbitron), sans-serif", genre: "retro" },
+  // — script accents —
+  { key: "mrs-saint-delafield", label: "Mrs Saint Delafield", hint: "flowing signature script — the pink \u201cFace\u201d", stack: "var(--font-mrs-saint-delafield), cursive", genre: "script" },
+  { key: "yellowtail", label: "Yellowtail", hint: "brushy retro script", stack: "var(--font-yellowtail), cursive", genre: "script" },
+  { key: "caveat", label: "Caveat", hint: "casual handwritten", stack: "var(--font-caveat), cursive", genre: "script" },
+  // — y2k —
+  { key: "bungee", label: "Bungee", hint: "chunky signage caps", stack: "var(--font-bungee), sans-serif", genre: "y2k" },
+  { key: "righteous", label: "Righteous", hint: "rounded bubble display", stack: "var(--font-righteous), sans-serif", genre: "y2k" },
+  // — techno / cyberpunk —
+  { key: "rajdhani", label: "Rajdhani", hint: "condensed cyber headings", stack: "var(--font-rajdhani), sans-serif", genre: "techno" },
+  { key: "share-tech-mono", label: "Share Tech Mono", hint: "hacker terminal mono", stack: "var(--font-share-tech-mono), monospace", genre: "techno" },
+  { key: "ibm-plex-mono", label: "IBM Plex Mono", hint: "terminal mono", stack: "var(--font-ibm-plex-mono), monospace", genre: "techno" },
+  { key: "vt323", label: "VT323", hint: "phosphor CRT terminal", stack: "var(--font-vt323), monospace", genre: "techno" },
+  // — eerie / liminal —
+  { key: "special-elite", label: "Special Elite", hint: "worn typewriter — found notes", stack: "var(--font-special-elite), cursive", genre: "eerie" },
+  // — fresh / frutiger —
+  { key: "quicksand", label: "Quicksand", hint: "glossy rounded — aero bubbles", stack: "var(--font-quicksand), sans-serif", genre: "fresh" },
+  { key: "outfit", label: "Outfit", hint: "geometric sans", stack: "var(--font-outfit), sans-serif", genre: "fresh" },
+  // — dream —
+  { key: "cormorant-garamond", label: "Cormorant Garamond", hint: "soft storybook serif", stack: "var(--font-cormorant-garamond), serif", genre: "dream" },
+  { key: "fraunces", label: "Fraunces", hint: "soft editorial serif", stack: "var(--font-fraunces), serif", genre: "dream" },
+  // — clean workhorses —
+  { key: "space-grotesk", label: "Space Grotesk", hint: "modern grotesk", stack: "var(--font-space-grotesk), sans-serif", genre: "clean" },
+  { key: "dm-sans", label: "DM Sans", hint: "clean body text", stack: "var(--font-dm-sans), sans-serif", genre: "clean" },
+  { key: "ibm-plex-sans", label: "IBM Plex Sans", hint: "neutral workhorse", stack: "var(--font-ibm-plex-sans), sans-serif", genre: "clean" },
 ];
 
 /** CSS font-family stack for a FONT_LIBRARY key, or null if unknown/empty. */
@@ -56,6 +112,116 @@ export function fontStack(key?: string | null): string | null {
   if (!key) return null;
   return FONT_LIBRARY.find((f) => f.key === key)?.stack ?? null;
 }
+
+// ————— Genre packs —————
+// One-click typography moods, curated per internet aesthetic. Applying a
+// pack sets the display font, body font, epithet font and hero-title
+// effect in one stroke — e.g. the retrowave logo pairing: wide chrome
+// caps + flowing script.
+export interface GenrePack {
+  key: string;
+  label: string;
+  blurb: string;
+  fontDisplay: string;
+  fontBody: string;
+  epithetFont: string; // "" = leave the world's default
+  effect: TitleEffect;
+  /** Built-in world ids this pack was tuned for (highlighted in Studio). */
+  worlds: string[];
+  /** Sample words shown on the pack card. */
+  sample: string;
+}
+
+export const GENRE_PACKS: GenrePack[] = [
+  {
+    key: "retro-chrome",
+    label: "Retro Chrome",
+    blurb: "Wide chrome caps + flowing script — the 1987 ski-logo pairing.",
+    fontDisplay: "michroma",
+    fontBody: "dm-sans",
+    epithetFont: "mrs-saint-delafield",
+    effect: "chrome",
+    worlds: ["retrowave", "synthwave"],
+    sample: "NORTH",
+  },
+  {
+    key: "neon-drive",
+    label: "Neon Drive",
+    blurb: "Retro-wide techno with a hot neon halo and brush-script accents.",
+    fontDisplay: "audiowide",
+    fontBody: "space-grotesk",
+    epithetFont: "yellowtail",
+    effect: "neon",
+    worlds: ["synthwave", "retrowave"],
+    sample: "DRIVE",
+  },
+  {
+    key: "mall-neon",
+    label: "Mall Neon",
+    blurb: "Boardwalk tube-lettering over a casual hand — pastel and dreamy.",
+    fontDisplay: "monoton",
+    fontBody: "caveat",
+    epithetFont: "caveat",
+    effect: "vapor",
+    worlds: ["vaporwave"],
+    sample: "A E S T H E T I C",
+  },
+  {
+    key: "bubble-pop",
+    label: "Bubble Pop",
+    blurb: "Chunky signage caps, rounded bubbles, iridescent sheen.",
+    fontDisplay: "bungee",
+    fontBody: "outfit",
+    epithetFont: "righteous",
+    effect: "holo",
+    worlds: ["y2k"],
+    sample: "CYBER",
+  },
+  {
+    key: "lucid-serif",
+    label: "Lucid Serif",
+    blurb: "Soft storybook serif for half-remembered rooms.",
+    fontDisplay: "cormorant-garamond",
+    fontBody: "dm-sans",
+    epithetFont: "caveat",
+    effect: "none",
+    worlds: ["dreamcore", "liminal"],
+    sample: "Reverie",
+  },
+  {
+    key: "found-tape",
+    label: "Found Tape",
+    blurb: "Worn typewriter headings — notes left in yellow rooms.",
+    fontDisplay: "special-elite",
+    fontBody: "ibm-plex-sans",
+    epithetFont: "vt323",
+    effect: "outline",
+    worlds: ["backrooms", "liminal"],
+    sample: "LEVEL 0",
+  },
+  {
+    key: "ghost-terminal",
+    label: "Ghost Terminal",
+    blurb: "Condensed cyber headings + phosphor mono, cold and precise.",
+    fontDisplay: "rajdhani",
+    fontBody: "share-tech-mono",
+    epithetFont: "",
+    effect: "neon",
+    worlds: ["cyberpunk"],
+    sample: "JACK_IN",
+  },
+  {
+    key: "aero-gloss",
+    label: "Aero Gloss",
+    blurb: "Glossy rounded humanism — bubbles, skies and optimism.",
+    fontDisplay: "quicksand",
+    fontBody: "dm-sans",
+    epithetFont: "",
+    effect: "none",
+    worlds: ["frutiger"],
+    sample: "Breathe",
+  },
+];
 
 export interface BgSettings {
   opacity: number; // 0–1
@@ -148,6 +314,8 @@ export interface SiteSettings {
   heroOffsetY: string;
   /** Hero copy column max-width in rem, "" = default 56. */
   heroCopyWidth: string;
+  /** Homepage wordmark effect: chrome | neon | holo | vapor | outline | "" = none. */
+  heroTitleEffect: string;
 }
 
 export const DEFAULT_SITE: SiteSettings = {
@@ -166,6 +334,7 @@ export const DEFAULT_SITE: SiteSettings = {
   heroHeight: "88",
   heroOffsetY: "0",
   heroCopyWidth: "",
+  heroTitleEffect: "",
 };
 
 /** The world object the museum UI consumes — built-ins overridden by Studio data,
@@ -332,6 +501,8 @@ export function themeVarsFor(def: PortalWorldDef): Record<string, string> {
   if (fd) vars["--w-font-display"] = fd;
   const fb = fontStack(def.theme?.fontBody);
   if (fb) vars["--w-font-body"] = fb;
+  const fe = fontStack(def.theme?.epithetFont);
+  if (fe) vars["--w-font-epithet"] = fe;
   if (def.theme?.titleScale) vars["--w-title-scale"] = String(def.theme.titleScale);
   return vars;
 }
@@ -358,6 +529,8 @@ export function themeOverrideCss(worlds: PortalWorldDef[]): string {
     if (fd) vars.push(`--w-font-display:${fd}`);
     const fb = fontStack(t?.fontBody);
     if (fb) vars.push(`--w-font-body:${fb}`);
+    const fe = fontStack(t?.epithetFont);
+    if (fe) vars.push(`--w-font-epithet:${fe}`);
     if (t?.titleScale) vars.push(`--w-title-scale:${t.titleScale}`);
     if (w.kind === "custom") {
       const v = themeVarsFor(w);

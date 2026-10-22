@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────
 import { useEffect, useRef } from "react";
 import { useApp } from "@/lib/store";
-import { themeVarsFor, fontStack, type PortalWorldDef, type SceneDoc, type SceneLayer } from "@/lib/studio";
+import { themeVarsFor, fontStack, effectClass, type PortalWorldDef, type SceneDoc, type SceneLayer } from "@/lib/studio";
 import { WorldGallery } from "./world-shell";
 import type { WorldDef } from "@/lib/aesthetics";
 
@@ -223,12 +223,31 @@ export function CustomWorldPage({ def }: { def: PortalWorldDef }) {
           <p className="text-[12px] font-bold uppercase tracking-[0.5em]" style={{ color: def.accent, textShadow: `0 0 18px ${def.accent}66` }}>
             World {num}
           </p>
-          <h1 className="w-display w-hero-title mt-4 font-black" style={{ color: def.fg, textShadow: "0 2px 24px rgba(0,0,0,0.45)" }}>
-            {def.name}
-          </h1>
-          <p className="mt-4 text-[17px] italic opacity-90" style={{ color: def.accent2, textShadow: "0 1px 10px rgba(0,0,0,0.55)" }}>
-            {def.epithet}
-          </p>
+          {(() => {
+            const fx = effectClass(def.theme?.titleEffect);
+            return (
+              <>
+                <h1
+                  className={`w-display w-hero-title mt-4 font-black ${fx}`}
+                  style={fx ? undefined : { color: def.fg, textShadow: "0 2px 24px rgba(0,0,0,0.45)" }}
+                >
+                  {def.name}
+                </h1>
+                <p
+                  className="mt-4 opacity-90"
+                  style={{
+                    color: def.accent2,
+                    textShadow: "0 1px 6px rgba(0,0,0,0.4)",
+                    fontFamily: fontStack(def.theme?.epithetFont) ?? undefined,
+                    fontSize: def.theme?.epithetFont ? "30px" : undefined,
+                    lineHeight: def.theme?.epithetFont ? 1.3 : undefined,
+                  }}
+                >
+                  {def.epithet}
+                </p>
+              </>
+            );
+ })()}
           <p className="mx-auto mt-5 max-w-2xl text-balance text-[15.5px] leading-relaxed opacity-80">{def.short}</p>
         </section>
 

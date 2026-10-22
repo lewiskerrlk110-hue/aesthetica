@@ -1,14 +1,17 @@
 "use client";
 
 // STUDIO — Main Page: everything about the museum's homepage —
-// hero copy, how the worlds are presented (grid or carousel), and an
-// optional hero background media layer over the cosmic canvas.
+// hero copy, typography & wordmark effects, positioning, how the worlds
+// are presented (grid or carousel), an optional hero background media
+// layer over the cosmic canvas — all mirrored live in the preview panel.
 import { useEffect, useState } from "react";
 import { Save, LayoutGrid, GalleryHorizontal, ImagePlus, X } from "lucide-react";
-import { useStudioConfig } from "@/lib/worlds-config";
+import { useStudioConfig, publishSiteDraft } from "@/lib/worlds-config";
 import { MediaPicker } from "./media-library";
-import { FontPicker, AlignPicker, SliderRow, type AlignValue } from "./design-controls";
+import { FontPicker, EffectPicker, AlignPicker, SliderRow, type AlignValue } from "./design-controls";
+import { LivePreview } from "./preview-panel";
 import type { SiteSettings, PortalsLayout } from "@/lib/studio";
+import { fontStack } from "@/lib/studio";
 
 const LAYOUT_OPTIONS: { value: PortalsLayout; icon: typeof LayoutGrid; title: string; desc: string }[] = [
   {
@@ -40,6 +43,13 @@ export function SiteSettingsForm() {
     setDraft(site);
   }
 
+  // live preview: stream unsaved main-page edits into every open page
+  useEffect(() => {
+    const t = setTimeout(() => publishSiteDraft(draft), 160);
+    return () => clearTimeout(t);
+  }, [draft]);
+  useEffect(() => () => publishSiteDraft(null), []);
+
   const save = async () => {
     setSaving(true);
     const r = await fetch("/api/studio/site", {
@@ -51,6 +61,7 @@ export function SiteSettingsForm() {
     if (r.ok) {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+      publishSiteDraft(null); // drop the draft — saved data takes over
       await reload();
     }
   };
@@ -71,7 +82,8 @@ export function SiteSettingsForm() {
   const heroIsVideo = /\.(mp4|webm|mov|ogv)(\?|$)/i.test(draft.heroMediaUrl);
 
   return (
-    <div className="max-w-2xl space-y-9">
+    <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
+      <div className="max-w-2xl min-w-0 flex-1 space-y-9">
       {/* ——— Hero copy ——— */}
       <section className="space-y-5">
         <h3 className="text-[12px] font-semibold uppercase tracking-[0.3em] text-white/45">Hero copy</h3>
@@ -173,6 +185,20 @@ export function SiteSettingsForm() {
           />
           <p className="mt-1 text-[11px] text-white/35">Scales the AESTHETICA hero wordmark; 100% is the built-in size.</p>
         </div>
+        <div>
+          <label className="studio-label">Wordmark effect</label>
+          <p className="mb-2 text-[11.5px] text-white/40">
+            The treatment on AESTHETICA itself — chrome metal, neon halo, holographic sheen…
+          </p>
+          <EffectPicker
+            value={draft.heroTitleEffect || "none"}
+            onChange={(v) => setDraft({ ...draft, heroTitleEffect: v === "none" ? "" : v })}
+            accent="#ff2e88"
+            accent2="#9be8ff"
+            fontFamily={fontStack(draft.fontDisplay) ?? undefined}
+            sample="AESTHETICA"
+          />
+        </div>
       </section>
 
       {/* ——— Hero layout ——— */}
@@ -267,6 +293,12 @@ export function SiteSettingsForm() {
         World counts, portal cards and the footer adjust automatically to your world list — adding
         or hiding worlds updates the museum everywhere, including these labels.
       </p>
+      </div>
+
+      {/* ——— live preview ——— */}
+      <div className="w-full shrink-0 xl:sticky xl:top-[72px] xl:w-[540px]">
+        <LivePreview path="/#/" />
+      </div>
     </div>
   );
 }

@@ -1,12 +1,12 @@
 "use client";
 
 // STUDIO — shared design controls: font pickers with live specimen
-// previews and a 3-way alignment segmented control. Used by the
-// Main Page editor and the per-world "Type & layout" tab.
-import { FONT_LIBRARY } from "@/lib/studio";
+// previews, visual title-effect tiles and a 3-way alignment segmented
+// control. Used by the Main Page editor and the per-world "Type & FX" tab.
+import { FONT_LIBRARY, FONT_GENRES, TITLE_EFFECTS, effectClass, type FontGenre } from "@/lib/studio";
 import { AlignLeft, AlignCenter, AlignRight, RotateCcw } from "lucide-react";
 
-/** Grid of font specimen cards. value === "" means "(default)". */
+/** Grid of font specimen cards, grouped by genre. value === "" means "(default)". */
 export function FontPicker({
   value,
   onChange,
@@ -18,14 +18,18 @@ export function FontPicker({
   allowDefault?: boolean;
   defaultLabel?: string;
 }) {
+  const groups = (Object.keys(FONT_GENRES) as FontGenre[])
+    .map((g) => ({ genre: g, fonts: FONT_LIBRARY.filter((f) => f.genre === g) }))
+    .filter((g) => g.fonts.length > 0);
+
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+    <div className="space-y-3">
       {allowDefault && (
         <button
           type="button"
           onClick={() => onChange("")}
           aria-pressed={value === ""}
-          className={`rounded-xl border p-3 text-left transition-colors ${
+          className={`w-full rounded-xl border p-3 text-left transition-colors ${
             value === "" ? "border-[#ff2e88] bg-[#ff2e88]/10" : "border-white/12 bg-white/[0.03] hover:bg-white/[0.06]"
           }`}
         >
@@ -36,23 +40,83 @@ export function FontPicker({
           <p className="text-[10.5px] text-white/40">keeps the built-in font</p>
         </button>
       )}
-      {FONT_LIBRARY.map((f) => (
-        <button
-          key={f.key}
-          type="button"
-          onClick={() => onChange(f.key)}
-          aria-pressed={value === f.key}
-          className={`rounded-xl border p-3 text-left transition-colors ${
-            value === f.key ? "border-[#ff2e88] bg-[#ff2e88]/10" : "border-white/12 bg-white/[0.03] hover:bg-white/[0.06]"
-          }`}
-        >
-          <p className="truncate text-[16px] text-white" style={{ fontFamily: f.stack }}>
-            Aa Bb 123
+      {groups.map((g) => (
+        <div key={g.genre}>
+          <p
+            className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.25em]"
+            style={{ color: FONT_GENRES[g.genre].color }}
+          >
+            {FONT_GENRES[g.genre].label}
           </p>
-          <p className="mt-1.5 truncate text-[11px] font-medium text-white/80">{f.label}</p>
-          <p className="truncate text-[10.5px] text-white/40">{f.hint}</p>
-        </button>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {g.fonts.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => onChange(f.key)}
+                aria-pressed={value === f.key}
+                className={`rounded-xl border p-3 text-left transition-colors ${
+                  value === f.key ? "border-[#ff2e88] bg-[#ff2e88]/10" : "border-white/12 bg-white/[0.03] hover:bg-white/[0.06]"
+                }`}
+              >
+                <p className="truncate text-[16px] text-white" style={{ fontFamily: f.stack }}>
+                  Aa Bb 123
+                </p>
+                <p className="mt-1.5 truncate text-[11px] font-medium text-white/80">{f.label}</p>
+                <p className="truncate text-[10.5px] text-white/40">{f.hint}</p>
+              </button>
+            ))}
+          </div>
+        </div>
       ))}
+    </div>
+  );
+}
+
+/** Visual title-effect tiles — each renders real text with the real effect,
+ *  tinted by the world's accent pair. Pass accent/accent2 for accuracy. */
+export function EffectPicker({
+  value,
+  onChange,
+  accent = "#ff2e88",
+  accent2 = "#7df2d8",
+  fontFamily,
+  sample = "AESTHETICA",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  accent?: string;
+  accent2?: string;
+  fontFamily?: string;
+  sample?: string;
+}) {
+  const vars = { "--w-accent": accent, "--w-accent2": accent2 } as React.CSSProperties;
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {TITLE_EFFECTS.map((e) => {
+        const cls = effectClass(e.value);
+        const selected = value === e.value || (!value && e.value === "none");
+        return (
+          <button
+            key={e.value}
+            type="button"
+            onClick={() => onChange(e.value)}
+            aria-pressed={selected}
+            className={`rounded-xl border p-3 transition-colors ${
+              selected ? "border-[#ff2e88] bg-[#ff2e88]/10" : "border-white/12 bg-white/[0.03] hover:bg-white/[0.06]"
+            }`}
+          >
+            <p
+              className={`truncate text-[19px] font-black leading-tight ${cls}`}
+              style={{ ...vars, fontFamily: fontFamily || undefined, color: cls ? undefined : "#f4f1fa" }}
+            >
+              {sample}
+            </p>
+            <p className="mt-2 text-[11px] font-medium text-white/80">{e.label}</p>
+            <p className="truncate text-[10.5px] text-white/40">{e.desc}</p>
+          </button>
+        );
+      })}
     </div>
   );
 }

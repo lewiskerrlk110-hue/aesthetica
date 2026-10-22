@@ -4,6 +4,7 @@ import { useApp } from "@/lib/store";
 import { useEffect } from "react";
 import { type WorldDef } from "@/lib/aesthetics";
 import { useStudioConfig } from "@/lib/worlds-config";
+import { effectClass, fontStack } from "@/lib/studio";
 import { WorldGallery, WorldArchive, RelatedWorlds } from "./world-shell";
 
 export function WorldPage({
@@ -26,6 +27,19 @@ export function WorldPage({
   const heroAlign = studioTheme?.heroAlign ?? "center";
   const heroAlignCls =
     heroAlign === "left" ? "items-start text-left" : heroAlign === "right" ? "items-end text-right" : "items-center text-center";
+  // Hero title effect: an explicit Studio pick wins; otherwise fall back to
+  // the world's built-in signature treatment (retrowave neon, y2k holo, …).
+  const fx =
+    studioTheme?.titleEffect !== undefined
+      ? effectClass(studioTheme.titleEffect)
+      : world.id === "retrowave"
+        ? "neon-text"
+        : world.id === "y2k"
+          ? "holo-text"
+          : world.id === "vaporwave"
+            ? "vapor-text"
+            : "";
+  const epithetFont = fontStack(studioTheme?.epithetFont);
 
   // scroll content into view when switching tabs
   useEffect(() => {
@@ -67,18 +81,21 @@ export function WorldPage({
             World 0{world.index}
           </p>
           <h1
-            className={`w-display w-hero-title mt-4 font-black ${
-              world.id === "retrowave" ? "neon-text" : world.id === "y2k" ? "holo-text" : world.id === "vaporwave" ? "vapor-text" : ""
-            }`}
-            style={
-              world.id === "retrowave" || world.id === "y2k" || world.id === "vaporwave"
-                ? undefined
-                : { color: world.fg }
-            }
+            className={`w-display w-hero-title mt-4 font-black ${fx}`}
+            style={fx ? undefined : { color: world.fg }}
           >
             {world.name}
           </h1>
-          <p className="mt-4 text-[17px] italic opacity-90" style={{ color: world.accent2, textShadow: "0 1px 10px rgba(0,0,0,0.55), 0 0 22px rgba(0,0,0,0.35)" }}>
+          <p
+            className="mt-4 opacity-90"
+            style={{
+              color: world.accent2,
+              textShadow: epithetFont ? "0 1px 6px rgba(0,0,0,0.4)" : "0 1px 10px rgba(0,0,0,0.55), 0 0 22px rgba(0,0,0,0.35)",
+              fontFamily: epithetFont ?? undefined,
+              fontSize: epithetFont ? "30px" : undefined,
+              lineHeight: epithetFont ? 1.3 : undefined,
+            }}
+          >
             {world.epithet}
           </p>
           <p className="mx-auto mt-5 max-w-2xl text-balance text-[15.5px] leading-relaxed opacity-80">

@@ -361,3 +361,27 @@ Work Log:
 
 Stage Summary:
 - The neighbouring-worlds section now ends the page flush with the screen bottom as a translucent frosted band that lets each world's backdrop shine through; still in normal flow (nothing pinned while browsing).
+
+---
+Task ID: STUDIO-LIVE-1
+Agent: main (Z.ai)
+Task: "overhaul the studio for more advanced customisation that includes positioning and fonts" + "create a preview window on the changes you can make live and make genre specific fonts such as the retrowave logo i attached" — Studio v2: live preview window, genre font packs (retro chrome + script per the attached 80s logo), title effects, hero positioning.
+
+Work Log:
+- layout.tsx: 12 new genre fonts via next/font/google — Monoton, Michroma, Mrs Saint Delafield, Yellowtail (retro chrome/script — the logo pairing), Bungee, Righteous (Y2K), VT323, Special Elite (eerie), Rajdhani, Share Tech Mono (cyber), Quicksand (aero), Cormorant Garamond (dream); all exposed as CSS variables on <body>
+- lib/studio.ts: FONT_LIBRARY now genre-tagged (retro/script/y2k/techno/eerie/fresh/dream/clean with colours) and grown to 21 families; TITLE_EFFECTS registry + effectClass() helper (chrome | neon | holo | vapor | outline | none); GENRE_PACKS — 8 one-click typography moods (Retro Chrome, Neon Drive, Mall Neon, Bubble Pop, Lucid Serif, Found Tape, Ghost Terminal, Aero Gloss) each setting display+body+epithet fonts and a title effect, with worlds-tuned badges; WorldThemePatch gained titleEffect + epithetFont; SiteSettings gained heroTitleEffect; themeVarsFor/themeOverrideCss emit --w-font-epithet
+- lib/worlds-config.ts: LIVE DRAFT BRIDGE — Studio publishes unsaved edits (publishWorldDraft / publishSiteDraft / clearDraft) to localStorage + BroadcastChannel "aesthetica-studio-draft"; every open page/tab/iframe applies the draft on top of fetched config (boot-time read + channel + storage events), so changes appear instantly before Save; store gained draft state + applyDraft; initStudioConfig boots the bridge
+- globals.css: theme-aware .ae-fx-chrome (80s logo gradient: sky-cyan top → accent → deep violet → accent2 → pink shine, background-clip:text + glow drop-shadows), .ae-fx-neon, .ae-fx-holo, .ae-fx-vapor, .ae-fx-outline — all keyed to --w-accent/--w-accent2; fx-off/reduced-motion guards
+- world-page.tsx + custom-world.tsx: hero h1 uses Studio titleEffect (explicit pick wins; falls back to legacy per-world signature classes); epithet renders in its own font (script sizes up to 30px for legibility) — world-page epithet also un-italicised when scripted
+- homepage.tsx: wordmark span switches to ae-fx-* when site.heroTitleEffect set, else keeps the built-in gradient
+- NEW preview-panel.tsx: LivePreview — real iframe of the page with Desktop/Tablet/Phone widths, reload, open-external, LIVE radio badge and an "N unsaved edits showing" pill driven by store draft state
+- design-controls.tsx: FontPicker regrouped by genre with coloured headers; new EffectPicker — visual tiles rendering real text with each effect tinted by the world's accent pair
+- world-editor.tsx: two-column layout (editor + sticky live preview); new "Type & FX" tab (genre pack cards with specimen + script epithet preview, display/body/epithet font pickers, hero title effect picker, reset); new "Position" tab (title scale, hero align, hero height, vertical offset, content width); draft streaming debounced 160ms, draft dropped on save/leave/world-switch; dirty now covers bgSettings + scene
+- site-settings.tsx: same two-column live preview of the homepage; site drafts stream; "Wordmark effect" picker added to Typography
+- Fixed in passing: publisher's own window now applies the draft (BroadcastChannel doesn't echo) so the unsaved badge lights in the Studio itself
+- agent-browser E2E: Retro Chrome pack on Retrowave → draft in localStorage → live preview iframe + fresh tab both render ae-fx-chrome/Michroma/Mrs Saint Delafield before saving; Save → API theme {fontDisplay:michroma, epithetFont:mrs-saint-delafield, titleEffect:chrome} → page renders from saved data with draft cleared; Position slider writes draft (titleScale 1.25); Main Page preview + wordmark tiles render; homepage wordmark unaffected by default; zero page/console errors; tsc + eslint clean
+- Screenshots: studio-live-preview.png, studio-typefx-retro-chrome.png, retrowave-chrome-hero.png, studio-mainpage-preview.png (docs/screenshots/)
+
+Stage Summary:
+- The Studio is now a live editor: every world page and the homepage can be edited with a real preview window beside the controls — unsaved changes stream into the preview (and any other open tab) the moment you type, and saving makes them permanent everywhere.
+- Genre typography shipped: 8 curated packs including "Retro Chrome" — wide chrome-gradient caps in Michroma with the epithet in Mrs Saint Delafield script, the attached 80s logo pairing — plus chrome/neon/holo/vapor/outline title effects for any world or the homepage wordmark. Retrowave now wears the chrome treatment (saved).

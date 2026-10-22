@@ -544,6 +544,70 @@
   100% { background-position: 220% 50%; }
 }
 
+/* ---------- STUDIO TITLE EFFECTS (.ae-fx-*, theme-aware via --w-accent/--w-accent2) ---------- */
+
+/* Chrome — the 80s logo treatment: vertical sky-to-metal gradient, like a
+   retrowave brand mark; tinted by the world's accent pair. */
+.ae-fx-chrome {
+  background-image: linear-gradient(
+    180deg,
+    #eafcff 0%,
+    #9be8ff 24%,
+    var(--w-accent, #6d8aa8) 44%,
+    #2b1058 58%,
+    var(--w-accent2, #ff2e88) 78%,
+    #ffd9f0 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 10px color-mix(in srgb, var(--w-accent2, #ff2e88) 40%, transparent))
+    drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+
+/* Neon — glow-tube halo keyed to the world accent. */
+.ae-fx-neon {
+  color: #fff;
+  text-shadow:
+    0 0 6px color-mix(in srgb, var(--w-accent, #ff2e88) 92%, transparent),
+    0 0 22px color-mix(in srgb, var(--w-accent, #ff2e88) 55%, transparent),
+    0 0 60px color-mix(in srgb, var(--w-accent2, #ff2e88) 40%, transparent);
+}
+
+/* Holographic — slow iridescent sheen. */
+.ae-fx-holo {
+  background-image: linear-gradient(100deg, var(--w-accent, #c94fb2), var(--w-accent2, #8a5fd0) 35%, #e874c4 70%, var(--w-accent, #c94fb2));
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: holo-slide 7s linear infinite;
+  filter: drop-shadow(0 2px 12px color-mix(in srgb, var(--w-accent, #c94fb2) 35%, transparent));
+}
+
+/* Vapor — pastel drift. */
+.ae-fx-vapor {
+  background-image: linear-gradient(100deg, #ff9ecb, var(--w-accent, #7df2d8), var(--w-accent2, #cdb4ff), #ff9ecb);
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: holo-slide 9s linear infinite;
+  filter: drop-shadow(0 2px 10px rgba(255, 158, 203, 0.3));
+}
+
+/* Outline — hollow neon tube. */
+.ae-fx-outline {
+  color: transparent;
+  -webkit-text-stroke: 2px var(--w-accent, #ff2e88);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--w-accent, #ff2e88) 45%, transparent);
+}
+
+.fx-off .ae-fx-holo,
+.fx-off .ae-fx-vapor {
+  animation: none;
+}
+
 /* ---------- OVERLAYS ---------- */
 
 .scanlines::after {

@@ -162,3 +162,26 @@ Stage Summary:
 - Y2K world now mirrors the reference: pearlescent pink-lavender desk still-life with translucent holo mouse, iridescent CDs, silver MD player, glitter crystal ball, braided cables and twinkling sparkles
 - Whole theme flipped from dark navy to light pearl with deep violet ink text and hot-pink/lavender accents; homepage portal card updated to match
 - Committed and pushed to github.com/lewiskerrlk110-hue/aesthetica (main)
+
+---
+Task ID: HERO-UNI-1
+Agent: main (Z.ai)
+Task: Replace the homepage hero sun background with a universe-themed scene encompassing the site's theme (museum of eight worlds)
+
+Work Log:
+- Replaced the entire scene in src/components/homepage/hero-canvas.tsx (was: striped sun orb on a horizon cycling through 8 world palettes):
+  - Deep-space gradient (#050310 -> #0a0618 -> #130b28 -> #1a1033)
+  - 8 nebulae, one tint per world across the spectrum (retrowave pink, orange, backrooms gold, vaporwave mint, synthwave cyan, dreamcore sky, y2k violet, cyberpunk purple), drifting imperceptibly
+  - Spiral galaxy at the old sun's position: perspective-squashed, two logarithmic arms of ~220 dots (warm core -> cool outer, occasional pink flecks) rotating slowly, inter-arm specks, warm galactic core + violet/cyan halo
+  - Three-layer starfield (~238 stars) with per-star twinkle phase; every 11th star tinted; brightest few get four-point cross glints
+  - "Constellation of eight worlds": 8 world-stars on an irregular ring around the title, joined by faint lines; each flares in sequence (1.35s/step, gaussian envelope) with colour glow + glint, neighbouring segments brighten — the museum's worlds taking turns to shine
+  - Deterministic shooting star every ~6.2s (seeded by cycle index — no state refs, restart-safe)
+  - Edge vignette + bottom blend into the page background #0d0b14
+- All positions are pure functions of index + t (deterministic rnd() PRNG) — no refs mutated, no state; reduced-motion renders one static frame via existing useCanvasLoop; DPR cap/visibility pause inherited
+- Nebula alpha 0.16 / galaxy arm brightness tuned up after first screenshot
+- Verified via agent-browser: desktop 1440x900 + mobile 390x844, zero console/page errors, hero text contrast preserved by existing dark radial overlay; eslint clean
+- Refreshed docs/screenshots/home.png (flares mid-cycle)
+
+Stage Summary:
+- Homepage hero is now "The Constellation of Eight Worlds" — a living universe that literally contains the museum's eight worlds as flaring stars around a central galaxy
+- Committed and pushed to github.com/lewiskerrlk110-hue/aesthetica (main)

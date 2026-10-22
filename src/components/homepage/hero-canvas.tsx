@@ -1,181 +1,252 @@
 "use client";
 
-import { useRef } from "react";
-import { useCanvasLoop, hexToRgb, lerp } from "@/lib/canvas";
+import { useCanvasLoop, rgba } from "@/lib/canvas";
 import { useApp } from "@/lib/store";
 
-// Palette sequence through the eight worlds — the hero slowly cycles
-// through each world's atmosphere (sky, horizon, motif colour).
-const PHASES = [
-  { skyTop: "#1a0a2e", skyMid: "#54123f", horizon: "#ff8a5c", glow: "#ff2e88", motif: "grid" }, // retrowave
-  { skyTop: "#0d0221", skyMid: "#31065c", horizon: "#ff38e4", glow: "#23e6ff", motif: "grid" }, // synthwave
-  { skyTop: "#2a1e3f", skyMid: "#c86bb1", horizon: "#7df2d8", glow: "#ff9ecb", motif: "bust" }, // vaporwave
-  { skyTop: "#16213a", skyMid: "#4a5f8f", horizon: "#9be8ff", glow: "#ffb3e6", motif: "chrome" }, // y2k
-  { skyTop: "#78c8f5", skyMid: "#c9e8fb", horizon: "#ffe6a0", glow: "#f7b4d0", motif: "cloud" }, // dreamcore
-  { skyTop: "#050810", skyMid: "#0a1220", horizon: "#00e5ff", glow: "#ff2a3c", motif: "city" }, // cyberpunk
-  { skyTop: "#d8d2c4", skyMid: "#e7e1d1", horizon: "#b3a98c", glow: "#8f9b7a", motif: "hall" }, // liminal
-  { skyTop: "#1c1808", skyMid: "#6e6230", horizon: "#d8c34a", glow: "#9fae5a", motif: "rooms" }, // backrooms
-];
+// ————— Universe hero — "The Constellation of Eight Worlds" —————
+// Deep space holds the whole museum: eight nebulae tinted in each world's
+// colour, a slow spiral galaxy at the centre, a three-layer twinkling
+// starfield, shooting stars — and a constellation of eight world-stars
+// that take turns to flare, connecting every room of the museum.
 
-const PHASE_MS = 9000; // each world's atmosphere lingers ~9s
-const FADE_MS = 3500; // crossfade window
+// one tint per world, spread across the spectrum
+const TINTS = ["#ff2e88", "#ff8a5c", "#d8c34a", "#7df2d8", "#23e6ff", "#78c8f5", "#8a5fd0", "#b48aff"];
 
-function phaseAt(t: number) {
-  const cycle = PHASES.length * PHASE_MS;
-  // JS % keeps the sign — a negative t (early first rAF frame) must wrap forward.
-  const x = ((t % cycle) + cycle) % cycle;
-  const i = Math.floor(x / PHASE_MS) % PHASES.length;
-  const local = x - i * PHASE_MS;
-  const next = (i + 1) % PHASES.length;
-  let a = 1;
-  if (local > PHASE_MS - FADE_MS) a = (PHASE_MS - local) / FADE_MS;
-  return { i, next, a };
+// deterministic pseudo-random from an index — stable star positions, no state
+function rnd(i: number) {
+  const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
 }
 
-function mixHex(c1: string, c2: string, a: number) {
-  const [r1, g1, b1] = hexToRgb(c1);
-  const [r2, g2, b2] = hexToRgb(c2);
-  return `rgb(${Math.round(lerp(r1, r2, 1 - a))},${Math.round(lerp(g1, g2, 1 - a))},${Math.round(lerp(b1, b2, 1 - a))})`;
+function twinkle(t: number, i: number, speed: number) {
+  return 0.72 + 0.28 * Math.sin(t * speed + i * 2.39);
 }
 
 export function HeroCanvas() {
   const reduced = useApp((s) => s.fxReduced);
 
   const ref = useCanvasLoop((ctx, w, h, t) => {
-    const { i, next, a } = phaseAt(t);
-    const A = PHASES[i];
-    const B = PHASES[next];
-    const skyTop = mixHex(A.skyTop, B.skyTop, a);
-    const skyMid = mixHex(A.skyMid, B.skyMid, a);
-    const horizon = mixHex(A.horizon, B.horizon, a);
-    const glow = mixHex(A.glow, B.glow, a);
+    const m = Math.min(w, h);
 
-    const horizonY = h * 0.62;
+    // ——— deep space ———
+    const space = ctx.createLinearGradient(0, 0, 0, h);
+    space.addColorStop(0, "#050310");
+    space.addColorStop(0.42, "#0a0618");
+    space.addColorStop(0.78, "#130b28");
+    space.addColorStop(1, "#1a1033");
+    ctx.fillStyle = space;
+    ctx.fillRect(0, 0, w, h);
 
-    // sky
-    const sky = ctx.createLinearGradient(0, 0, 0, horizonY);
-    sky.addColorStop(0, skyTop);
-    sky.addColorStop(1, skyMid);
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, w, horizonY);
+    // ——— eight world-tinted nebulae, drifting almost imperceptibly ———
+    for (let i = 0; i < 8; i++) {
+      const nx = (0.1 + 0.8 * rnd(i * 3 + 1)) * w + Math.sin(t * 0.00005 + i * 1.7) * m * 0.02;
+      const ny = (0.06 + 0.62 * rnd(i * 3 + 2)) * h + Math.cos(t * 0.00004 + i * 2.3) * m * 0.015;
+      const nr = m * (0.26 + 0.24 * rnd(i * 3 + 3));
+      const ng = ctx.createRadialGradient(nx, ny, 0, nx, ny, nr);
+      ng.addColorStop(0, rgba(TINTS[i], 0.16));
+      ng.addColorStop(0.55, rgba(TINTS[i], 0.06));
+      ng.addColorStop(1, rgba(TINTS[i], 0));
+      ctx.fillStyle = ng;
+      ctx.fillRect(nx - nr, ny - nr, nr * 2, nr * 2);
+    }
 
-    // glow orb
-    const orbR = Math.min(w, h) * 0.16;
-    const ox = w * 0.5;
-    const oy = horizonY - orbR * 0.4;
-    const og = ctx.createRadialGradient(ox, oy, orbR * 0.1, ox, oy, orbR * 2.4);
-    og.addColorStop(0, mixHex(A.glow, "#ffffff", 0.1));
-    og.addColorStop(0.4, skyMid);
-    og.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = og;
-    ctx.fillRect(0, 0, w, horizonY);
+    // ——— spiral galaxy: the museum at the centre of the universe ———
+    const gx = w * 0.5;
+    const gy = h * 0.68;
+    const grx = m * 0.3;
+    const gry = m * 0.115;
 
-    const orbFill = ctx.createLinearGradient(0, oy - orbR, 0, oy + orbR);
-    orbFill.addColorStop(0, mixHex("#ffe6a0", horizon, 0.35));
-    orbFill.addColorStop(1, glow);
-    ctx.fillStyle = orbFill;
-    ctx.beginPath();
-    ctx.arc(ox, oy, orbR, 0, Math.PI * 2);
-    ctx.fill();
+    const halo = ctx.createRadialGradient(gx, gy, 0, gx, gy, m * 0.46);
+    halo.addColorStop(0, "rgba(201,184,255,0.09)");
+    halo.addColorStop(0.5, "rgba(155,232,255,0.035)");
+    halo.addColorStop(1, "rgba(155,232,255,0)");
+    ctx.fillStyle = halo;
+    ctx.fillRect(0, 0, w, h);
 
-    // scanline stripes across the orb
-    ctx.fillStyle = skyTop;
-    for (let s = 0; s < 5; s++) {
-      const sy = oy - orbR * 0.25 + s * (orbR * 0.34);
-      ctx.globalAlpha = 0.82;
-      ctx.fillRect(ox - orbR, sy, orbR * 2, 3 + s * 2.2);
+    ctx.save();
+    ctx.translate(gx, gy);
+    ctx.scale(1, gry / grx); // squash into perspective
+    const rot = t * 0.00004;
+    for (let arm = 0; arm < 2; arm++) {
+      for (let s = 0; s < 110; s++) {
+        const th = (s / 110) * Math.PI * 2.35 + arm * Math.PI + rot;
+        const rr = grx * (0.1 + 0.92 * Math.pow(s / 110, 1.45));
+        const jx = (rnd(arm * 997 + s * 3) - 0.5) * grx * 0.07;
+        const jy = (rnd(arm * 997 + s * 3 + 1) - 0.5) * grx * 0.07;
+        const px = Math.cos(th) * rr + jx;
+        const py = Math.sin(th) * rr + jy;
+        const fade = 1 - s / 130;
+        const sz = 0.5 + rnd(arm * 997 + s * 3 + 2) * 1.15;
+        ctx.globalAlpha = Math.max(0, fade * (0.42 + rnd(s + arm * 13) * 0.44));
+        ctx.fillStyle = s < 40 ? "#ffe9c9" : s % 9 === 0 ? "#ffb3e6" : "#bfe0ff";
+        ctx.beginPath();
+        ctx.arc(px, py, sz, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    // cluster specks between the arms
+    for (let s = 0; s < 46; s++) {
+      const th = rnd(s * 5 + 61) * Math.PI * 2;
+      const rr = grx * (0.12 + 0.8 * Math.pow(rnd(s * 5 + 62), 1.3));
+      ctx.globalAlpha = 0.16 + rnd(s * 5 + 63) * 0.22;
+      ctx.fillStyle = "#dfe8ff";
+      ctx.beginPath();
+      ctx.arc(Math.cos(th) * rr, Math.sin(th) * rr, 0.4 + rnd(s * 5 + 64) * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // galactic core
+    const core = ctx.createRadialGradient(gx, gy, 0, gx, gy, m * 0.085);
+    core.addColorStop(0, "rgba(255,248,235,0.75)");
+    core.addColorStop(0.35, "rgba(255,225,180,0.3)");
+    core.addColorStop(1, "rgba(255,225,180,0)");
+    ctx.fillStyle = core;
+    ctx.fillRect(gx - m * 0.09, gy - m * 0.09, m * 0.18, m * 0.18);
+
+    // ——— starfield: three depth layers ———
+    const layers = [
+      { n: 150, rMin: 0.35, rMax: 1.0, aBase: 0.28, spMin: 0.0006, spMax: 0.0016 },
+      { n: 64, rMin: 0.8, rMax: 1.7, aBase: 0.5, spMin: 0.0005, spMax: 0.0013 },
+      { n: 24, rMin: 1.4, rMax: 2.4, aBase: 0.72, spMin: 0.0004, spMax: 0.001 },
+    ];
+    let starIdx = 0;
+    for (let li = 0; li < layers.length; li++) {
+      const L = layers[li];
+      for (let s = 0; s < L.n; s++) {
+        const i = starIdx++;
+        const x = rnd(i * 7 + 11) * w;
+        const y = rnd(i * 7 + 12) * h;
+        const r = L.rMin + rnd(i * 7 + 13) * (L.rMax - L.rMin);
+        const a = (L.aBase + rnd(i * 7 + 14) * 0.42) * twinkle(t, i, L.spMin + rnd(i * 7 + 15) * (L.spMax - L.spMin));
+        const tint = i % 11 === 0 ? TINTS[i % 8] : "#ffffff";
+        ctx.globalAlpha = Math.min(1, a);
+        ctx.fillStyle = tint;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        // cross glints on the brightest few of the near layer
+        if (li === 2 && r > 2.1) {
+          ctx.globalAlpha = Math.min(1, a) * 0.5;
+          ctx.strokeStyle = tint;
+          ctx.lineWidth = 0.7;
+          const gl = r * 3.4;
+          ctx.beginPath();
+          ctx.moveTo(x - gl, y);
+          ctx.lineTo(x + gl, y);
+          ctx.moveTo(x, y - gl);
+          ctx.lineTo(x, y + gl);
+          ctx.stroke();
+        }
+      }
     }
     ctx.globalAlpha = 1;
 
-    // motif layer — fragments of each world drifting through
-    ctx.save();
-    if (A.motif === "grid" || B.motif === "grid") {
-      const ga = A.motif === "grid" ? a : 1 - a;
-      ctx.globalAlpha = ga * 0.5;
-      ctx.strokeStyle = mixHex(A.glow, B.glow, a);
-      ctx.lineWidth = 1.2;
-      for (let k = -10; k <= 10; k++) {
-        ctx.beginPath();
-        ctx.moveTo(w / 2 + k * (w / 22), horizonY);
-        ctx.lineTo(w / 2 + k * (w / 3.2), h);
-        ctx.stroke();
-      }
-      for (let r = 0; r < 7; r++) {
-        const yy = horizonY + Math.pow(r / 7, 2.2) * (h - horizonY);
-        ctx.globalAlpha = ga * 0.5 * (0.25 + (r / 7) * 0.75);
-        ctx.beginPath();
-        ctx.moveTo(0, yy);
-        ctx.lineTo(w, yy);
-        ctx.stroke();
-      }
+    // ——— the constellation of eight worlds ———
+    const P = 1350; // ms per flare step
+    const active = (t / P) % 8;
+    const pts: [number, number][] = [];
+    for (let i = 0; i < 8; i++) {
+      const base = (i / 8) * Math.PI * 2 - Math.PI / 2 + (rnd(i * 13 + 5) - 0.5) * 0.6;
+      const px = w * (0.5 + Math.cos(base) * (0.34 + rnd(i * 13 + 6) * 0.09));
+      const py = h * (0.46 + Math.sin(base) * (0.3 + rnd(i * 13 + 7) * 0.08));
+      pts.push([px, py]);
     }
-    if (A.motif === "city" || B.motif === "city") {
-      const ga = A.motif === "city" ? a : 1 - a;
-      ctx.globalAlpha = ga * 0.75;
-      ctx.fillStyle = skyTop;
-      for (let b = 0; b < 14; b++) {
-        const bw = w / 12;
-        const bx = b * bw - 10;
-        const bh = 30 + ((b * 97) % 130) * (h / 600);
-        ctx.fillRect(bx, horizonY - bh, bw, bh);
-        ctx.fillStyle = mixHex(A.horizon, B.horizon, a);
-        for (let wy = 0; wy < 4; wy++) {
-          if ((b + wy) % 3 === 0) ctx.fillRect(bx + bw * 0.25, horizonY - bh + 10 + wy * 24, bw * 0.18, 5);
-        }
-        ctx.fillStyle = skyTop;
-      }
-    }
-    if (A.motif === "cloud" || B.motif === "cloud") {
-      const ga = A.motif === "cloud" ? a : 1 - a;
-      ctx.globalAlpha = ga * 0.8;
-      ctx.fillStyle = mixHex(A.horizon, "#ffffff", 0.45);
-      for (let c = 0; c < 5; c++) {
-        const cx = ((c * 250 + t * 0.012) % (w + 300)) - 150;
-        const cy = 60 + (c % 3) * 70;
-        for (const [dx, dy, r] of [[0, 0, 34], [30, 8, 26], [-32, 10, 24], [10, -12, 22]]) {
-          ctx.beginPath();
-          ctx.ellipse(cx + dx, cy + dy, r, r * 0.62, 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
-    if (A.motif === "chrome" || B.motif === "chrome") {
-      const ga = A.motif === "chrome" ? a : 1 - a;
-      const cx = w * 0.78;
-      const cy = h * 0.24;
-      const cg = ctx.createRadialGradient(cx - 12, cy - 14, 4, cx, cy, 44);
-      cg.addColorStop(0, "#ffffff");
-      cg.addColorStop(0.5, mixHex(A.horizon, "#8fa8c8", 0.4));
-      cg.addColorStop(1, mixHex(A.glow, "#3a4a66", 0.5));
-      ctx.globalAlpha = ga * 0.9;
-      ctx.fillStyle = cg;
+    // constellation lines — each segment brightens as a neighbouring star flares
+    ctx.strokeStyle = "#c9c4ff";
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < 8; i++) {
+      const j = (i + 1) % 8;
+      const dA = Math.min(Math.abs(active - i), 8 - Math.abs(active - i));
+      const dB = Math.min(Math.abs(active - j), 8 - Math.abs(active - j));
+      const dd = Math.min(dA, dB);
+      const env = Math.exp(-dd * dd * 1.6);
+      ctx.globalAlpha = 0.1 + env * 0.4;
       ctx.beginPath();
-      ctx.arc(cx, cy, 34 + Math.sin(t / 900) * 3, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(pts[i][0], pts[i][1]);
+      ctx.lineTo(pts[j][0], pts[j][1]);
+      ctx.stroke();
     }
-    ctx.restore();
+    // world-stars, each glowing in its world's colour
+    for (let i = 0; i < 8; i++) {
+      const d = Math.min(Math.abs(active - i), 8 - Math.abs(active - i));
+      const env = Math.exp(-d * d * 1.9);
+      const px = pts[i][0];
+      const py = pts[i][1];
+      const glowR = m * (0.028 + 0.03 * env);
+      const gg = ctx.createRadialGradient(px, py, 0, px, py, glowR);
+      gg.addColorStop(0, rgba(TINTS[i], 0.55 + 0.4 * env));
+      gg.addColorStop(0.4, rgba(TINTS[i], 0.2 + 0.3 * env));
+      gg.addColorStop(1, rgba(TINTS[i], 0));
+      ctx.fillStyle = gg;
+      ctx.fillRect(px - glowR, py - glowR, glowR * 2, glowR * 2);
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(px, py, 1.6 + env * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      if (env > 0.5) {
+        // four-point glint while flaring
+        ctx.globalAlpha = Math.min(1, (env - 0.5) * 1.6);
+        ctx.strokeStyle = TINTS[i];
+        ctx.lineWidth = 1;
+        const gl = m * 0.018;
+        ctx.beginPath();
+        ctx.moveTo(px - gl, py);
+        ctx.lineTo(px + gl, py);
+        ctx.moveTo(px, py - gl);
+        ctx.lineTo(px, py + gl);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
 
-    // horizon band + ground
-    const ground = ctx.createLinearGradient(0, horizonY, 0, h);
-    ground.addColorStop(0, mixHex(horizon, "#000000", 0.25));
-    ground.addColorStop(1, mixHex(skyTop, "#000000", 0.55));
-    ctx.fillStyle = ground;
-    ctx.fillRect(0, horizonY, w, h - horizonY);
+    // ——— shooting stars ———
+    const PERIOD = 6200;
+    const LIFE = 1100;
+    const su = t % PERIOD;
+    if (su < LIFE) {
+      const seed = Math.floor(t / PERIOD);
+      const p = su / LIFE;
+      const sx0 = w * (0.12 + 0.76 * rnd(seed * 31 + 3));
+      const sy0 = h * (0.04 + 0.3 * rnd(seed * 31 + 4));
+      const ang = Math.PI * (0.68 + 0.16 * rnd(seed * 31 + 5));
+      const dist = m * 0.42;
+      const hx = sx0 + Math.cos(ang) * dist * p;
+      const hy = sy0 + Math.sin(ang) * dist * p;
+      const tail = m * (0.06 + 0.05 * p);
+      const tx = hx - Math.cos(ang) * tail;
+      const ty = hy - Math.sin(ang) * tail;
+      const a = Math.sin(Math.PI * p);
+      const sg = ctx.createLinearGradient(hx, hy, tx, ty);
+      sg.addColorStop(0, `rgba(255,255,255,${(0.9 * a).toFixed(3)})`);
+      sg.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.strokeStyle = sg;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(hx, hy);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+      const hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, 5);
+      hg.addColorStop(0, `rgba(255,255,255,${(0.8 * a).toFixed(3)})`);
+      hg.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = hg;
+      ctx.fillRect(hx - 5, hy - 5, 10, 10);
+    }
 
-    // atmospheric haze at horizon
-    const haze = ctx.createLinearGradient(0, horizonY - 60, 0, horizonY + 40);
-    haze.addColorStop(0, "rgba(0,0,0,0)");
-    haze.addColorStop(0.5, mixHex(horizon, "rgba(0,0,0,0)", 0.66));
-    haze.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = haze;
-    ctx.fillRect(0, horizonY - 60, w, 100);
-
-    // vignette
-    const vig = ctx.createRadialGradient(w / 2, h / 2, h * 0.4, w / 2, h / 2, h * 0.95);
+    // ——— vignette + blend into the page below ———
+    const vig = ctx.createRadialGradient(w / 2, h / 2, h * 0.42, w / 2, h / 2, h * 0.98);
     vig.addColorStop(0, "rgba(0,0,0,0)");
-    vig.addColorStop(1, "rgba(0,0,0,0.45)");
+    vig.addColorStop(1, "rgba(3,2,8,0.5)");
     ctx.fillStyle = vig;
     ctx.fillRect(0, 0, w, h);
+
+    const blend = ctx.createLinearGradient(0, h * 0.86, 0, h);
+    blend.addColorStop(0, "rgba(13,11,20,0)");
+    blend.addColorStop(1, "rgba(13,11,20,0.9)");
+    ctx.fillStyle = blend;
+    ctx.fillRect(0, h * 0.86, w, h * 0.14);
   }, { reduced });
 
   return (

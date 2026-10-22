@@ -1,0 +1,565 @@
+     1→"use client";
+     2→
+     3→// STUDIO — World editor: rename a world, recolor its theme, assign a
+     4→// background media wash (built-ins), build its whole scene (customs), and
+     5→// the Type & FX / Position labs — genre font packs, hero title effects,
+     6→// hero layout controls — all mirrored live in the preview panel.
+     7→import { useEffect, useMemo, useState } from "react";
+     8→import { ArrowLeft, RotateCcw, Save, Trash2, Sparkles } from "lucide-react";
+     9→import { WORLDS } from "@/lib/aesthetics";
+    10→import type { PortalWorldDef, SceneDoc, WorldThemePatch, BgSettings } from "@/lib/studio";
+    11→import { GENRE_PACKS, effectClass, fontStack, type GenrePack } from "@/lib/studio";
+    12→import { useStudioConfig, publishWorldDraft, type WorldDraftPatch } from "@/lib/worlds-config";
+    13→import { SceneEditor } from "./scene-editor";
+    14→import { MediaPicker } from "./media-library";
+    15→import { FontPicker, EffectPicker, AlignPicker, SliderRow, type AlignValue } from "./design-controls";
+    16→import { LivePreview } from "./preview-panel";
+    17→import { BLEND_MODES } from "@/lib/studio";
+    18→
+    19→const THEME_FIELDS: { key: keyof WorldThemePatch; label: string }[] = [
+    20→  { key: "bg", label: "Background" },
+    21→  { key: "bg2", label: "Background 2" },
+    22→  { key: "fg", label: "Text" },
+    23→  { key: "accent", label: "Accent" },
+    24→  { key: "accent2", label: "Accent 2" },
+    25→  { key: "panelBorder", label: "Panel border" },
+    26→];
+    27→
+    28→type EditorTab = "identity" | "type" | "position" | "theme" | "background" | "scene";
+    29→
+    30→export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () => void }) {
+    31→  const reload = useStudioConfig((s) => s.reload);
+    32→  const [name, setName] = useState(def.name);
+    33→  const [epithet, setEpithet] = useState(def.epithet);
+    34→  const [blurb, setBlurb] = useState(def.portalBlurb);
+    35→  const [theme, setTheme] = useState<WorldThemePatch>(def.theme || {});
+    36→  const [bgMediaUrl, setBgMediaUrl] = useState<string | null>(def.bgMediaUrl || null);
+    37→  const [bgSettings, setBgSettings] = useState<Partial<BgSettings>>({ opacity: 0.5, blend: "normal", fit: "cover", dim: 0.25, ...(def.bgSettings || {}) });
+    38→  const [scene, setScene] = useState<SceneDoc>(def.scene || { bg: "#0d0b14", layers: [] });
+    39→  const [selectedLayer, setSelectedLayer] = useState<string | null>(null);
+    40→  const [pickerOpen, setPickerOpen] = useState(false);
+    41→  const [saving, setSaving] = useState(false);
+    42→  const [savedAt, setSavedAt] = useState<string | null>(null);
+    43→  // custom worlds open straight into the scene builder
+    44→  const [tab, setTab] = useState<EditorTab>(() => (def.kind === "custom" ? "scene" : "identity"));
+    45→
+    46→  // re-sync the whole draft when a different world is opened (render-time adjustment)
+    47→  const [lastSlug, setLastSlug] = useState(def.id);
+    48→  if (lastSlug !== def.id) {
+    49→    setLastSlug(def.id);
+    50→    setName(def.name);
+    51→    setEpithet(def.epithet);
+    52→    setBlurb(def.portalBlurb);
+    53→    setTheme(def.theme || {});
+    54→    setBgMediaUrl(def.bgMediaUrl || null);
+    55→    setBgSettings({ opacity: 0.5, blend: "normal", fit: "cover", dim: 0.25, ...(def.bgSettings || {}) });
+    56→    setScene(def.scene || { bg: "#0d0b14", layers: [] });
+    57→    setSelectedLayer(null);
+    58→    setTab(def.kind === "custom" ? "scene" : "identity");
+    59→  }
+    60→
+    61→  // ——— live preview: stream this world's unsaved edits into every open page ———
+    62→  useEffect(() => {
+    63→    const t = setTimeout(() => {
+    64→      publishWorldDraft(def.id, {
+    65→        name,
+    66→        epithet,
+    67→        portalBlurb: blurb,
+    68→        theme,
+    69→        bgMediaUrl,
+    70→        ...(def.kind === "custom" ? { scene } : { bgSettings: bgSettings as WorldDraftPatch["bgSettings"] }),
+    71→      });
+    72→    }, 160);
+    73→    return () => clearTimeout(t);
+    74→  }, [def.id, def.kind, name, epithet, blurb, theme, bgMediaUrl, bgSettings, scene]);
+    75→
+    76→  // leaving this editor (world switch or unmount) drops its draft
+    77→  useEffect(() => {
+    78→    const id = def.id;
+    79→    return () => publishWorldDraft(id, null);
+    80→  }, [def.id]);
+    81→
+    82→  const dirty = useMemo(() => {
+    83→    const bgDefault = { opacity: 0.5, blend: "normal", fit: "cover", dim: 0.25, ...(def.bgSettings || {}) };
+    84→    return (
+    85→      name !== def.name ||
+    86→      epithet !== def.epithet ||
+    87→      blurb !== def.portalBlurb ||
+    88→      JSON.stringify(theme) !== JSON.stringify(def.theme || {}) ||
+    89→      bgMediaUrl !== (def.bgMediaUrl || null) ||
+    90→      JSON.stringify(bgSettings) !== JSON.stringify(bgDefault) ||
+    91→      (def.kind === "custom" && JSON.stringify(scene) !== JSON.stringify(def.scene || {}))
+    92→    );
+    93→  }, [def, name, epithet, blurb, theme, bgMediaUrl, bgSettings, scene]);
+    94→
+    95→  // static defaults for reset hints + effect tinting
+    96→  const staticDef = WORLDS.find((w) => w.id === def.id);
+    97→  const effAccent = theme.accent || staticDef?.accent || "#ff2e88";
+    98→  const effAccent2 = theme.accent2 || staticDef?.accent2 || "#7df2d8";
+    99→  const displayStack = fontStack(theme.fontDisplay);
+   100→
+   101→  const save = async () => {
+   102→    setSaving(true);
+   103→    const body: Record<string, unknown> = { name, epithet, portalBlurb: blurb };
+   104→    if (def.kind === "builtin") {
+   105→      body.theme = theme;
+   106→      body.bgMediaUrl = bgMediaUrl;
+   107→      body.bgSettings = bgSettings;
+   108→    } else {
+   109→      body.theme = theme;
+   110→      body.scene = scene;
+   111→    }
+   112→    const r = await fetch(`/api/studio/worlds/${def.id}`, {
+   113→      method: "PATCH",
+   114→      headers: { "Content-Type": "application/json" },
+   115→      body: JSON.stringify(body),
+   116→    });
+   117→    setSaving(false);
+   118→    if (r.ok) {
+   119→      setSavedAt(new Date().toLocaleTimeString());
+   120→      publishWorldDraft(def.id, null); // drop the draft — saved data takes over
+   121→      await reload();
+   122→    } else {
+   123→      const d = await r.json().catch(() => ({}));
+   124→      alert(d.error || "Could not save");
+   125→    }
+   126→  };
+   127→
+   128→  const resetWorld = async () => {
+   129→    if (def.kind === "custom") {
+   130→      if (!confirm(`Delete the world "${def.name}" permanently?`)) return;
+   131→      await fetch(`/api/studio/worlds/${def.id}`, { method: "DELETE" });
+   132→      publishWorldDraft(def.id, null);
+   133→      await reload();
+   134→      onBack();
+   135→      return;
+   136→    }
+   137→    if (!confirm(`Reset all Studio changes for "${def.name}" back to the original?`)) return;
+   138→    await fetch(`/api/studio/worlds/${def.id}`, { method: "DELETE" });
+   139→    publishWorldDraft(def.id, null);
+   140→    await reload();
+   141→    onBack();
+   142→  };
+   143→
+   144→  const setThemeKey = (k: keyof WorldThemePatch, v: string | null) => {
+   145→    setTheme((t) => ({ ...t, [k]: v }));
+   146→  };
+   147→
+   148→  const applyPack = (p: GenrePack) =>
+   149→    setTheme((t) => ({
+   150→      ...t,
+   151→      fontDisplay: p.fontDisplay,
+   152→      fontBody: p.fontBody,
+   153→      epithetFont: p.epithetFont || "",
+   154→      titleEffect: p.effect,
+   155→    }));
+   156→
+   157→  const packActive = (p: GenrePack) =>
+   158→    theme.fontDisplay === p.fontDisplay &&
+   159→    theme.fontBody === p.fontBody &&
+   160→    (theme.titleEffect ?? "none") === p.effect;
+   161→
+   162→  const tabs: { id: EditorTab; label: string; show: boolean }[] = [
+   163→    { id: "identity", label: "Identity", show: true },
+   164→    { id: "type", label: "Type & FX", show: true },
+   165→    { id: "position", label: "Position", show: true },
+   166→    { id: "theme", label: "Theme colors", show: true },
+   167→    { id: "background", label: "Background media", show: def.kind === "builtin" },
+   168→    { id: "scene", label: "Scene builder", show: def.kind === "custom" },
+   169→  ];
+   170→
+   171→  return (
+   172→    <div>
+   173→      {/* header */}
+   174→      <div className="flex flex-wrap items-center gap-3">
+   175→        <button onClick={onBack} className="flex items-center gap-1.5 rounded-lg border border-white/12 bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/80 hover:bg-white/10">
+   176→          <ArrowLeft className="h-3.5 w-3.5" /> All worlds
+   177→        </button>
+   178→        <div className="min-w-0">
+   179→          <h2 className="truncate text-[17px] font-bold text-white">{def.name}</h2>
+   180→          <p className="text-[11.5px] text-white/45">
+   181→            {def.kind === "builtin" ? "Built-in world — editable via overrides" : "Custom world — full scene builder"} · /#/world/{def.id}
+   182→          </p>
+   183→        </div>
+   184→        <div className="ml-auto flex items-center gap-2">
+   185→          {savedAt && <span className="text-[11.5px] text-[#7df2d8]">Saved {savedAt}</span>}
+   186→          {dirty && <span className="text-[11.5px] text-[#ffb347]">Unsaved changes</span>}
+   187→          <button
+   188→            onClick={resetWorld}
+   189→            className="flex items-center gap-1.5 rounded-lg border border-white/12 px-3 py-1.5 text-[12.5px] text-white/60 hover:border-[#ff5c7a]/50 hover:text-[#ff5c7a]"
+   190→          >
+   191→            <Trash2 className="h-3.5 w-3.5" />
+   192→            {def.kind === "custom" ? "Delete world" : "Reset"}
+   193→          </button>
+   194→          <button
+   195→            onClick={save}
+   196→            disabled={saving}
+   197→            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#ff2e88] to-[#7df2d8] px-4 py-1.5 text-[13px] font-semibold text-black disabled:opacity-50"
+   198→          >
+   199→            <Save className="h-3.5 w-3.5" />
+   200→            {saving ? "Saving…" : "Save changes"}
+   201→          </button>
+   202→        </div>
+   203→      </div>
+   204→
+   205→      {/* tabs */}
+   206→      <div className="mt-4 flex gap-1 border-b border-white/10">
+   207→        {tabs.filter((t) => t.show).map((t) => (
+   208→          <button
+   209→            key={t.id}
+   210→            onClick={() => setTab(t.id)}
+   211→            className={`-mb-px border-b-2 px-3.5 py-2 text-[13px] transition-colors ${
+   212→              tab === t.id ? "border-[#ff2e88] font-semibold text-white" : "border-transparent text-white/50 hover:text-white/85"
+   213→            }`}
+   214→          >
+   215→            {t.label}
+   216→          </button>
+   217→        ))}
+   218→      </div>
+   219→
+   220→      {/* editor + live preview — the scene builder takes the full width
+   221→          (the canvas is a drag surface; the preview stacks below it) */}
+   222→      <div className={`mt-5 flex flex-col gap-6 ${tab === "scene" ? "" : "xl:flex-row xl:items-start"}`}>
+   223→        <div className="min-w-0 flex-1">
+   224→          {tab === "identity" && (
+   225→            <div className="max-w-xl space-y-4">
+   226→              <div>
+   227→                <label className="studio-label">World name</label>
+   228→                <input className="studio-input" value={name} maxLength={48} onChange={(e) => setName(e.target.value)} />
+   229→              </div>
+   230→              <div>
+   231→                <label className="studio-label">Epithet (the tagline)</label>
+   232→                <input className="studio-input" value={epithet} maxLength={80} onChange={(e) => setEpithet(e.target.value)} />
+   233→                <p className="mt-1.5 text-[11.5px] text-white/40">
+   234→                  Give it a script voice with a genre font — see the Type &amp; FX tab.
+   235→                </p>
+   236→              </div>
+   237→              <div>
+   238→                <label className="studio-label">Portal blurb (shown on hover)</label>
+   239→                <textarea className="studio-input min-h-[70px]" value={blurb} maxLength={280} onChange={(e) => setBlurb(e.target.value)} />
+   240→              </div>
+   241→              <p className="text-[12px] leading-relaxed text-white/40">
+   242→                The name, epithet and blurb update the portal card on the homepage, the nav dropdown
+   243→                and the world page hero. {def.kind === "custom" ? "The slug /#/world/" + def.id + " is permanent." : ""}
+   244→              </p>
+   245→            </div>
+   246→          )}
+   247→
+   248→          {tab === "type" && (
+   249→            <div className="space-y-9">
+   250→              {/* ——— genre packs ——— */}
+   251→              <section>
+   252→                <h3 className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.3em] text-white/45">
+   253→                  <Sparkles className="h-3.5 w-3.5 text-[#ffb347]" /> Genre packs
+   254→                </h3>
+   255→                <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
+   256→                  One click sets the display font, body font, epithet script and a hero title effect —
+   257→                  curated pairings for each internet aesthetic, like an 80s brand mark.
+   258→                </p>
+   259→                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+   260→                  {GENRE_PACKS.map((p) => {
+   261→                    const tuned = p.worlds.includes(def.id);
+   262→                    const eff = effectClass(p.effect);
+   263→                    return (
+   264→                      <button
+   265→                        key={p.key}
+   266→                        type="button"
+   267→                        onClick={() => applyPack(p)}
+   268→                        aria-pressed={packActive(p)}
+   269→                        className={`relative rounded-xl border p-4 text-left transition-colors ${
+   270→                          packActive(p) ? "border-[#ff2e88] bg-[#ff2e88]/10" : "border-white/12 bg-white/[0.03] hover:bg-white/[0.06]"
+   271→                        }`}
+   272→                      >
+   273→                        {tuned && (
+   274→                          <span className="absolute right-3 top-3 rounded-full bg-[#7df2d8]/15 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-[#7df2d8]">
+   275→                            Tuned
+   276→                          </span>
+   277→                        )}
+   278→                        <p
+   279→                          className={`truncate text-[21px] font-black leading-tight ${eff}`}
+   280→                          style={{
+   281→                            fontFamily: fontStack(p.fontDisplay) ?? undefined,
+   282→                            ["--w-accent" as string]: effAccent,
+   283→                            ["--w-accent2" as string]: effAccent2,
+   284→                            color: eff ? undefined : "#f4f1fa",
+   285→                          }}
+   286→                        >
+   287→                          {p.sample}
+   288→                        </p>
+   289→                        <p className="mt-2.5 text-[13px] font-semibold text-white">{p.label}</p>
+   290→                        <p className="mt-1 text-[11.5px] leading-relaxed text-white/45">{p.blurb}</p>
+   291→                        {p.epithetFont && (
+   292→                          <p
+   293→                            className="mt-1.5 truncate text-[15px] text-[#ff9ecb]"
+   294→                            style={{ fontFamily: fontStack(p.epithetFont) ?? undefined }}
+   295→                          >
+   296→                            {epithet || "script accent"}
+   297→                          </p>
+   298→                        )}
+   299→                      </button>
+   300→                    );
+   301→                  })}
+   302→                </div>
+   303→              </section>
+   304→
+   305→              {/* ——— individual fonts ——— */}
+   306→              <section>
+   307→                <h3 className="text-[12px] font-semibold uppercase tracking-[0.3em] text-white/45">Fonts</h3>
+   308→                <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
+   309→                  Or fine-tune each slot yourself — every specimen renders in the real font.
+   310→                </p>
+   311→                <div className="mt-4 space-y-6">
+   312→                  <div>
+   313→                    <label className="studio-label">Display font — headings &amp; hero title</label>
+   314→                    <FontPicker
+   315→                      value={theme.fontDisplay || ""}
+   316→                      onChange={(k) => setThemeKey("fontDisplay", k || null)}
+   317→                      defaultLabel="World default"
+   318→                    />
+   319→                  </div>
+   320→                  <div>
+   321→                    <label className="studio-label">Body font — paragraphs &amp; buttons</label>
+   322→                    <FontPicker
+   323→                      value={theme.fontBody || ""}
+   324→                      onChange={(k) => setThemeKey("fontBody", k || null)}
+   325→                      defaultLabel="World default"
+   326→                    />
+   327→                  </div>
+   328→                  <div>
+   329→                    <label className="studio-label">Epithet font — the tagline&apos;s own voice</label>
+   330→                    <p className="mb-2 text-[11.5px] text-white/40">
+   331→                      A flowing script here (try Mrs Saint Delafield) gives the pink-ink signature look.
+   332→                    </p>
+   333→                    <FontPicker
+   334→                      value={theme.epithetFont || ""}
+   335→                      onChange={(k) => setThemeKey("epithetFont", k || null)}
+   336→                      defaultLabel="Match the epithet styling"
+   337→                    />
+   338→                  </div>
+   339→                </div>
+   340→              </section>
+   341→
+   342→              {/* ——— title effects ——— */}
+   343→              <section>
+   344→                <h3 className="text-[12px] font-semibold uppercase tracking-[0.3em] text-white/45">Hero title effect</h3>
+   345→                <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
+   346→                  The treatment on the world-page headline — chrome metal, neon glow, holographic sheen and friends.
+   347→                </p>
+   348→                <div className="mt-4">
+   349→                  <EffectPicker
+   350→                    value={theme.titleEffect || "none"}
+   351→                    onChange={(v) => setThemeKey("titleEffect", v === "none" ? null : v)}
+   352→                    accent={effAccent}
+   353→                    accent2={effAccent2}
+   354→                    fontFamily={displayStack ?? undefined}
+   355→                    sample={name || "AESTHETICA"}
+   356→                  />
+   357→                </div>
+   358→                <button
+   359→                  onClick={() => setTheme((t) => ({ ...t, fontDisplay: undefined, fontBody: undefined, epithetFont: undefined, titleEffect: undefined }))}
+   360→                  className="mt-4 flex items-center gap-1.5 text-[12px] text-white/50 hover:text-white"
+   361→                >
+   362→                  <RotateCcw className="h-3 w-3" /> Reset all typography to the world default
+   363→                </button>
+   364→              </section>
+   365→            </div>
+   366→          )}
+   367→
+   368→          {tab === "position" && (
+   369→            <div className="max-w-2xl space-y-7">
+   370→              <p className="text-[12.5px] leading-relaxed text-white/45">
+   371→                {def.kind === "custom"
+   372→                  ? "Layout of the world-page hero. Fine per-element positioning (X/Y/size/rotation of every scene layer) lives in the Scene builder tab — drag or nudge there."
+   373→                  : "Layout of the world-page hero: where the title block sits, how tall it breathes, and how wide the content column below runs."}
+   374→              </p>
+   375→              <div className="max-w-md">
+   376→                <SliderRow
+   377→                  label="Hero title size"
+   378→                  value={theme.titleScale ?? 1}
+   379→                  min={0.5}
+   380→                  max={2}
+   381→                  step={0.05}
+   382→                  format={(v) => `${Math.round(v * 100)}%`}
+   383→                  onReset={() => setThemeKey("titleScale", null)}
+   384→                  onChange={(v) => setTheme((t) => ({ ...t, titleScale: v }))}
+   385→                />
+   386→                <p className="mt-1 text-[11px] text-white/35">100% is the built-in size.</p>
+   387→              </div>
+   388→              <div>
+   389→                <label className="studio-label">Hero text alignment</label>
+   390→                <AlignPicker
+   391→                  value={(theme.heroAlign as AlignValue) || "center"}
+   392→                  onChange={(v) => setTheme((t) => ({ ...t, heroAlign: v }))}
+   393→                />
+   394→              </div>
+   395→              <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+   396→                <SliderRow
+   397→                  label="Hero height"
+   398→                  value={theme.heroHeight ?? 62}
+   399→                  min={40}
+   400→                  max={120}
+   401→                  unit="vh"
+   402→                  onReset={() => setThemeKey("heroHeight", null)}
+   403→                  onChange={(v) => setTheme((t) => ({ ...t, heroHeight: v }))}
+   404→                />
+   405→                <SliderRow
+   406→                  label="Vertical offset"
+   407→                  value={theme.heroOffsetY ?? 0}
+   408→                  min={-25}
+   409→                  max={25}
+   410→                  step={0.5}
+   411→                  unit="vh"
+   412→                  onReset={() => setThemeKey("heroOffsetY", null)}
+   413→                  onChange={(v) => setTheme((t) => ({ ...t, heroOffsetY: v }))}
+   414→                />
+   415→                <SliderRow
+   416→                  label="Content column width"
+   417→                  value={theme.contentWidth ?? 80}
+   418→                  min={48}
+   419→                  max={110}
+   420→                  unit="rem"
+   421→                  onReset={() => setThemeKey("contentWidth", null)}
+   422→                  onChange={(v) => setTheme((t) => ({ ...t, contentWidth: v }))}
+   423→                />
+   424→              </div>
+   425→            </div>
+   426→          )}
+   427→
+   428→          {tab === "theme" && (
+   429→            <div className="grid max-w-3xl gap-5 md:grid-cols-[1fr_260px]">
+   430→              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+   431→                {THEME_FIELDS.map((f) => (
+   432→                  <div key={f.key}>
+   433→                    <label className="studio-label">{f.label}</label>
+   434→                    <div className="flex gap-1.5">
+   435→                      <input
+   436→                        type="color"
+   437→                        className="studio-color !h-[30px] !w-10 shrink-0"
+   438→                        value={String(theme[f.key] || "#000000")}
+   439→                        onChange={(e) => setThemeKey(f.key, e.target.value)}
+   440→                        aria-label={f.label}
+   441→                      />
+   442→                      <input
+   443→                        className="studio-input"
+   444→                        value={String(theme[f.key] || "")}
+   445→                        placeholder={staticDef ? String((staticDef as unknown as Record<string, string>)[f.key === "panelBorder" ? "accent" : f.key] || "") : ""}
+   446→                        onChange={(e) => setThemeKey(f.key, e.target.value || null)}
+   447→                      />
+   448→                    </div>
+   449→                  </div>
+   450→                ))}
+   451→                <div>
+   452→                  <label className="studio-label">Corner radius</label>
+   453→                  <input
+   454→                    className="studio-input"
+   455→                    value={theme.radius || ""}
+   456→                    placeholder="e.g. 1rem / 0.5rem"
+   457→                    onChange={(e) => setThemeKey("radius", e.target.value || null)}
+   458→                  />
+   459→                </div>
+   460→              </div>
+   461→              <div>
+   462→                <p className="studio-label">Live preview strip</p>
+   463→                <div
+   464→                  className="overflow-hidden rounded-xl border border-white/10"
+   465→                  style={{ background: theme.bg || staticDef?.bg || "#0d0b14" }}
+   466→                >
+   467→                  <div className="p-4">
+   468→                    <p className="text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: theme.accent || staticDef?.accent }}>World preview</p>
+   469→                    <p className="mt-1 text-[17px] font-bold" style={{ color: theme.fg || staticDef?.fg }}>{name}</p>
+   470→                    <p className="text-[12px] italic" style={{ color: theme.accent2 || staticDef?.accent2 }}>{epithet}</p>
+   471→                    <div className="mt-3 flex gap-2">
+   472→                      <span className="rounded-full px-3 py-1 text-[11px] font-semibold text-black" style={{ background: theme.accent || staticDef?.accent }}>Primary</span>
+   473→                      <span className="rounded-full px-3 py-1 text-[11px] text-black" style={{ background: theme.accent2 || staticDef?.accent2 }}>Secondary</span>
+   474→                      <span className="rounded-full border px-3 py-1 text-[11px]" style={{ borderColor: theme.panelBorder || "rgba(255,255,255,0.2)", color: theme.fg || staticDef?.fg }}>Panel</span>
+   475→                    </div>
+   476→                    <div className="mt-3 rounded-lg border p-2.5 text-[11.5px]" style={{ borderColor: theme.panelBorder || "rgba(255,255,255,0.2)", background: theme.bg2 || "rgba(255,255,255,0.04)", color: theme.fg || staticDef?.fg }}>
+   477→                      A panel that uses the world's variables.
+   478→                    </div>
+   479→                  </div>
+   480→                </div>
+   481→                <button
+   482→                  onClick={() => setTheme({})}
+   483→                  className="mt-3 flex items-center gap-1.5 text-[12px] text-white/50 hover:text-white"
+   484→                >
+   485→                  <RotateCcw className="h-3 w-3" /> Clear all theme overrides
+   486→                </button>
+   487→              </div>
+   488→            </div>
+   489→          )}
+   490→
+   491→          {tab === "background" && def.kind === "builtin" && (
+   492→            <div className="max-w-2xl space-y-5">
+   493→              <p className="text-[13px] leading-relaxed text-white/55">
+   494→                Assign an image, GIF or video as a living background wash. It sits between the
+   495→                world's own canvas environment and its content — dial opacity and blend to taste.
+   496→              </p>
+   497→              <div className="flex items-center gap-3">
+   498→                <div className="h-24 w-40 overflow-hidden rounded-xl border border-white/12 bg-black/50">
+   499→                  {bgMediaUrl ? (
+   500→                    /\.(mp4|webm|mov)(\?|$)/i.test(bgMediaUrl) ? (
+   501→                      <video src={bgMediaUrl} muted loop autoPlay playsInline className="h-full w-full object-cover" />
+   502→                    ) : (
+   503→
+   504→                      <img src={bgMediaUrl} alt="Background preview" className="h-full w-full object-cover" />
+   505→                    )
+   506→                  ) : (
+   507→                    <div className="flex h-full items-center justify-center text-[11.5px] text-white/35">No media assigned</div>
+   508→                  )}
+   509→                </div>
+   510→                <div className="flex flex-col gap-2">
+   511→                  <button onClick={() => setPickerOpen(true)} className="rounded-lg bg-white/10 px-3.5 py-2 text-[13px] text-white hover:bg-white/20">
+   512→                    {bgMediaUrl ? "Replace media" : "Choose media"}
+   513→                  </button>
+   514→                  {bgMediaUrl && (
+   515→                    <button onClick={() => setBgMediaUrl(null)} className="rounded-lg border border-white/12 px-3.5 py-2 text-[12.5px] text-white/60 hover:text-white">
+   516→                      Remove background
+   517→                    </button>
+   518→                  )}
+   519→                </div>
+   520→              </div>
+   521→              {bgMediaUrl && (
+   522→                <div className="grid max-w-md grid-cols-2 gap-3">
+   523→                  <div>
+   524→                    <label className="studio-label">Opacity — {Math.round((bgSettings.opacity ?? 0.5) * 100)}%</label>
+   525→                    <input type="range" min={0} max={1} step={0.02} className="w-full accent-[#ff2e88]" value={bgSettings.opacity} onChange={(e) => setBgSettings({ ...bgSettings, opacity: Number(e.target.value) })} />
+   526→                  </div>
+   527→                  <div>
+   528→                    <label className="studio-label">Darkening wash — {Math.round((bgSettings.dim ?? 0.25) * 100)}%</label>
+   529→                    <input type="range" min={0} max={1} step={0.02} className="w-full accent-[#ff2e88]" value={bgSettings.dim} onChange={(e) => setBgSettings({ ...bgSettings, dim: Number(e.target.value) })} />
+   530→                  </div>
+   531→                  <div>
+   532→                    <label className="studio-label">Blend mode</label>
+   533→                    <select className="studio-input" value={bgSettings.blend} onChange={(e) => setBgSettings({ ...bgSettings, blend: e.target.value })}>
+   534→                      {BLEND_MODES.map((b) => <option key={b} value={b}>{b}</option>)}
+   535→                    </select>
+   536→                  </div>
+   537→                  <div>
+   538→                    <label className="studio-label">Fit</label>
+   539→                    <select className="studio-input" value={bgSettings.fit} onChange={(e) => setBgSettings({ ...bgSettings, fit: e.target.value as BgSettings["fit"] })}>
+   540→                      <option value="cover">Cover</option>
+   541→                      <option value="contain">Contain</option>
+   542→                      <option value="fill">Stretch</option>
+   543→                    </select>
+   544→                  </div>
+   545→                </div>
+   546→              )}
+   547→            </div>
+   548→          )}
+   549→
+   550→          {tab === "scene" && def.kind === "custom" && (
+   551→            <SceneEditor doc={scene} onChange={setScene} selectedId={selectedLayer} onSelect={setSelectedLayer} />
+   552→          )}
+   553→        </div>
+   554→
+   555→        {/* ——— live preview ——— */}
+   556→        <div className={tab === "scene" ? "w-full shrink-0" : "w-full shrink-0 xl:sticky xl:top-[72px] xl:w-[540px]"}>
+   557→          <LivePreview path={`/#/world/${def.id}`} />
+   558→        </div>
+   559→      </div>
+   560→
+   561→      <MediaPicker open={pickerOpen} onClose={() => setPickerOpen(false)} onPick={(url) => setBgMediaUrl(url)} />
+   562→    </div>
+   563→  );
+   564→}
+   565→

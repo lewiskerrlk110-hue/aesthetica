@@ -212,14 +212,14 @@ export const WORLDS: WorldDef[] = [
     name: "Dreamcore",
     epithet: "The World Between Memories",
     short:
-      "Bright skies, enormous clouds and places that feel remembered but never visited.",
+      "Twilight meadows, enormous glowing clouds and places that feel remembered but never visited.",
     portalBlurb:
-      "A bright nostalgic dream — pink clouds, meadows, lonely petrol stations, floating doors.",
-    grad: ["#78c8f5", "#f7b4d0", "#ffe6a0"],
-    accent: "#e26fa8",
-    accent2: "#78c8f5",
-    bg: "#bfe3fb",
-    fg: "#21324a",
+      "A meadow at the edge of the map, past midnight — glowing clouds, a tethered island, a bar of dreams.",
+    grad: ["#141b3d", "#ff9ed2", "#7fd4dc"],
+    accent: "#ff9ed2",
+    accent2: "#7fd4dc",
+    bg: "#141b3d",
+    fg: "#ece6fa",
     galleryStyle: "spacious",
     related: ["liminal", "y2k", "vaporwave"],
     archive: [

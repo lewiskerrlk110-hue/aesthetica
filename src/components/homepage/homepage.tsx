@@ -197,11 +197,42 @@ function PortalScene({ world }: { world: WorldId }) {
     case "dreamcore":
       return (
         <div className={common}>
-          <div className="absolute inset-0" style={{ background: "linear-gradient(#78c8f5 0%, #c9e8fb 60%, #fff8ef 100%)" }} />
-          <div className="cloud-blob ambient-float absolute left-[16%] top-[20%] h-9 w-20 bg-[#f7b4d0]" />
-          <div className="cloud-blob absolute right-[14%] top-[32%] h-11 w-24 bg-[#ffa77d]/90" style={{ animationDelay: "-3s" }} />
-          <div className="absolute bottom-0 h-[30%] w-full bg-[#a9d5a1]" />
-          <div className="absolute bottom-[26%] left-[44%] h-10 w-[3px] rounded bg-[#fff8ef]/80" />
+          {/* twilight sky + evening star (page DreamEnv) */}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(#0d1233 0%, #26306b 45%, #55508f 75%, #b878b8 100%)" }} />
+          <div className="absolute right-[30%] top-[12%] h-1 w-1 rounded-full bg-[#f4f6ff]" style={{ boxShadow: "0 0 8px 2px rgba(220,230,255,0.75)" }} />
+          <div className="absolute left-[24%] top-[7%] h-px w-px bg-white/80" />
+          <div className="absolute left-[58%] top-[5%] h-px w-px bg-white/70" />
+          <div className="absolute right-[10%] top-[20%] h-px w-px bg-[#c8e0ff]/80" />
+          {/* the great pink-gold cumulus */}
+          <div className="cloud-blob absolute left-[12%] top-[32%] h-9 w-28" style={{ background: "radial-gradient(circle at 50% 88%, #ffd8a8 0%, #f0a8c8 48%, #6b5492 100%)", opacity: 0.95 }} />
+          <div className="cloud-blob absolute right-[16%] top-[26%] h-5 w-14 bg-[#6a5590]/80" />
+          {/* meadow */}
+          <div className="absolute bottom-0 h-[30%] w-full" style={{ background: "linear-gradient(#2c5244, #152e28)" }} />
+          {/* tethered island with pink-roofed house */}
+          <div className="ambient-float absolute left-[11%] top-[14%] w-[18%]">
+            <div className="absolute bottom-full left-1/2 h-5 w-px -translate-x-1/2 bg-white/35" />
+            <svg viewBox="0 0 60 46" className="h-auto w-full" aria-hidden>
+              <polygon points="6,18 54,18 47,32 38,40 30,34 22,42 14,30" fill="#3a2f52" />
+              <path d="M3 17 Q17 12 30 14 Q45 16 57 18 Q43 23 30 23 Q15 23 3 17 Z" fill="#3f7a52" />
+              <rect x="22" y="6" width="14" height="9" fill="#f6ecf4" />
+              <polygon points="20,6 29,1 38,6" fill="#ff9ed2" />
+              <rect x="25" y="8" width="3.5" height="3.5" fill="#ffd898" />
+            </svg>
+          </div>
+          {/* Bar of Dreams kiosk */}
+          <div className="absolute bottom-[12%] right-[12%] w-[24%]">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap font-[var(--font-caveat)] text-[8px] text-[#ffd8f0]" style={{ textShadow: "0 0 6px #ff9ed2, 0 0 12px rgba(255,158,210,0.5)" }}>Bar of Dreams</div>
+            <div className="h-2.5 w-full rounded-t-sm" style={{ background: "repeating-linear-gradient(90deg,#ff9ed2 0 4px,#fff2fa 4px 8px,#9ee8e0 8px 12px,#fff2fa 12px 16px)" }} />
+            <div className="mx-auto h-5 w-[88%] rounded-b-sm bg-[#241f42] p-0.5">
+              <div className="h-3 w-full rounded-[2px]" style={{ background: "linear-gradient(#ffd898,#ffb090)", boxShadow: "0 0 8px rgba(255,190,120,0.55)" }} />
+            </div>
+          </div>
+          {/* pond + flowers */}
+          <div className="absolute bottom-[7%] left-[36%] h-2.5 w-8 rounded-[50%]" style={{ background: "linear-gradient(rgba(255,158,210,0.5), rgba(16,23,54,0.9))" }} />
+          <div className="absolute bottom-[5%] left-[12%] h-1 w-1 rounded-full bg-[#ff9ed2]" />
+          <div className="absolute bottom-[9%] left-[22%] h-1 w-1 rounded-full bg-[#c8a8ee]" />
+          <div className="absolute bottom-[4%] left-[46%] h-1 w-1 rounded-full bg-[#fff2fa]/90" />
+          <div className="absolute bottom-[6%] right-[40%] h-1 w-1 rounded-full bg-[#ff9ed2]/80" />
         </div>
       );
     case "cyberpunk":

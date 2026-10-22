@@ -215,20 +215,32 @@
 
 /* ---------- DREAMCORE ---------- */
 [data-world="dreamcore"] {
-  --w-bg: #bfe3fb;
-  --w-bg2: #d7ecfc;
-  --w-fg: #21324a;
-  --w-fg-dim: rgba(33, 50, 74, 0.72);
-  --w-accent: #e26fa8;
-  --w-accent2: #78c8f5;
-  --w-panel: rgba(255, 248, 239, 0.78);
-  --w-panel-border: rgba(33, 50, 74, 0.14);
+  --w-bg: #141b3d;
+  --w-bg2: #1e2856;
+  --w-fg: #ece6fa;
+  --w-fg-dim: rgba(236, 230, 250, 0.66);
+  --w-accent: #ff9ed2;
+  --w-accent2: #7fd4dc;
+  --w-panel: rgba(26, 33, 72, 0.68);
+  --w-panel-border: rgba(255, 158, 210, 0.22);
   --w-font-display: var(--font-fraunces), serif;
   --w-font-body: var(--font-dm-sans), sans-serif;
   --w-font-hand: var(--font-caveat), cursive;
   --w-radius: 1.5rem;
-  --w-shadow: 0 18px 44px -18px rgba(60, 90, 130, 0.45);
+  --w-shadow: 0 18px 44px -18px rgba(4, 8, 28, 0.65);
 }
+
+/* dreamcore scene motion: tethered island sway + neon sign pulse */
+@keyframes dc-sway {
+  0%, 100% { transform: rotate(-1.4deg) translateY(0); }
+  50% { transform: rotate(1.4deg) translateY(-5px); }
+}
+.dc-sway { animation: dc-sway 9s ease-in-out infinite; transform-origin: 50% -260%; }
+@keyframes dc-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+.dc-glow { animation: dc-glow 3.8s ease-in-out infinite; }
 
 /* ---------- CYBERPUNK ---------- */
 [data-world="cyberpunk"] {
@@ -595,6 +607,8 @@
 .fx-off .holo-text,
 .fx-off .vapor-text,
 .fx-off .y2k-sparkle,
+.fx-off .dc-sway,
+.fx-off .dc-glow,
 .fx-off .film-grain::after {
   animation: none !important;
 }
@@ -603,7 +617,7 @@
   .ambient-float, .ambient-soft, .ambient-spin, .ambient-bob,
   .ambient-flicker, .ambient-neon-flicker, .ambient-kenburns,
   .palm-sway, .car-bob, .bl-sway, .bl-bob, .neon-future,
-  .holo-text, .vapor-text, .y2k-sparkle {
+  .holo-text, .vapor-text, .y2k-sparkle, .dc-sway, .dc-glow {
     animation: none !important;
   }
   html { scroll-behavior: auto; }

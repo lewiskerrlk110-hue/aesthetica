@@ -186,7 +186,7 @@ export function DreamJournal() {
       )}
 
       {shareUrl && (
-        <div className="mb-6 flex items-center gap-2 rounded-xl bg-[#78c8f5]/25 px-4 py-3 text-[13px] text-[#21324a]">
+        <div className="mb-6 flex items-center gap-2 rounded-xl bg-[var(--w-accent)]/15 px-4 py-3 text-[13px] text-[var(--w-fg)]">
           <Share2 className="h-4 w-4 shrink-0" />
           <span className="truncate">{shareUrl}</span>
         </div>
@@ -502,7 +502,7 @@ export function SleepyRadio() {
       stops.push(() => { src.stop(); lfo.stop(); });
     }
 
-    if (id === "pad") {
+    if (id === "dawn") {
       // gentle major-9 pad
       const freqs = [220, 277.18, 329.63, 493.88];
       freqs.forEach((f, i) => {

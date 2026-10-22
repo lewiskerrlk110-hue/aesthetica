@@ -84,8 +84,8 @@ export interface SiteSettings {
 export const DEFAULT_SITE: SiteSettings = {
   heroEyebrow: "A living museum of internet aesthetics",
   heroSub:
-    "Eight interconnected worlds of art, nostalgia and digital subculture — each a fully realised visual universe with its own archive, gallery and community. Nostalgia for imagined futures, and futures imagined once more.",
-  portalsTitle: "The Eight Worlds",
+    "Nine interconnected worlds of art, nostalgia and digital subculture — each a fully realised visual universe with its own archive, gallery and community. Nostalgia for imagined futures, and futures imagined once more.",
+  portalsTitle: "All Worlds",
   portalsKicker: "Choose a door",
 };
 

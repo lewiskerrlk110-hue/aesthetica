@@ -19,6 +19,7 @@ import { DreamcorePage } from "@/components/worlds/dreamcore";
 import { CyberpunkPage } from "@/components/worlds/cyberpunk";
 import { LiminalPage } from "@/components/worlds/liminal";
 import { BackroomsPage } from "@/components/worlds/backrooms";
+import { FrutigerPage } from "@/components/worlds/frutiger";
 import { CustomWorldPage } from "@/components/worlds/custom-world";
 import { Studio } from "@/components/studio/studio";
 
@@ -105,6 +106,9 @@ function BuiltinWorld({ slug, def }: { slug: string; def?: PortalWorldDef }) {
       break;
     case "backrooms":
       page = <BackroomsPage />;
+      break;
+    case "frutiger":
+      page = <FrutigerPage />;
       break;
     default:
       return <Homepage />;

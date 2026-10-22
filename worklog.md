@@ -292,3 +292,22 @@ Stage Summary:
 - Studio live at /#/studio (PIN: aesthetica, override via STUDIO_PIN env). Built-ins keep hand-crafted canvas art but gain copy/color/order/visibility/background-media editing; custom worlds are fully user-built from layers. All mutations persist in SQLite and go live instantly.
 - Known scope: builtin world scenes themselves remain code (not layer-editable); uploads stored on local disk — Vercel deploys will need Blob/Turso migration as previously discussed; pre-existing /api/dreamseed?type=notes 500 (BackroomsNote.createdAt) untouched.
 - Left as a living demo: custom world SolARPunk (deletable in Studio) + test-media.jpg in the library.
+
+---
+Task ID: FA-1
+Agent: main (Z.ai)
+Task: Create a ninth world, Frutiger Aero, styled from the user's reference wallpaper (upload/hq720.jpg — glossy aqua water city: glass towers, water-slide tubes, waterfall, rainbow, lagoon, half-submerged CRT, CDs, globe, white flowers, "Welcome to Paradise").
+
+Work Log:
+- Studied registry-driven architecture: WORLDS in src/lib/aesthetics.ts feeds Studio merge (buildMergedWorlds), nav dropdown, portal grid, gallery/archive — a new WorldDef propagates everywhere; only page.tsx switch + PortalScene case + theme CSS are world-specific
+- aesthetics.ts: added "frutiger" to WorldId union + World 09 entry (name Frutiger Aero, epithet The Aqua Utopia, accent #1fa7e8, accent2 #4fc98e, light sky bg #dff3fd / deep-water fg #0d4a70, galleryStyle glossy, related y2k/dreamcore/vaporwave) with 4-section archive (documented: Frutiger typeface + Windows Aero naming, nature-as-technology imagery, flat-design turn + CARI/2022 revival; interpretation: utopia in a water droplet) + GALLERY_FILTERS entry
+- src/components/worlds/frutiger.tsx (new, ~535 lines): full-bleed SVG environment mirroring the reference — azure sky + lens-flare sun, 4 drifting cloud banks, pastel rainbow arc (opacity pulse), glass tower clusters with mullions + roof caps, dome building, tall "future" sign tower, palms, looping water-slide tube with animated flowing dash highlights (two loops), waterfall off mid-tower ledge with flowing streaks + splash pool, lagoon with shimmer bars and tower reflections, bobbing "dream" / "water slide →" signs and floating "Welcome to Paradise" board, half-submerged CRT monitor showing a glossy aero desktop, plus DOM layers: 16 rising gloss bubbles (fa-rise, per-bubble sway/duration), two conic-gradient iridescent CDs (ambient-float), CSS globe with green landmasses, white flowers, light sweep, white vignette
+- Interactive features: Bubble Bay (click-to-pop tank, 9 self-regenerating bubbles, popped counter, onAnimationEnd respawn) + Aqua Surface Lab (6 swatch material explorer: aqua glass, water droplet, gloss button, lens flare, fresh grass, aurora sheen) + nature-tech note panel
+- globals.css: [data-world="frutiger"] theme block (light theme, Outfit display font, white panels) + keyframes fa-rise/fa-drift/fa-flow/fa-shimmer/fa-bob/fa-arc/fa-tank-rise
+- page.tsx: imported FrutigerPage + added "frutiger" case to BuiltinWorld switch
+- homepage.tsx: PortalScene case "frutiger" — mini SVG (sky, sun, rainbow, towers + dome, dash-animated tube, lagoon shimmer, Paradise board, bubbles) synced with page scene
+- Consistency fixes: nav dropdown label "The Eight Worlds" → "All Worlds"; homepage portals title + heroSub "Eight" → "Nine" updated in BOTH DEFAULT_SITE (studio.ts) and the live siteSetting rows in db/custom.db (Prisma update script scripts/db-fix-title.js); moved Paradise board clear of the globe in the world SVG
+- Verified: eslint clean; tsc clean for all changed files (pre-existing unrelated errors in examples/, skills/, api/dreamseed untouched); agent-browser zero page/console errors on #/world/frutiger and #/world/frutiger/gallery; Bubble Bay click-tested (counter "2 popped"); screenshots world-frutiger.png (hero with popped counter) + home-portal-frutiger.png (World 09 card in portal grid, homepage stats "9 worlds")
+
+Stage Summary:
+- Frutiger Aero is live as World 09: registry entry, hand-built SVG city environment per reference, interactive Bubble Bay + Aqua Surface Lab, theme block, portal card, gallery/archive wired. Nav + homepage copy now reflect 9 worlds (code defaults + DB rows). Screenshots in docs/screenshots/. Commit follows.

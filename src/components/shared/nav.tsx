@@ -54,7 +54,7 @@ export function Nav() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[13px] text-white/75 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--w-accent)]">
-                The Eight Worlds
+                All Worlds
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
             </DropdownMenuTrigger>

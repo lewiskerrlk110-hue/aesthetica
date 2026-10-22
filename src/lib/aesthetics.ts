@@ -14,7 +14,8 @@ export type WorldId =
   | "dreamcore"
   | "cyberpunk"
   | "liminal"
-  | "backrooms";
+  | "backrooms"
+  | "frutiger";
 
 export interface ArchiveSection {
   heading: string;
@@ -362,6 +363,45 @@ export const WORLDS: WorldDef[] = [
       },
     ],
   },
+  {
+    id: "frutiger",
+    index: 9,
+    name: "Frutiger Aero",
+    epithet: "The Aqua Utopia",
+    short:
+      "Glass towers over paradise water, bubbles rising forever — nature and technology promising a soft, clean tomorrow.",
+    portalBlurb:
+      "A glass city over lagoon water — looping water slides, a drifting rainbow, bubbles and a half-drowned monitor.",
+    grad: ["#0b5ea8", "#38b6f0", "#a8ecff"],
+    accent: "#1fa7e8",
+    accent2: "#4fc98e",
+    bg: "#dff3fd",
+    fg: "#0d4a70",
+    galleryStyle: "glossy",
+    related: ["y2k", "dreamcore", "vaporwave"],
+    archive: [
+      {
+        heading: "The typeface and the operating system",
+        kind: "documented",
+        body: "Frutiger Aero spans roughly 2004 to 2013. Its retroactive name combines two period icons: Frutiger, the humanist typeface drawn by Adrian Frutiger and widely used in signage and UI of the era, and Aero, the glass-heavy interface language introduced with Windows Vista (2006) and refined in Windows 7 (2009). The label itself was popularised retrospectively by the Consumer Aesthetics Research Institute (CARI), founded in 2019 to catalogue consumer visual eras.",
+      },
+      {
+        heading: "Nature as technology's ambassador",
+        kind: "documented",
+        body: "The style fused skeuomorphic gloss with utopian nature imagery: water droplets on leaves, tropical fish drifting across wallpapers, grass underfoot, blue skies with fisheye clouds, bubbles and aurora gradients. Desktop wallpapers shipped with operating systems became its gallery — Windows Vista's green-and-blue vistas are canonical — alongside glossy Web 2.0 buttons, aqua progress bars and translucent hardware.",
+      },
+      {
+        heading: "The flat-design turn",
+        kind: "documented",
+        body: "The gloss began to read as excess as interfaces simplified: Microsoft's Metro design (2012) and Apple's iOS 7 (2013) replaced sheen and depth with flat colour and thin type, closing the era almost overnight. Interest returned in the early 2020s — CARI's naming work, nostalgia threads and a wave of TikTok and YouTube essays from around 2022 re-catalogued Frutiger Aero as a lost optimistic future.",
+      },
+      {
+        heading: "Utopia in a water droplet",
+        kind: "interpretation",
+        body: "Frutiger Aero is optimism rendered in glass and chlorinated blue: technology that promises to behave like a garden — clean, fresh, self-renewing. Reading it today, the spotless water city feels like advertising's version of ecology, a future polished so hard it could never stain. Its bubbles rise forever precisely because none of them were ever going to burst.",
+      },
+    ],
+  },
 ];
 
 export const WORLD_MAP: Record<WorldId, WorldDef> = Object.fromEntries(
@@ -379,6 +419,7 @@ export const GALLERY_FILTERS: Record<WorldId, string[]> = {
   cyberpunk: ["all", "film-still", "poster", "photograph"],
   liminal: ["all", "photograph", "film-still"],
   backrooms: ["all", "photograph", "render", "film-still"],
+  frutiger: ["all", "interface", "render", "photograph"],
 };
 
 export const MEDIUM_LABELS: Record<string, string> = {

@@ -337,6 +337,61 @@ function PortalScene({ w }: { w: PortalWorldDef }) {
           </svg>
         </div>
       );
+    case "frutiger":
+      return (
+        <div className={common}>
+          {/* Aqua utopia (page FrutigerEnv): sky, sun, rainbow, glass towers,
+              dome, looping slide tube, lagoon shimmer, signs, bubbles */}
+          <svg className="h-full w-full" viewBox="0 0 300 224" preserveAspectRatio="xMidYMid slice" aria-hidden>
+            <defs>
+              <linearGradient id="pv-fa-sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#3fb2ef" />
+                <stop offset="0.6" stopColor="#8ed9f8" />
+                <stop offset="1" stopColor="#d9f5fe" />
+              </linearGradient>
+              <linearGradient id="pv-fa-glass" x1="0" y1="0" x2="0.7" y2="1">
+                <stop offset="0" stopColor="#eafaff" />
+                <stop offset="0.55" stopColor="#9fdcf6" />
+                <stop offset="1" stopColor="#57b4e4" />
+              </linearGradient>
+              <linearGradient id="pv-fa-water" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#9fe8f6" />
+                <stop offset="1" stopColor="#1286c2" />
+              </linearGradient>
+            </defs>
+            <rect width="300" height="224" fill="url(#pv-fa-sky)" />
+            <circle cx="56" cy="34" r="34" fill="#ffffff" opacity="0.9" />
+            <circle cx="56" cy="34" r="13" fill="#ffffff" />
+            {/* rainbow */}
+            <path d="M 20 120 A 130 130 0 0 1 282 112" fill="none" stroke="#ffffff" strokeWidth="6" strokeLinecap="round" opacity="0.55" />
+            {/* towers + dome */}
+            <rect x="16" y="96" width="22" height="94" rx="3" fill="url(#pv-fa-glass)" stroke="#ffffff" strokeOpacity="0.6" strokeWidth="1.2" />
+            <rect x="46" y="74" width="30" height="116" rx="3" fill="url(#pv-fa-glass)" stroke="#ffffff" strokeOpacity="0.65" strokeWidth="1.2" />
+            <rect x="248" y="52" width="34" height="138" rx="3" fill="url(#pv-fa-glass)" stroke="#ffffff" strokeOpacity="0.65" strokeWidth="1.2" />
+            <rect x="256" y="60" width="20" height="8" rx="3" fill="#ffffff" />
+            <ellipse cx="128" cy="118" rx="24" ry="17" fill="#bdeafc" stroke="#ffffff" strokeWidth="1.4" />
+            <rect x="106" y="126" width="44" height="64" rx="3" fill="url(#pv-fa-glass)" stroke="#ffffff" strokeOpacity="0.6" strokeWidth="1.2" />
+            {/* slide tube */}
+            <path d="M 208 128 C 246 84 288 96 286 140 C 284 170 250 176 240 152" fill="none" stroke="#eafcff" strokeWidth="7" strokeLinecap="round" opacity="0.75" />
+            <path d="M 208 128 C 246 84 288 96 286 140 C 284 170 250 176 240 152" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 12" className="fa-flow" style={{ animationDuration: "2.2s" }} />
+            {/* lagoon */}
+            <rect x="0" y="156" width="300" height="68" fill="url(#pv-fa-water)" />
+            <rect x="0" y="155" width="300" height="2.4" fill="#ffffff" opacity="0.6" />
+            {[14, 68, 122, 176, 232, 268].map((x, i) => (
+              <rect key={i} x={x} y={170 + (i % 3) * 14} width="34" height="2.6" rx="1.3" fill="#ffffff" className="fa-shimmer" opacity="0.45" style={{ animationDelay: `${i * 0.5}s` }} />
+            ))}
+            {/* welcome board */}
+            <rect x="212" y="176" width="62" height="20" rx="4" fill="#ffffff" stroke="#cfeaf6" strokeWidth="1.5" />
+            <text x="243" y="189" textAnchor="middle" fontSize="7.5" fill="#1f88be" style={{ fontWeight: 700 }}>
+              Paradise
+            </text>
+            {/* bubbles */}
+            {[[36, 200, 5], [82, 210, 3.4], [150, 204, 4.4], [196, 212, 3], [266, 206, 5]].map(([cx, cy, r], i) => (
+              <circle key={i} cx={cx} cy={cy} r={r} fill="#ffffff" opacity="0.7" className="fa-shimmer" style={{ animationDelay: `${i * 0.7}s` }} />
+            ))}
+          </svg>
+        </div>
+      );
     default:
       // Studio-built custom worlds: render their live scene graph, scaled to the card
       return (

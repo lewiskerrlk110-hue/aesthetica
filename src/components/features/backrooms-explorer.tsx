@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Move, Maximize2 } from "lucide-react";
+import { Move } from "lucide-react";
 
 // ————— First-person maze explorer (canvas raycaster) —————
 // Yellow rooms, fluorescent ceiling panels, damp carpet.
@@ -33,10 +33,58 @@ const isWall = (x: number, y: number) => {
   return MAP[yi][xi] === "1";
 };
 
+// ————— Found Notes, scattered through the maze —————
+// Fixed scatter spots (cell centres), first one just north of spawn as an
+// on-ramp; the rest pushed into far corners, dead ends and side rooms.
+const NOTE_SPOTS: Array<[number, number]> = [
+  [1.5, 11.5],
+  [2.5, 1.5],
+  [9.5, 1.5],
+  [13.5, 2.5],
+  [3.5, 4.5],
+  [8.5, 5.5],
+  [11.5, 7.5],
+  [8.5, 10.5],
+];
+
+const FOUND_KEY = "aes-backrooms-found";
+const FOUND_EVENT = "aes:notes-found";
+
+export function readFoundNotes(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(FOUND_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function announceFoundNote(id: string) {
+  const cur = readFoundNotes();
+  if (cur.includes(id)) return;
+  try {
+    window.localStorage.setItem(FOUND_KEY, JSON.stringify([...cur, id]));
+  } catch {
+    /* storage unavailable */
+  }
+  window.dispatchEvent(new CustomEvent(FOUND_EVENT, { detail: id }));
+}
+
+interface NoteDTO {
+  id: string; levelRef: string | null; title: string; body: string;
+  foundAt: string | null; timestamp: string | null; kind: string;
+}
+
 export function BackroomsExplorer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [entered, setEntered] = useState(false);
   const [fps, setFps] = useState(0);
+  const [notes, setNotes] = useState<NoteDTO[]>([]);
+  const [found, setFound] = useState<string[]>([]);
+  const [openNote, setOpenNote] = useState<NoteDTO | null>(null);
+  const [nearId, setNearId] = useState<string | null>(null);
   const keys = useRef<Record<string, boolean>>({});
   const state = useRef({
     px: 1.5,
@@ -48,13 +96,49 @@ export function BackroomsExplorer() {
   const rafRef = useRef(0);
   const lastRef = useRef(0);
   const reducedRef = useRef(false);
+  const nearRef = useRef<string | null>(null);
+  const notesRef = useRef<NoteDTO[]>([]);
+  const foundRef = useRef<string[]>([]);
+  const openRef = useRef(false);
+
+  // load the archive + mirror the found set (also syncs across tabs)
+  useEffect(() => {
+    fetch("/api/dreamseed?type=notes")
+      .then((r) => r.json())
+      .then((d) => {
+        notesRef.current = d.notes || [];
+        setNotes(notesRef.current);
+      })
+      .catch(() => {});
+    const sync = () => {
+      foundRef.current = readFoundNotes();
+      setFound(foundRef.current);
+    };
+    sync();
+    window.addEventListener(FOUND_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(FOUND_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  useEffect(() => { openRef.current = openNote !== null; }, [openNote]);
 
   // controls
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (!entered) return;
-      keys.current[e.key.toLowerCase()] = true;
-      if (["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(e.key.toLowerCase())) e.preventDefault();
+      const key = e.key.toLowerCase();
+      keys.current[key] = true;
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) e.preventDefault();
+      if (key === "f" && nearRef.current && !openRef.current) {
+        const n = notesRef.current.find((x) => x.id === nearRef.current);
+        if (n) {
+          setOpenNote(n);
+          announceFoundNote(n.id);
+        }
+      }
     };
     const up = (e: KeyboardEvent) => { keys.current[e.key.toLowerCase()] = false; };
     window.addEventListener("keydown", down);
@@ -65,19 +149,30 @@ export function BackroomsExplorer() {
     };
   }, [entered]);
 
+  const readNear = useCallback(() => {
+    const n = notesRef.current.find((x) => x.id === nearRef.current);
+    if (n) {
+      setOpenNote(n);
+      announceFoundNote(n.id);
+    }
+  }, []);
+
   const step = useCallback((dt: number, ctx: CanvasRenderingContext2D, w: number, h: number) => {
     const s = state.current;
+    const now = performance.now();
     const speed = 2.1 * (dt / 1000);
     const rot = 1.9 * (dt / 1000);
     const k = keys.current;
     let mx = 0;
     let my = 0;
-    if (k["w"] || k["arrowup"]) { mx += Math.cos(s.dir); my += Math.sin(s.dir); }
-    if (k["s"] || k["arrowdown"]) { mx -= Math.cos(s.dir); my -= Math.sin(s.dir); }
-    if (k["a"] || k["arrowleft"]) s.dir -= rot;
-    if (k["d"] || k["arrowright"]) s.dir += rot;
-    if (k["q"]) { mx -= Math.sin(s.dir); my += Math.cos(s.dir); }
-    if (k["e"]) { mx += Math.sin(s.dir); my -= Math.cos(s.dir); }
+    if (!openRef.current) {
+      if (k["w"] || k["arrowup"]) { mx += Math.cos(s.dir); my += Math.sin(s.dir); }
+      if (k["s"] || k["arrowdown"]) { mx -= Math.cos(s.dir); my -= Math.sin(s.dir); }
+      if (k["a"] || k["arrowleft"]) s.dir -= rot;
+      if (k["d"] || k["arrowright"]) s.dir += rot;
+      if (k["q"]) { mx -= Math.sin(s.dir); my += Math.cos(s.dir); }
+      if (k["e"]) { mx += Math.sin(s.dir); my -= Math.cos(s.dir); }
+    }
     const len = Math.hypot(mx, my) || 1;
     const nx = s.px + (mx / len) * speed * (mx || my ? 1 : 0);
     const ny = s.py + (my / len) * speed * (mx || my ? 1 : 0);
@@ -152,10 +247,12 @@ export function BackroomsExplorer() {
     // raycast walls
     const fov = Math.PI / 3;
     const numRays = Math.floor(w / 3);
+    const zbuf = new Float32Array(numRays);
     for (let r = 0; r < numRays; r++) {
       const angle = s.dir - fov / 2 + (r / numRays) * fov;
       const dist = castRay(s.px, s.py, angle);
       const corrected = dist * Math.cos(angle - s.dir);
+      zbuf[r] = corrected;
       const wallH = Math.min(h, (h * 1.1) / Math.max(0.08, corrected));
       const shade = Math.max(0.12, 1 - corrected / 9);
       const x = (r / numRays) * w;
@@ -169,6 +266,73 @@ export function BackroomsExplorer() {
       // darker baseboard
       ctx.fillStyle = `rgba(80,70,30,${0.5 * shade})`;
       ctx.fillRect(x, h / 2 + wallH / 2 - wallH * 0.06, w / numRays + 1, wallH * 0.06);
+    }
+
+    // scattered note sprites, z-buffered against the walls, far to near
+    const sprites: Array<{ id: string; found: boolean; x: number; y: number; rel: number; corrected: number }> = [];
+    for (let i = 0; i < notesRef.current.length; i++) {
+      const spot = NOTE_SPOTS[i % NOTE_SPOTS.length];
+      const dx = spot[0] - s.px;
+      const dy = spot[1] - s.py;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 0.05 || dist > 13) continue;
+      let rel = Math.atan2(dy, dx) - s.dir;
+      while (rel > Math.PI) rel -= Math.PI * 2;
+      while (rel < -Math.PI) rel += Math.PI * 2;
+      if (Math.abs(rel) > fov / 2 + 0.12) continue;
+      const corrected = dist * Math.cos(rel);
+      if (corrected < 0.12) continue;
+      const col = Math.floor((rel / fov + 0.5) * numRays);
+      if (col < 0 || col >= numRays || corrected > zbuf[col] + 0.2) continue;
+      sprites.push({
+        id: notesRef.current[i].id,
+        found: foundRef.current.includes(notesRef.current[i].id),
+        x: spot[0], y: spot[1], rel, corrected,
+      });
+    }
+    sprites.sort((a, b) => b.corrected - a.corrected);
+    for (const sp of sprites) {
+      const wallH = (h * 1.1) / sp.corrected;
+      const x = (sp.rel / fov + 0.5) * w;
+      const floorY = h / 2 + wallH / 2;
+      const bob = Math.sin(now / 480 + sp.x * 7) * wallH * 0.012;
+      const ph = wallH * 0.15;
+      const pw = ph * 0.72;
+      const cy = floorY - wallH * 0.06 - bob - ph / 2;
+      // glow pool on the carpet so pages read at a distance
+      const gA = 0.13 + 0.05 * Math.sin(now / 300 + sp.y * 5);
+      const glow = ctx.createRadialGradient(x, floorY, 1, x, floorY, wallH * 0.17);
+      glow.addColorStop(0, `rgba(255,246,200,${gA})`);
+      glow.addColorStop(1, "rgba(255,246,200,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(x - wallH * 0.17, floorY - wallH * 0.17, wallH * 0.34, wallH * 0.34);
+      // the page itself — dimmer once recovered
+      ctx.save();
+      ctx.translate(x, cy);
+      ctx.rotate(Math.sin(now / 900 + sp.x * 3) * 0.06);
+      ctx.fillStyle = sp.found ? "rgba(238,228,190,0.45)" : "#efe6c8";
+      ctx.fillRect(-pw / 2, -ph / 2, pw, ph);
+      ctx.fillStyle = "rgba(90,78,40,0.45)";
+      for (let l = 1; l <= 3; l++) {
+        ctx.fillRect(-pw * 0.32, -ph / 2 + (ph * l) / 4, pw * 0.64, Math.max(1, ph * 0.02));
+      }
+      ctx.restore();
+    }
+
+    // proximity — nearest page within reach
+    let nearest: string | null = null;
+    let best = 0.85;
+    for (let i = 0; i < notesRef.current.length; i++) {
+      const spot = NOTE_SPOTS[i % NOTE_SPOTS.length];
+      const d = Math.hypot(spot[0] - s.px, spot[1] - s.py);
+      if (d < best) {
+        best = d;
+        nearest = notesRef.current[i].id;
+      }
+    }
+    if (nearRef.current !== nearest) {
+      nearRef.current = nearest;
+      setNearId(nearest);
     }
 
     // fog vignette
@@ -258,6 +422,11 @@ export function BackroomsExplorer() {
     };
   }, [entered, step]);
 
+  const closeNote = () => {
+    setOpenNote(null);
+    keys.current = {};
+  };
+
   const holdBtn = (key: string, label: string) => (
     <button
       className="flex h-12 w-12 items-center justify-center rounded-lg border border-[var(--w-panel-border)] bg-[var(--w-panel)] text-lg select-none active:bg-[var(--w-accent)]/25"
@@ -270,13 +439,17 @@ export function BackroomsExplorer() {
     </button>
   );
 
+  const complete = notes.length > 0 && found.length >= notes.length;
+
   return (
     <div className="w-panel overflow-hidden">
       <div className="flex items-center justify-between border-b border-[var(--w-panel-border)] px-4 py-2.5">
         <p className="flex items-center gap-2 font-[var(--font-ibm-plex-mono)] text-[12px] uppercase tracking-widest opacity-75">
           <Move className="h-4 w-4" /> Level 0 — first-person explorer
         </p>
-        <span className="font-[var(--font-ibm-plex-mono)] text-[10.5px] opacity-40">{entered ? `${fps} fps · noclip stable` : "standby"}</span>
+        <span className="font-[var(--font-ibm-plex-mono)] text-[10.5px] opacity-40">
+          {entered ? `${fps} fps · noclip stable` : "standby"}
+        </span>
       </div>
       <div className="relative aspect-[16/9] w-full bg-black">
         {entered ? (
@@ -284,6 +457,25 @@ export function BackroomsExplorer() {
             <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
             {/* scanlines + vignette overlays */}
             <div className="scanlines absolute inset-0" />
+            {/* notes-found HUD */}
+            {notes.length > 0 && (
+              <div
+                className="absolute left-3 top-3 rounded-full bg-black/55 px-3 py-1.5 font-[var(--font-ibm-plex-mono)] text-[10.5px] text-[#d8c34a] backdrop-blur"
+                aria-live="polite"
+              >
+                notes {Math.min(found.length, notes.length)}/{notes.length}
+                {complete ? " · archive complete" : ""}
+              </div>
+            )}
+            {/* proximity prompt — also the touch affordance */}
+            {nearId && !openNote && (
+              <button
+                onClick={readNear}
+                className="absolute bottom-28 left-1/2 -translate-x-1/2 rounded-full bg-black/65 px-4 py-2 font-[var(--font-ibm-plex-mono)] text-[11.5px] text-[#efe9d0] backdrop-blur transition hover:bg-black/85 md:bottom-20"
+              >
+                a page lies on the carpet — read it (F)
+              </button>
+            )}
             {/* touch controls */}
             <div className="absolute bottom-3 left-3 grid grid-cols-3 gap-1.5 opacity-80 md:hidden">
               <div />
@@ -299,6 +491,31 @@ export function BackroomsExplorer() {
             >
               Exit the maze
             </button>
+            {openNote && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+                onClick={closeNote}
+                role="dialog"
+                aria-modal="true"
+              >
+                <div
+                  className="paper max-h-[80vh] w-full max-w-lg overflow-y-auto p-7"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ background: "linear-gradient(#f4eeda,#eee6cc)", color: "#3a3420" }}
+                >
+                  <p className="font-[var(--font-ibm-plex-mono)] text-[10.5px] uppercase tracking-widest text-[#8a7c38]">
+                    {openNote.levelRef || "unassigned space"} · {openNote.timestamp || "undated"} · {openNote.kind}
+                  </p>
+                  <h3 className="mt-1 font-[var(--font-ibm-plex-mono)] text-xl font-semibold">{openNote.title}</h3>
+                  <p className="mt-1 font-[var(--font-ibm-plex-mono)] text-[11px] text-[#6e6230]">found: {openNote.foundAt}</p>
+                  <div className="mt-4 whitespace-pre-line font-[var(--font-ibm-plex-mono)] text-[13.5px] leading-relaxed">{openNote.body}</div>
+                  <p className="mt-5 border-t border-[#3a3420]/15 pt-3 text-[10.5px] leading-relaxed text-[#3a3420]/55">
+                    Community-created fiction in the Backrooms tradition — creative writing, not documentation.
+                  </p>
+                  <button onClick={closeNote} className="mt-4 rounded-full bg-[#3a3420]/10 px-4 py-1.5 text-[12px] font-semibold hover:bg-[#3a3420]/20">Close</button>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <button
@@ -308,8 +525,8 @@ export function BackroomsExplorer() {
             <span className="font-[var(--font-ibm-plex-mono)] text-[11px] uppercase tracking-[0.4em] text-[#d8c34a]/70">no_clip.exe</span>
             <span className="text-2xl font-bold text-[#efe9d0] transition-colors group-hover:text-white">Enter the Backrooms</span>
             <span className="max-w-sm px-6 text-center text-[13px] leading-relaxed text-[#efe9d0]/55">
-              WASD or arrow keys to walk. The rooms repeat. The hum does not mean anyone is home.
-              You can always exit — you are a visitor here.
+              WASD or arrow keys to walk. Eight pages are scattered on the carpet — find them all.
+              The hum does not mean anyone is home. You can always exit — you are a visitor here.
             </span>
             <span className="mt-2 rounded-full border border-[#d8c34a]/40 px-5 py-2 font-[var(--font-ibm-plex-mono)] text-[12px] text-[#d8c34a] transition-colors group-hover:bg-[#d8c34a]/15">
               &gt; begin descent

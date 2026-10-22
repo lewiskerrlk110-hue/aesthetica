@@ -11,11 +11,11 @@ export async function GET(req: NextRequest) {
     case "postcards":
       return json({ postcards: await db.postcard.findMany({ orderBy: { createdAt: "asc" } }) });
     case "locations":
-      return json({ locations: await db.cloudLocation.findMany({ orderBy: { createdAt: "asc" } }) });
+      return json({ locations: await db.cloudLocation.findMany({ orderBy: { name: "asc" } }) });
     case "levels":
       return json({ levels: await db.backroomsLevel.findMany({ orderBy: { identifier: "asc" } }) });
     case "notes":
-      return json({ notes: await db.backroomsNote.findMany({ orderBy: { createdAt: "asc" } }) });
+      return json({ notes: await db.backroomsNote.findMany({ orderBy: { title: "asc" } }) });
     default:
       return bad("Unknown type");
   }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { WORLD_MAP } from "@/lib/aesthetics";
 import { WorldPage } from "./world-page";
-import { BackroomsExplorer } from "@/components/features/backrooms-explorer";
+import { BackroomsExplorer, readFoundNotes } from "@/components/features/backrooms-explorer";
 import { authHeaders } from "@/lib/identity";
 import { useToast } from "@/hooks/use-toast";
 import { Radio, FileText, Volume2, VolumeX, Signal, Map as MapIcon } from "lucide-react";
@@ -599,8 +599,17 @@ function FoundNotes() {
   const [notes, setNotes] = useState<NoteDTO[]>([]);
   const [filter, setFilter] = useState("all");
   const [sel, setSel] = useState<NoteDTO | null>(null);
+  const [found, setFound] = useState<string[]>([]);
   useEffect(() => {
     fetch("/api/dreamseed?type=notes").then((r) => r.json()).then((d) => setNotes(d.notes || [])).catch(() => {});
+    const sync = () => setFound(readFoundNotes());
+    sync();
+    window.addEventListener("aes:notes-found", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("aes:notes-found", sync);
+      window.removeEventListener("storage", sync);
+    };
   }, []);
   const levels = Array.from(new Set(notes.map((n) => n.levelRef).filter(Boolean))) as string[];
   const list = filter === "all" ? notes : notes.filter((n) => n.levelRef === filter);
@@ -611,7 +620,15 @@ function FoundNotes() {
         <p className="flex items-center gap-2 font-[var(--font-ibm-plex-mono)] text-[12px] uppercase tracking-widest opacity-75">
           <FileText className="h-4 w-4" /> Found Notes Archive
         </p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {notes.length > 0 && (
+            <span
+              className="rounded-full border border-[var(--w-panel-border)] px-2.5 py-1 font-[var(--font-ibm-plex-mono)] text-[9.5px] uppercase tracking-wider opacity-70"
+              style={found.filter((f) => notes.some((n) => n.id === f)).length >= notes.length ? { color: "var(--w-accent)", borderColor: "var(--w-accent)", opacity: 1 } : undefined}
+            >
+              {found.filter((f) => notes.some((n) => n.id === f)).length}/{notes.length} recovered in the maze
+            </span>
+          )}
           <button onClick={() => setFilter("all")} className="w-tag" style={filter === "all" ? { color: "var(--w-fg)", borderColor: "var(--w-accent)" } : undefined}>all</button>
           {levels.map((l) => (
             <button key={l} onClick={() => setFilter(l)} className="w-tag" style={filter === l ? { color: "var(--w-fg)", borderColor: "var(--w-accent)" } : undefined}>{l}</button>
@@ -627,7 +644,12 @@ function FoundNotes() {
           >
             <span className="flex items-center justify-between gap-2">
               <span className="font-[var(--font-ibm-plex-mono)] text-[13px] font-semibold">{n.title}</span>
-              <span className="rounded bg-[var(--w-accent)]/15 px-1.5 py-0.5 font-[var(--font-ibm-plex-mono)] text-[9.5px] uppercase tracking-wider" style={{ color: "var(--w-accent)" }}>{n.kind}</span>
+              <span className="flex shrink-0 gap-1">
+                {found.includes(n.id) && (
+                  <span className="rounded bg-[var(--w-accent)]/15 px-1.5 py-0.5 font-[var(--font-ibm-plex-mono)] text-[9.5px] uppercase tracking-wider" style={{ color: "var(--w-accent)" }}>recovered</span>
+                )}
+                <span className="rounded bg-[var(--w-accent)]/15 px-1.5 py-0.5 font-[var(--font-ibm-plex-mono)] text-[9.5px] uppercase tracking-wider" style={{ color: "var(--w-accent)" }}>{n.kind}</span>
+              </span>
             </span>
             <span className="mt-1 block line-clamp-2 text-[12px] leading-relaxed opacity-60">{n.body.split("\n")[0]}</span>
             <span className="mt-2 block font-[var(--font-ibm-plex-mono)] text-[10.5px] opacity-40">

@@ -575,3 +575,25 @@ Work Log:
 
 Stage Summary:
 - The Studio now reorganises both levels of the site: the homepage's six content sections (order + visibility) from the Main Page tab, and each built-in world's page blocks (features / gallery / archive tabs / related strip) from a new Sections tab — every change previews live and lands for visitors on save. Uploaded backgrounds are self-cleaning: replacing, clearing, resetting or deleting a world (or the hero media) removes the orphaned file unless something else still uses it.
+
+---
+Task ID: MAZE-NOTES-1
+Agent: main (Z.ai)
+Task: "is the found notes programmed with anything? if not put them in the game have them scattered" — wire the Found Notes into the Backrooms maze as scattered discoverable pages.
+
+Work Log:
+- Answered: notes were passive (archive list + paper reader only); maze had no gameplay.
+- Rewrote src/components/features/backrooms-explorer.tsx: 8 fixed scatter spots (first just north of spawn as on-ramp, rest in far corners/dead ends), z-buffered billboard sprites (glowing paper with ruled lines, bob + shimmer, dimmed once recovered), proximity detection (<0.85 units) with HTML prompt "a page lies on the carpet — read it (F)", F-key + tap to open the paper modal in place, movement gated while reading, HUD chip "notes x/8 · archive complete".
+- Found-state store: localStorage "aes-backrooms-found" + custom event "aes:notes-found" + storage listener; exported readFoundNotes()/announceFoundNote().
+- FIXED pre-existing bug: /api/dreamseed?type=notes and ?type=locations ordered by non-existent createdAt (BackroomsNote/CloudLocation have no such column) → 500, archive panel and Dreamcore locations silently empty. Changed to orderBy title (notes) / name (locations).
+- src/components/worlds/backrooms.tsx FoundNotes: listens for found events, shows "x/8 recovered in the maze" chip (accent when complete) + "recovered" badge on found cards.
+- Prompt positioning: raised to bottom-28/bottom-20 to clear the sticky World/Gallery/Archive pill; copy made touch-neutral.
+- README world 08 line updated.
+- Verified via agent-browser: notes 0/8 HUD at spawn → synthetic key events walked to note → prompt → paper modal ("A good place, for once") → HUD 1/8 → full reload keeps 1/8 (persistence) → archive shows 1/8 counter + RECOVERED badge → mobile 390px clean, no dpad collision → 0 console errors.
+- tsc + eslint clean on touched files; locations API returns 5 rows.
+
+Stage Summary:
+- The Backrooms maze is now the way to collect the archive: 8 pages scattered on the carpet, read in place, progress persisted per browser and mirrored in the Found Notes Archive panel.
+- Bonus: dreamseed API 500 fixed — archive panel and Dreamcore Cloud Atlas were silently broken.
+- Screenshots: docs/screenshots/maze-notes-{entry,spawn,hud,near,prompt,modal,found1,persist,archive,mobile,mobile2}.png
+- No schema changes; no restart needed.

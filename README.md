@@ -27,7 +27,7 @@ carefully separates **documented facts** from **interpretation**.
 | 05 | **Dreamcore** | The World Between Memories | Living meadow, **Dream Journal** (private-by-default, shareable via link), postcards, memory fragments, Cloud Atlas, Sleepy Radio |
 | 06 | **Cyberpunk** | The Rain-Soaked Megacity | Three-plane rain canvas, expandable visual timeline 1968 → today |
 | 07 | **Liminal Spaces** | The Place Between Places | Slow-drift corridor, location directory with type filters + random discovery |
-| 08 | **The Backrooms** | The Infinite Interior | **First-person raycaster maze** (WASD + touch), Radio Room with synthesized stations, Found Notes, Level Explorer |
+| 08 | **The Backrooms** | The Infinite Interior | **First-person raycaster maze** (WASD + touch) with the Found Notes scattered on its carpet — read them in place, they sync to the archive, Radio Room with synthesized stations, Level Explorer |
 
 <div align="center">
 <table>

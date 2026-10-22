@@ -2,10 +2,14 @@
 
 // STUDIO — Scene editor: build a custom world's scene graph on an interactive
 // canvas. Drag to move, handles to resize, inspector for everything else.
-// Geometry is % of the stage; font sizes are cqh so scenes scale anywhere.
+// Snapping: optional grid (1–10%) and smart alignment guides — edges &
+// centres snap to other layers and the stage, with neon lines showing each
+// match. Hold Alt to drag freely. Geometry is % of the stage; font sizes
+// are cqh so scenes scale anywhere.
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Trash2, Copy, ArrowUp, ArrowDown, Type, Square, Image as ImageIcon, Blend,
+  Magnet, Crosshair, Grid3x3,
 } from "lucide-react";
 import { LayerContent, layerBoxStyle } from "@/components/worlds/custom-world";
 import {
@@ -30,6 +34,88 @@ function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v));
 }
 
+// ————— snapping engine —————
+export interface GuideLines { v: number[]; h: number[] }
+const EMPTY_GUIDES: GuideLines = { v: [], h: [] };
+const SNAP_THRESHOLD = 1.1; // % of the stage — how close counts as "aligned"
+
+interface SnapOpts { gridOn: boolean; guidesOn: boolean; grid: number }
+
+function roundTo(v: number, grid: number) {
+  return Math.round(v / grid) * grid;
+}
+
+/** Alignment candidates from the other layers + the stage itself
+ *  (left/centre/right per layer, plus the stage's own edges & centre). */
+function edgeTargets(others: SceneLayer[], axis: "x" | "y"): number[] {
+  const t: number[] = [0, 50, 100];
+  for (const l of others) {
+    if (axis === "x") t.push(l.x, l.x + l.w / 2, l.x + l.w);
+    else t.push(l.y, l.y + l.h / 2, l.y + l.h);
+  }
+  return t;
+}
+
+/** Closest target within threshold of any of the moving reference points. */
+function bestMatch(refs: number[], targets: number[], threshold = SNAP_THRESHOLD) {
+  let best: { pos: number; ref: number; d: number } | null = null;
+  for (const r of refs) {
+    for (const t of targets) {
+      const d = Math.abs(r - t);
+      if (d <= threshold && (!best || d < best.d)) best = { pos: t, ref: r, d };
+    }
+  }
+  return best ? { pos: best.pos, ref: best.ref } : null;
+}
+
+/** Snap one moving edge (resize) — alignment guides first, then the grid. */
+function snapEdge(val: number, targets: number[], o: SnapOpts): { v: number; guide: number | null } {
+  if (o.guidesOn) {
+    let bestD = SNAP_THRESHOLD, hit: number | null = null;
+    for (const t of targets) {
+      const d = Math.abs(val - t);
+      if (d < bestD) { bestD = d; hit = t; }
+    }
+    if (hit !== null) return { v: hit, guide: hit };
+  }
+  if (o.gridOn) return { v: roundTo(val, o.grid), guide: null };
+  return { v: val, guide: null };
+}
+
+/** Snap a moving box (drag) — guides win per axis, grid fills the gaps. */
+function snapMove(
+  nx: number, ny: number, w: number, h: number,
+  others: SceneLayer[], o: SnapOpts,
+): { x: number; y: number; guides: GuideLines } {
+  let x = nx, y = ny;
+  const guides: GuideLines = { v: [], h: [] };
+  if (o.guidesOn) {
+    const mx = bestMatch([nx, nx + w / 2, nx + w], edgeTargets(others, "x"));
+    if (mx) { x += mx.pos - mx.ref; guides.v.push(mx.pos); }
+    const my = bestMatch([ny, ny + h / 2, ny + h], edgeTargets(others, "y"));
+    if (my) { y += my.pos - my.ref; guides.h.push(my.pos); }
+  }
+  if (o.gridOn) {
+    if (guides.v.length === 0) x = roundTo(x, o.grid);
+    if (guides.h.length === 0) y = roundTo(y, o.grid);
+  }
+  return { x, y, guides };
+}
+
+// ————— snap preferences (persisted per browser) —————
+const SNAP_KEY = "aesthetica-studio-snap";
+type SnapPrefs = { gridOn: boolean; guidesOn: boolean; grid: number; show: boolean };
+const DEFAULT_SNAP: SnapPrefs = { gridOn: true, guidesOn: true, grid: 5, show: true };
+function loadSnapPrefs(): SnapPrefs {
+  if (typeof window === "undefined") return DEFAULT_SNAP;
+  try {
+    const raw = window.localStorage.getItem(SNAP_KEY);
+    return raw ? { ...DEFAULT_SNAP, ...(JSON.parse(raw) as Partial<SnapPrefs>) } : DEFAULT_SNAP;
+  } catch {
+    return DEFAULT_SNAP;
+  }
+}
+
 export function SceneEditor({
   doc,
   onChange,
@@ -44,8 +130,21 @@ export function SceneEditor({
   const stageRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [snap, setSnap] = useState<SnapPrefs>(loadSnapPrefs);
+  const [guides, setGuides] = useState<GuideLines>(EMPTY_GUIDES);
   const selected = doc.layers.find((l) => l.id === selectedId) || null;
   const ordered = [...doc.layers].sort((a, b) => b.z - a.z); // topmost first
+
+  const setSnapPart = (p: Partial<SnapPrefs>) => setSnap((s) => ({ ...s, ...p }));
+  useEffect(() => {
+    try { window.localStorage.setItem(SNAP_KEY, JSON.stringify(snap)); } catch { /* private mode */ }
+  }, [snap]);
+
+  // Live snap settings for the pointer handlers (avoids stale closures).
+  const snapRef = useRef<SnapPrefs & { layers: SceneLayer[] }>({ ...DEFAULT_SNAP, layers: [] });
+  useEffect(() => {
+    snapRef.current = { gridOn: snap.gridOn, guidesOn: snap.guidesOn, grid: snap.grid, show: snap.show, layers: doc.layers };
+  }, [snap, doc.layers]);
 
   const patch = useCallback(
     (id: string, p: Partial<SceneLayer>) => {
@@ -78,22 +177,55 @@ export function SceneEditor({
       if (!d) return;
       const dx = ((e.clientX - d.startX) / d.rect.width) * 100;
       const dy = ((e.clientY - d.startY) / d.rect.height) * 100;
+      const cfg = snapRef.current;
+      const o: SnapOpts = e.altKey ? { gridOn: false, guidesOn: false, grid: 0 } : cfg;
+      const others = cfg.layers.filter((l) => l.id !== d.id);
+
       if (d.mode === "move") {
-        patch(d.id, { x: clamp(d.orig.x + dx, -40, 130), y: clamp(d.orig.y + dy, -40, 130) });
+        const s = snapMove(d.orig.x + dx, d.orig.y + dy, d.orig.w, d.orig.h, others, o);
+        setGuides(e.altKey ? EMPTY_GUIDES : s.guides);
+        patch(d.id, { x: clamp(s.x, -40, 130), y: clamp(s.y, -40, 130) });
         return;
       }
+
+      // ——— resize: snap the moving edges (guides, then grid) ———
       const h = d.handle!;
+      const xt = edgeTargets(others, "x");
+      const yt = edgeTargets(others, "y");
+      const g: GuideLines = { v: [], h: [] };
       let { x, y, w, hgt } = { x: d.orig.x, y: d.orig.y, w: d.orig.w, hgt: d.orig.h };
-      if (h.includes("e")) w = d.orig.w + dx;
-      if (h.includes("w")) { w = d.orig.w - dx; x = d.orig.x + dx; }
-      if (h.includes("s")) hgt = d.orig.h + dy;
-      if (h.includes("n")) { hgt = d.orig.h - dy; y = d.orig.y + dy; }
-      if (w < 2) { if (h.includes("w")) x = d.orig.x + d.orig.w - 2; w = 2; }
-      if (hgt < 2) { if (h.includes("n")) y = d.orig.y + d.orig.h - 2; hgt = 2; }
+      if (h.includes("e")) {
+        const s = snapEdge(d.orig.x + d.orig.w + dx, xt, o);
+        if (s.guide !== null) g.v.push(s.guide);
+        w = Math.max(2, s.v - x);
+      }
+      if (h.includes("w")) {
+        const s = snapEdge(d.orig.x + dx, xt, o);
+        if (s.guide !== null) g.v.push(s.guide);
+        x = s.v;
+        const right = d.orig.x + d.orig.w;
+        if (right - x < 2) x = right - 2;
+        w = right - x;
+      }
+      if (h.includes("s")) {
+        const s = snapEdge(d.orig.y + d.orig.h + dy, yt, o);
+        if (s.guide !== null) g.h.push(s.guide);
+        hgt = Math.max(2, s.v - y);
+      }
+      if (h.includes("n")) {
+        const s = snapEdge(d.orig.y + dy, yt, o);
+        if (s.guide !== null) g.h.push(s.guide);
+        y = s.v;
+        const bottom = d.orig.y + d.orig.h;
+        if (bottom - y < 2) y = bottom - 2;
+        hgt = bottom - y;
+      }
+      setGuides(e.altKey ? EMPTY_GUIDES : g);
       patch(d.id, { x, y, w, h: hgt });
     };
     const onUp = () => {
       dragRef.current = null;
+      setGuides(EMPTY_GUIDES);
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -142,7 +274,8 @@ export function SceneEditor({
         e.preventDefault();
         removeLayer(selected.id);
       }
-      const step = e.shiftKey ? 2 : 0.5;
+      const cfg = snapRef.current;
+      const step = cfg.gridOn && !e.altKey ? (e.shiftKey ? cfg.grid * 2 : cfg.grid) : e.shiftKey ? 2 : 0.5;
       if (e.key === "ArrowLeft") { e.preventDefault(); patch(selected.id, { x: selected.x - step }); }
       if (e.key === "ArrowRight") { e.preventDefault(); patch(selected.id, { x: selected.x + step }); }
       if (e.key === "ArrowUp") { e.preventDefault(); patch(selected.id, { y: selected.y - step }); }
@@ -220,22 +353,85 @@ export function SceneEditor({
               + {t}
             </button>
           ))}
-          <span className="ml-auto text-[10.5px] text-white/30">drag to move · handles to resize · ⌫ to remove</span>
+          <span className="ml-auto text-[10.5px] text-white/30">drag to move · handles to resize · ⌫ removes</span>
+        </div>
+        {/* ——— snapping options ——— */}
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          <span className="studio-label !mb-0 mr-1">Snap:</span>
+          <button
+            type="button"
+            aria-pressed={snap.gridOn}
+            title="Snap position and sizes to a grid"
+            onClick={() => setSnapPart({ gridOn: !snap.gridOn })}
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11.5px] transition-colors ${
+              snap.gridOn ? "border-[#7df2d8]/70 bg-[#7df2d8]/10 text-white" : "border-white/12 bg-white/[0.04] text-white/55 hover:text-white"
+            }`}
+          >
+            <Magnet className="h-3.5 w-3.5" />
+            To grid
+          </button>
+          <select
+            aria-label="Grid size"
+            value={snap.grid}
+            disabled={!snap.gridOn}
+            onChange={(e) => setSnapPart({ grid: Number(e.target.value) })}
+            className="rounded-lg border border-white/12 bg-white/[0.04] px-1.5 py-1 text-[11.5px] text-white/80 disabled:opacity-40"
+          >
+            {[1, 2.5, 5, 10].map((g) => <option key={g} value={g}>{g}%</option>)}
+          </select>
+          <button
+            type="button"
+            aria-pressed={snap.guidesOn}
+            title="Snap to other layers' edges & centres and the stage — pink guide lines show each match"
+            onClick={() => setSnapPart({ guidesOn: !snap.guidesOn })}
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11.5px] transition-colors ${
+              snap.guidesOn ? "border-[#ff2e88]/70 bg-[#ff2e88]/10 text-white" : "border-white/12 bg-white/[0.04] text-white/55 hover:text-white"
+            }`}
+          >
+            <Crosshair className="h-3.5 w-3.5" />
+            To others
+          </button>
+          <button
+            type="button"
+            aria-pressed={snap.show}
+            title="Show the grid overlay on the stage"
+            onClick={() => setSnapPart({ show: !snap.show })}
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11.5px] transition-colors ${
+              snap.show ? "border-[#9be8ff]/70 bg-[#9be8ff]/10 text-white" : "border-white/12 bg-white/[0.04] text-white/55 hover:text-white"
+            }`}
+          >
+            <Grid3x3 className="h-3.5 w-3.5" />
+            Grid lines
+          </button>
+          <span className="ml-auto text-[10.5px] text-white/30">hold Alt to drag freely</span>
         </div>
         <div
           ref={stageRef}
-          className="relative aspect-[16/10] w-full select-none overflow-hidden rounded-xl border border-white/12"
+          className="relative aspect-[16/10] w-full touch-none select-none overflow-hidden rounded-xl border border-white/12"
           style={{ background: doc.bg || "#0d0b14" }}
           onPointerDown={(e) => {
             if (e.target === stageRef.current) onSelect(null);
           }}
         >
+          {/* grid overlay — beneath the layers */}
+          {snap.show && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{
+                zIndex: 0,
+                backgroundImage:
+                  "linear-gradient(to right, rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.07) 1px, transparent 1px)",
+                backgroundSize: `${snap.grid}% ${snap.grid}%`,
+              }}
+            />
+          )}
           {[...doc.layers].sort((a, b) => a.z - b.z).map((l) => {
             const isSel = l.id === selectedId;
             return (
               <div
                 key={l.id}
-                className={`absolute ${isSel ? "ring-2 ring-[#ff2e88]" : "hover:ring-1 hover:ring-white/40"}`}
+                className={`absolute cursor-move ${isSel ? "ring-2 ring-[#ff2e88]" : "hover:ring-1 hover:ring-white/40"}`}
                 style={{ ...layerBoxStyle(l), opacity: l.opacity }}
                 onPointerDown={(e) => beginDrag(e, l, "move")}
               >
@@ -270,6 +466,35 @@ export function SceneEditor({
               Empty stage — add your first layer above
             </p>
           )}
+          {/* alignment guides — above the layers while dragging */}
+          {guides.v.map((t, i) => (
+            <div
+              key={`gv-${i}-${t}`}
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0"
+              style={{
+                zIndex: 300,
+                left: `${t}%`,
+                width: 0,
+                borderLeft: "1.5px dashed rgba(255,46,136,0.95)",
+                filter: "drop-shadow(0 0 5px rgba(255,46,136,0.8))",
+              }}
+            />
+          ))}
+          {guides.h.map((t, i) => (
+            <div
+              key={`gh-${i}-${t}`}
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0"
+              style={{
+                zIndex: 300,
+                top: `${t}%`,
+                height: 0,
+                borderTop: "1.5px dashed rgba(255,46,136,0.95)",
+                filter: "drop-shadow(0 0 5px rgba(255,46,136,0.8))",
+              }}
+            />
+          ))}
         </div>
         {/* stage background */}
         <div className="mt-3 flex items-center gap-2">

@@ -385,3 +385,21 @@ Work Log:
 Stage Summary:
 - The Studio is now a live editor: every world page and the homepage can be edited with a real preview window beside the controls — unsaved changes stream into the preview (and any other open tab) the moment you type, and saving makes them permanent everywhere.
 - Genre typography shipped: 8 curated packs including "Retro Chrome" — wide chrome-gradient caps in Michroma with the epithet in Mrs Saint Delafield script, the attached 80s logo pairing — plus chrome/neon/holo/vapor/outline title effects for any world or the homepage wordmark. Retrowave now wears the chrome treatment (saved).
+
+---
+Task ID: STUDIO-SNAP-1
+Agent: main (Z.ai)
+Task: "add options when moving components to snap to grid and to align to each other with lines to show. and drag-to-position elements in the scene builder" — snapping engine + drag ergonomics for the Studio scene builder.
+
+Work Log:
+- scene-editor.tsx — snapping engine: edgeTargets() builds alignment candidates from every other layer (left/centre/right, top/middle/bottom) plus the stage itself (0/50/100); bestMatch() finds the closest pair within a 1.1%-of-stage threshold; snapMove() snaps a dragged box per axis (guides win, grid fills the gaps); snapEdge() snaps moving resize edges the same way; roundTo() for grid maths
+- Guide lines: while dragging, matched alignment axes render as neon pink dashed stage-spanning lines (border + drop-shadow glow, zIndex 300, aria-hidden) — vertical for x matches, horizontal for y; cleared on pointerup; GuideLines exported for reuse
+- Snap bar UI above the stage: "To grid" toggle (Magnet, teal) + grid-size select (1 / 2.5 / 5 / 10%), "To others" toggle (Crosshair, pink) for alignment guides, "Grid lines" toggle (Grid3x3, blue) for a stage grid overlay (1px lines each grid cell, beneath layers); all persisted to localStorage (aesthetica-studio-snap) with SSR-safe loader; hint text "hold Alt to drag freely"
+- Alt bypass: holding Alt during move/resize skips both snaps (reads e.altKey per event); arrow-key nudge now uses grid-sized steps when grid snap is on (Shift = 2x grid, Alt = fine 0.5 steps)
+- Drag ergonomics: stage got touch-none (pointer dragging works on touch without scrolling), layer boxes got cursor-move
+- world-editor.tsx — scene builder now takes the FULL content width on xl (preview stacks below instead of squeezing the editor into a 540px side column): the drag canvas went from 141px to 668px wide on a 1440 screen — the other tabs keep the side-by-side live preview
+- E2E (agent-browser, temp world "Snap Test Lab"): drag aligning shape left/top to the text layer's edges showed v@10% + h@40% guides mid-drag and landed exactly on 10/40; guides off + off-grid drag (raw 17.3/37.3) grid-snapped to 15/35; synthetic altKey pointer drag landed raw (33.2/46.8) un-snapped (note: Playwright keydown Alt does not propagate altKey to pointer events — verified via synthetic PointerEvent); east-handle resize snapped the right edge to the text's right edge with a 90% guide (33.2 + 56.8 = 90); screenshots scene-snap-guides.png + scene-snap-resize.png; test world deleted after; no console/page errors
+- eslint + tsc clean on both changed files
+
+Stage Summary:
+- The scene builder is now a proper drag editor: pull any layer around and it either clicks to a 1–10% grid or snaps to its neighbours' edges/centres (and the stage's edges/centre) with glowing pink guide lines showing every match; resizing snaps too; Alt frees the drag; the canvas is 4.7x wider on desktop. Snap preferences persist per browser.

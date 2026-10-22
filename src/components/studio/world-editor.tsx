@@ -217,8 +217,9 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
         ))}
       </div>
 
-      {/* editor + live preview */}
-      <div className="mt-5 flex flex-col gap-6 xl:flex-row xl:items-start">
+      {/* editor + live preview — the scene builder takes the full width
+          (the canvas is a drag surface; the preview stacks below it) */}
+      <div className={`mt-5 flex flex-col gap-6 ${tab === "scene" ? "" : "xl:flex-row xl:items-start"}`}>
         <div className="min-w-0 flex-1">
           {tab === "identity" && (
             <div className="max-w-xl space-y-4">
@@ -552,7 +553,7 @@ export function WorldEditor({ def, onBack }: { def: PortalWorldDef; onBack: () =
         </div>
 
         {/* ——— live preview ——— */}
-        <div className="w-full shrink-0 xl:sticky xl:top-[72px] xl:w-[540px]">
+        <div className={tab === "scene" ? "w-full shrink-0" : "w-full shrink-0 xl:sticky xl:top-[72px] xl:w-[540px]"}>
           <LivePreview path={`/#/world/${def.id}`} />
         </div>
       </div>

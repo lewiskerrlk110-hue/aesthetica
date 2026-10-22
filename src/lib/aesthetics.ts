@@ -175,12 +175,12 @@ export const WORLDS: WorldDef[] = [
     short:
       "Chrome, translucent plastic and unshakeable optimism — the future as a friendly consumer product.",
     portalBlurb:
-      "A glossy millennium interface — chrome, holographic gradients, translucent tech.",
-    grad: ["#16213a", "#9be8ff", "#ffb3e6"],
-    accent: "#9be8ff",
-    accent2: "#ffb3e6",
-    bg: "#0f1420",
-    fg: "#f2f7ff",
+      "A pearlescent desk still-life — iridescent discs, translucent hardware, glitter and chrome braid.",
+    grad: ["#f3d9ee", "#d84fb0", "#8a5fd0"],
+    accent: "#d84fb0",
+    accent2: "#8a5fd0",
+    bg: "#f3d9ee",
+    fg: "#3f2856",
     galleryStyle: "glossy",
     related: ["vaporwave", "synthwave", "dreamcore"],
     archive: [

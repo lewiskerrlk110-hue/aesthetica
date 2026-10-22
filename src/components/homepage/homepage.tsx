@@ -37,7 +37,7 @@ function PortalScene({ world }: { world: WorldId }) {
     case "vaporwave":
       return (
         <div className={common}>
-          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${w.bg2}, #6d4a8f 60%, ${w.accent2})` }} />
+          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, #3d2266, #6d4a8f 60%, ${w.accent2})` }} />
           <div className="absolute bottom-0 left-0 right-0 h-[38%]" style={{ background: "repeating-conic-gradient(#3d2b5c 0% 25%, #57407e 0% 50%) 50%/22px 22px", transform: "perspective(120px) rotateX(38deg)", transformOrigin: "top" }} />
           <div className="ambient-soft absolute left-[24%] top-[18%] h-16 w-12 rounded-[50%] bg-[#f5ede0] shadow-lg" />
           <div className="absolute right-[16%] top-[30%] rounded border border-[#7df2d8] bg-black/40 px-2 py-1 font-mono text-[8px] text-[#7df2d8]">system.exe</div>
@@ -46,10 +46,35 @@ function PortalScene({ world }: { world: WorldId }) {
     case "y2k":
       return (
         <div className={common}>
-          <div className="absolute inset-0" style={{ background: `linear-gradient(120deg, ${w.bg2}, #2c3a68)` }} />
-          <div className="ambient-float absolute left-[20%] top-[22%] h-20 w-20 rounded-full" style={{ background: "radial-gradient(circle at 32% 28%, #fff 0%, #bfe3fb 30%, #7f9fc4 62%, #e8f4ff 82%, #9be8ff 100%)", boxShadow: "0 10px 40px -6px #9be8ff88" }} />
-          <div className="absolute right-[18%] top-[38%] h-10 w-10 rounded-full bg-[#ffb3e6]/70 blur-[1px]" />
-          <div className="absolute bottom-[16%] left-[38%] h-1.5 w-24 rounded-full bg-gradient-to-r from-transparent via-[#9be8ff] to-transparent opacity-70" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,#f8ddee 0%,#e6d0f4 55%,#f6c2e0 100%)" }} />
+          {/* desk gloss */}
+          <div className="absolute inset-x-0 bottom-0 h-[42%]" style={{ background: "linear-gradient(to top,#ffffff99,transparent)" }} />
+          {/* CD */}
+          <div className="absolute right-[10%] top-[14%] h-14 w-14 rounded-full" style={{ background: "conic-gradient(#ffd2ec,#fff2c8,#cdf2de,#cfe6ff,#e6d4ff,#ffd2ec)", WebkitMaskImage: "radial-gradient(circle,transparent 15%,black 16%)", maskImage: "radial-gradient(circle,transparent 15%,black 16%)", boxShadow: "0 8px 18px -8px #b06ab8" }} />
+          <div className="absolute right-[16.5%] top-[21%] h-3.5 w-3.5 rounded-full" style={{ background: "linear-gradient(#f4eaf8,#cdb8e2)", border: "1px solid #b39cc9" }} />
+          {/* mini MD player */}
+          <div className="absolute left-[8%] top-[20%] h-11 w-24 -rotate-6 rounded-lg" style={{ background: "linear-gradient(160deg,#fdf9ff,#e2d4f0 70%,#f2e8f6)", border: "1px solid #c2aed8", boxShadow: "0 8px 16px -8px #b07ab8" }}>
+            <div className="absolute left-1.5 top-1.5 flex gap-1">
+              {Array.from({ length: 5 }, (_, i) => <div key={i} className="h-2 w-2.5 rounded-[2px] bg-[#f0e6f6] ring-1 ring-[#c6b4d8]" />)}
+            </div>
+            <div className="absolute bottom-1.5 left-1.5 h-1.5 w-6 rounded-full bg-[#463656]/80" />
+            <div className="absolute bottom-1.5 right-2 h-2 w-2 rounded-full ring-1 ring-[#b7a0cc]">
+              <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#463656]" />
+            </div>
+          </div>
+          {/* mini holo mouse */}
+          <div className="absolute bottom-[13%] left-[24%] h-11 w-[68px] -rotate-3 rounded-[50%]" style={{ background: "radial-gradient(circle at 35% 28%,#fff,#fbeef8 42%,#dcc9f0 82%,#f4e6f6)", boxShadow: "0 8px 14px -6px #b078b899" }}>
+            <div className="absolute left-1/2 top-[18%] h-3.5 w-2.5 -translate-x-1/2 rounded-full" style={{ background: "repeating-linear-gradient(90deg,#b9a2d8 0 1px,#e8dcf6 1px 2px)" }} />
+          </div>
+          {/* mini glitter ball */}
+          <div className="absolute bottom-[11%] right-[16%] h-10 w-10 rounded-full" style={{ background: "radial-gradient(circle at 34% 28%,#fff,#f4eafc 30%,#c2aae0 85%)", boxShadow: "0 6px 12px -5px #b078b8" }}>
+            <div className="absolute inset-0 rounded-full" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.95) 0.8px,transparent 1.2px),radial-gradient(rgba(198,168,236,0.9) 0.8px,transparent 1.3px)", backgroundSize: "6px 6px,9px 9px", backgroundPosition: "0 0,3px 4px", opacity: 0.65 }} />
+            <div className="absolute left-[18%] top-[12%] h-2.5 w-3.5 rounded-[50%] bg-white/90 blur-[1px]" />
+          </div>
+          {/* sparkles */}
+          <div className="y2k-sparkle absolute left-[16%] top-[16%] h-2 w-2 rotate-45 bg-white" />
+          <div className="y2k-sparkle absolute right-[28%] top-[38%] h-1.5 w-1.5 rotate-45 bg-white" style={{ animationDelay: "-1.4s" }} />
+          <div className="y2k-sparkle absolute bottom-[28%] left-[48%] h-1.5 w-1.5 rotate-45 bg-white" style={{ animationDelay: "-2.2s" }} />
         </div>
       );
     case "dreamcore":

@@ -5,11 +5,7 @@
 // Staff emails are only ever shown here, behind staff auth — never publicly.
 import { useCallback, useEffect, useState } from "react";
 import { UserPlus, ShieldCheck, Trash2, KeyRound, Loader2 } from "lucide-react";
-
-export interface StaffMe {
-  email: string;
-  role: string; // owner | editor
-}
+import type { SessionUser } from "@/lib/session";
 
 interface StaffRow {
   id: string;
@@ -22,7 +18,7 @@ const inputCls =
   "w-full rounded-lg border border-white/12 bg-black/40 px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:border-[#ff2e88]/60 focus:outline-none";
 const labelCls = "mb-1 block text-[11px] font-semibold uppercase tracking-wider text-white/45";
 
-export function StaffPanel({ me, onMeChange }: { me: StaffMe; onMeChange: (m: StaffMe) => void }) {
+export function StaffPanel({ me, onMeChange }: { me: SessionUser; onMeChange: (m: SessionUser) => void }) {
   const isOwner = me.role === "owner";
 
   return (
@@ -35,7 +31,7 @@ export function StaffPanel({ me, onMeChange }: { me: StaffMe; onMeChange: (m: St
 
 // ————— Your account —————
 
-function AccountCard({ me }: { me: StaffMe }) {
+function AccountCard({ me }: { me: SessionUser }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -78,7 +74,7 @@ function AccountCard({ me }: { me: StaffMe }) {
         </span>
       </div>
       <p className="mb-4 text-[12.5px] leading-relaxed text-white/45">
-        Signed in as <span className="font-semibold text-white/80">{me.email}</span>. Change your
+        Account: <span className="font-semibold text-white/80">{me.email}</span>. Change your
         password here — it applies the next time you sign in; your current session keeps working.
       </p>
       <div className="grid gap-3">
@@ -115,7 +111,7 @@ function AccountCard({ me }: { me: StaffMe }) {
 
 // ————— Team roster (owner only) —————
 
-function TeamCard({ me }: { me: StaffMe }) {
+function TeamCard({ me }: { me: SessionUser }) {
   const [rows, setRows] = useState<StaffRow[] | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { db } from "@/lib/db";
-import { isAuthed } from "@/lib/studio-auth";
+import { isStaff } from "@/lib/studio-auth";
 
 const MAX_BYTES = 60 * 1024 * 1024; // 60MB
 
@@ -29,7 +29,7 @@ function kindOf(mime: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await isAuthed())) {
+  if (!(await isStaff())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const form = await req.formData().catch(() => null);

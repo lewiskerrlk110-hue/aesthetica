@@ -14,7 +14,8 @@ const SESSION_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 export interface SessionUser {
   id: string;
   email: string;
-  role: string; // owner | editor
+  name: string | null;
+  role: string; // owner | editor | member
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -77,13 +78,14 @@ function parseSessionToken(raw: string | undefined): string | null {
 // ————— staff account bootstrap (env-only, default-deny) —————
 
 /**
- * Create the first owner account if the staff table is empty AND the
+ * Create the first owner account if no owner exists yet AND the
  * STAFF_OWNER_EMAIL / STAFF_OWNER_PASS environment variables are set.
- * With no env vars the portal has no accounts at all — nobody gets in.
+ * Checks for owners specifically — public member registrations must not
+ * block the owner bootstrap. With no env vars nobody bootstraps.
  */
 export async function ensureSeedStaff(): Promise<void> {
-  const count = await db.staffUser.count();
-  if (count > 0) return;
+  const owners = await db.staffUser.count({ where: { role: "owner" } });
+  if (owners > 0) return;
   const email = (process.env.STAFF_OWNER_EMAIL || "").trim().toLowerCase();
   const password = process.env.STAFF_OWNER_PASS || "";
   if (!email || !password || !isValidEmail(email) || password.length < 8) return;
@@ -94,18 +96,24 @@ export async function ensureSeedStaff(): Promise<void> {
 
 // ————— session resolution —————
 
-/** Resolve the current session cookie to a live StaffUser (revocation-safe). */
+/** Resolve the current session cookie to a live account (revocation-safe). */
 export async function sessionUser(): Promise<SessionUser | null> {
   const jar = await cookies();
   const email = parseSessionToken(jar.get(STUDIO_COOKIE)?.value);
   if (!email) return null;
   const user = await db.staffUser.findUnique({ where: { email } });
   if (!user) return null;
-  return { id: user.id, email: user.email, role: user.role };
+  return { id: user.id, email: user.email, name: user.name, role: user.role };
 }
 
 export async function isAuthed(): Promise<boolean> {
   return (await sessionUser()) !== null;
+}
+
+/** Current user must hold studio privileges (owner | editor). */
+export async function isStaff(): Promise<boolean> {
+  const u = await sessionUser();
+  return u?.role === "owner" || u?.role === "editor";
 }
 
 /** Current user must be an owner (for staff management endpoints). */

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { getUser, bad, json } from "@/lib/api-utils";
+import { bad, json } from "@/lib/api-utils";
+import { sessionUser } from "@/lib/studio-auth";
 
 export async function GET(
   req: NextRequest,
@@ -19,8 +20,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = getUser(req);
-  if (user.id === "anon") return bad("Identity required", 401);
+  // Commenting is for signed-in accounts only; the author is forced server-side.
+  const session = await sessionUser();
+  if (!session) return bad("Sign in to leave a note", 401);
   const { id } = await params;
   const art = await db.artwork.findUnique({ where: { id }, select: { id: true } });
   if (!art) return bad("Not found", 404);
@@ -29,7 +31,12 @@ export async function POST(
   if (!text) return bad("Comment cannot be empty");
   if (text.length > 600) return bad("Comment too long (max 600 chars)");
   const comment = await db.comment.create({
-    data: { artworkId: id, authorId: user.id, authorName: user.name, body: text },
+    data: {
+      artworkId: id,
+      authorId: `acct:${session.id}`,
+      authorName: session.name || session.email.split("@")[0],
+      body: text,
+    },
   });
   return json({ comment }, 201);
 }

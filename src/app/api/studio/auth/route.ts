@@ -14,7 +14,7 @@ export async function GET() {
   const user = await sessionUser();
   return NextResponse.json({
     ok: user !== null,
-    user: user ? { email: user.email, role: user.role } : null,
+    user: user ? { id: user.id, email: user.email, name: user.name, role: user.role } : null,
   });
 }
 
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   const email = (body.email || "").trim().toLowerCase();
   const password = body.password || "";
   if (!email || !password) {
-    return NextResponse.json({ error: "Enter your staff email and password." }, { status: 400 });
+    return NextResponse.json({ error: "Enter your email and password." }, { status: 400 });
   }
 
   await ensureSeedStaff();
@@ -34,14 +34,14 @@ export async function POST(req: NextRequest) {
   const user = await db.staffUser.findUnique({ where: { email } });
   if (!user || !verifyPassword(password, user.passwordHash)) {
     return NextResponse.json(
-      { error: "Unrecognised login — this portal is for staff only." },
+      { error: "Unrecognised login — check your email and password." },
       { status: 401 },
     );
   }
 
   const resp = NextResponse.json({
     ok: true,
-    user: { email: user.email, role: user.role },
+    user: { id: user.id, email: user.email, name: user.name, role: user.role },
   });
   resp.cookies.set(STUDIO_COOKIE, makeSessionToken(user.email), {
     httpOnly: true,

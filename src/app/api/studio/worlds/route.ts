@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { isAuthed } from "@/lib/studio-auth";
+import { isStaff } from "@/lib/studio-auth";
 import { WORLDS } from "@/lib/aesthetics";
 import {
   buildMergedWorlds,
@@ -27,7 +27,7 @@ export async function GET() {
 
 /** Auth: create a custom world. */
 export async function POST(req: NextRequest) {
-  if (!(await isAuthed())) {
+  if (!(await isStaff())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = (await req.json().catch(() => ({}))) as {

@@ -6,10 +6,11 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Heart, MessageCircle, Bookmark, Share2, Trash2, Eye } from "lucide-react";
+import { Heart, MessageCircle, Bookmark, Share2, Trash2, Eye, LogIn } from "lucide-react";
 import { ArtworkCard, toggleLike, toggleBookmark, type ArtworkDTO } from "./artwork-card";
 import { VisuallySimilar } from "./visually-similar";
 import { authHeaders } from "@/lib/identity";
+import { handleOf, useSession } from "@/lib/session";
 import { useApp } from "@/lib/store";
 import { MEDIUM_LABELS, WORLD_MAP, type WorldId } from "@/lib/aesthetics";
 import { useToast } from "@/hooks/use-toast";
@@ -33,11 +34,18 @@ export function ArtworkViewer({
 }) {
   const { toast } = useToast();
   const navigate = useApp((s) => s.navigate);
+  const { user: account } = useSession();
   const [art, setArt] = useState<ArtworkDTO | null>(null);
   const [related, setRelated] = useState<ArtworkDTO[]>([]);
   const [comments, setComments] = useState<CommentDTO[]>([]);
   const [commentText, setCommentText] = useState("");
   const [sending, setSending] = useState(false);
+
+  // Own uploads show a delete button: account posts carry acct:<id>,
+  // legacy device posts keep the anonymous identity check.
+  const canDelete = !!art && !!account &&
+    (art.authorId === `acct:${account.id}` ||
+      (art.authorId !== "curator" && art.authorId === authHeaders()["x-user-id"]));
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/artworks/${artId}?userId=${authHeaders()["x-user-id"]}`);
@@ -191,7 +199,7 @@ export function ArtworkViewer({
                   <Share2 className="h-4 w-4" />
                   Share
                 </button>
-                {art.authorId === authHeaders()["x-user-id"] && art.authorId !== "curator" && (
+                {canDelete && (
                   <button onClick={remove} className="w-btn hover:!border-red-400" aria-label="Delete upload">
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -219,23 +227,38 @@ export function ArtworkViewer({
                 <h3 className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest opacity-70">
                   <MessageCircle className="h-3.5 w-3.5" /> Notes ({comments.length})
                 </h3>
-                <div className="mb-3 flex gap-2">
-                  <input
-                    className="w-input text-[13px]"
-                    placeholder="Leave a note on this piece…"
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && comment()}
-                    maxLength={600}
-                    aria-label="Write a comment"
-                  />
-                  <button
-                    className="inline-flex shrink-0 items-center rounded-[var(--w-radius,0.75rem)] bg-gradient-to-r from-[#ff2e88] to-[#7df2d8] px-4 py-2 text-[13px] font-semibold text-black shadow-[0_4px_18px_-6px_rgba(255,46,136,0.6)] transition-[filter,transform] hover:scale-[1.03] hover:brightness-110 disabled:opacity-50"
-                    onClick={comment}
-                    disabled={sending}
-                  >
-                    {sending ? "…" : "Post"}
-                  </button>
+                <div className="mb-3">
+                  {account ? (
+                    <>
+                      <div className="flex gap-2">
+                        <input
+                          className="w-input text-[13px]"
+                          placeholder={`Leave a note as ${handleOf(account)}…`}
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && comment()}
+                          maxLength={600}
+                          aria-label="Write a comment"
+                        />
+                        <button
+                          className="inline-flex shrink-0 items-center rounded-[var(--w-radius,0.75rem)] bg-gradient-to-r from-[#ff2e88] to-[#7df2d8] px-4 py-2 text-[13px] font-semibold text-black shadow-[0_4px_18px_-6px_rgba(255,46,136,0.6)] transition-[filter,transform] hover:scale-[1.03] hover:brightness-110 disabled:opacity-50"
+                          onClick={comment}
+                          disabled={sending}
+                        >
+                          {sending ? "…" : "Post"}
+                        </button>
+                      </div>
+                      <p className="mt-1 text-[11px] opacity-45">Commenting as {handleOf(account)}</p>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => navigate({ view: "studio" })}
+                      className="flex w-full items-center justify-center gap-2 rounded-[var(--w-radius,0.75rem)] border border-dashed border-[var(--w-panel-border)] py-3 text-[13px] opacity-80 transition-colors hover:border-[var(--w-accent)] hover:opacity-100"
+                    >
+                      <LogIn className="h-4 w-4" />
+                      Sign in to leave a note
+                    </button>
+                  )}
                 </div>
                 <div className="flex max-h-52 flex-col gap-2.5 overflow-y-auto pr-1 w-scroll">
                   {comments.length === 0 && (

@@ -517,3 +517,27 @@ Work Log:
 
 Stage Summary:
 - One visible, session-aware door: visitors get a Sign in button that opens the staff-only portal (non-staff logins rejected server-side); staff get a direct Studio shortcut. Studio content remains fully gated.
+
+---
+Task ID: PUBLIC-POST-1
+Agent: main (Z.ai)
+Task: Public account registration — everyone can create an account and post; recognised staff get the special privileges (studio). Remove the redundant "Signed in as" chip.
+
+Work Log:
+- Schema: StaffUser + name (display name), role now owner|editor|member (default member); db push (additive, data intact)
+- studio-auth.ts: SessionUser carries name; ensureSeedStaff checks owner count (member registrations can't block owner bootstrap); new isStaff() helper
+- New POST /api/studio/register: public signup (name/email/password ≥8) → role member + auto session cookie; duplicate email 409
+- Auth GET/POST + register return { id, email, name, role }
+- Staff roster GET: owner-only + filtered to owner/editor (members never listed); studio mutation guards switched isAuthed → isStaff across worlds/worlds[slug]/site/order/assets/upload so members are denied
+- Posting gated server-side: POST /api/artworks + POST /api/artworks/[id]/comments require a session; authorName/authorId forced server-side (authorId = acct:<accountId>, name = display name || email handle) — client identity headers ignored for authorship
+- New src/lib/session.ts useSession() hook (cached, cross-tab refresh on focus, handleOf helper)
+- Portal (studio.tsx): Sign in / Create account mode switch; register auto-signs-in and lands on the museum; members hitting #/studio get a MemberCard (Post your work / Back to the museum / Sign out) instead of studio UI; REMOVED the "Signed in as" header chip
+- nav.tsx: session-aware button — guests "Sign in", members "Sign out" (click signs out), staff "Studio"
+- upload-dialog.tsx: guests get a "Posting is for members" gate with CTA; members see "Posting as <name>" badge; POST no longer sends identity headers
+- artwork-viewer.tsx: guests see "Sign in to leave a note" instead of the comment box; members see input + "Commenting as <name>"; own-upload delete updated for acct:<id> authors (legacy device uploads still supported)
+- staff-panel.tsx: account card phrasing now "Account: <email>" (chip phrase removed); roster unchanged otherwise
+- Verified: unauthed artwork/comment POST → 401 with friendly messages; member registered via portal (Test Dreamer), uploaded (author forced acct:<id>, name "Test Dreamer"), commented (attributed), member 401/403-blocked from studio APIs, member bounce card, nav Sign out; staff sign-in reaches full studio with zero "Signed in as" chip; 0 console errors; test artwork + 2 test accounts deleted afterwards
+- Screenshots: docs/screenshots/member-gate-upload.png, member-card.png, member-upload.png, member-comment.png, member-bounce.png, staff-privileges.png
+
+Stage Summary:
+- Accounts are now public: anyone registers at the portal (member) and can post artwork + comments with a server-forced identity; recognised staff (owner/editor, assigned by the owner) unlock the studio on sign-in; likes/bookmarks remain anonymous; the "Signed in as" chip is gone — the nav button (Sign in / Sign out / Studio) carries the state.

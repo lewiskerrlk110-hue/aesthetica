@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { isAuthed } from "@/lib/studio-auth";
+import { isStaff } from "@/lib/studio-auth";
 import { WORLD_IDS } from "@/lib/aesthetics";
 
 type Body = {
@@ -20,7 +20,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  if (!(await isAuthed())) {
+  if (!(await isStaff())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { slug } = await params;
@@ -79,7 +79,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  if (!(await isAuthed())) {
+  if (!(await isStaff())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { slug } = await params;

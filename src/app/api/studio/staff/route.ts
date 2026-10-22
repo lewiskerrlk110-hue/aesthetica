@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { ensureSeedStaff, isAuthed, isOwner, isValidEmail, hashPassword } from "@/lib/studio-auth";
 import { db } from "@/lib/db";
 
-/** Owner: list the staff roster (emails visible only behind staff auth). */
+/** Owner: list the staff roster (owner/editor accounts only — members are not staff). */
 export async function GET() {
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "Staff only." }, { status: 401 });
   }
+  if (!(await isOwner())) {
+    return NextResponse.json({ error: "Only the owner can view staff." }, { status: 403 });
+  }
   await ensureSeedStaff();
   const users = await db.staffUser.findMany({
+    where: { role: { in: ["owner", "editor"] } },
     select: { id: true, email: true, role: true, createdAt: true },
     orderBy: [{ createdAt: "asc" }],
   });

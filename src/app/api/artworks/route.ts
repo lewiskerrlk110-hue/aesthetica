@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getUser, json, bad, parseTags } from "@/lib/api-utils";
+import { sessionUser } from "@/lib/studio-auth";
 
 const AESTHETICS = [
   "retrowave",
@@ -77,8 +78,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const user = getUser(req);
-  if (user.id === "anon") return bad("Identity required", 401);
+  // Posting is for signed-in accounts only; the author is forced server-side.
+  const session = await sessionUser();
+  if (!session) return bad("Sign in to post your work", 401);
   const body = await req.json().catch(() => null);
   if (!body) return bad("Invalid JSON");
   const { title, description, imageUrl, aesthetic, medium, tags, year } = body as Record<string, unknown>;
@@ -98,8 +100,8 @@ export async function POST(req: NextRequest) {
       aesthetic: aesthetic as string,
       medium: typeof medium === "string" ? medium : "digital",
       year: typeof year === "number" ? Math.round(year) : null,
-      authorName: user.name,
-      authorId: user.id,
+      authorName: session.name || session.email.split("@")[0],
+      authorId: `acct:${session.id}`,
       tags: parseTags(typeof tags === "string" ? tags : Array.isArray(tags) ? tags.join(",") : "").join(","),
       featured: false,
     },

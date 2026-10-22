@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Upload, Image as ImageIcon, Loader2 } from "lucide-react";
-import { authHeaders } from "@/lib/identity";
+import { Upload, Image as ImageIcon, Loader2, Lock } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { handleOf, useSession } from "@/lib/session";
 import { MEDIUM_LABELS } from "@/lib/aesthetics";
 import { useStudioWorlds } from "@/lib/worlds-config";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
   const navigate = useApp((s) => s.navigate);
   const worlds = useStudioWorlds();
   const { toast } = useToast();
+  const { user, loading } = useSession();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -63,7 +64,7 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
     try {
       const res = await fetch("/api/artworks", {
         method: "POST",
-        headers: authHeaders(),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description, tags, imageUrl: preview, aesthetic, medium, year }),
       });
       const data = await res.json();
@@ -86,6 +87,38 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
 
   const world = worlds.find((w) => w.id === aesthetic);
 
+  // Posting is for account holders — guests get a friendly gate.
+  if (!user) {
+    if (loading) {
+      return (
+        <div className="w-page">
+          <div className="mx-auto max-w-4xl px-4 py-24 text-center">
+            <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-[#ff2e88] border-t-transparent" />
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="w-page">
+        <div className="mx-auto max-w-md px-4 py-20 text-center">
+          <span className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff2e88] via-[#7df2d8] to-[#9be8ff] text-[17px] font-black text-black">Æ</span>
+          <h1 className="w-display text-2xl font-bold md:text-3xl">Posting is for members</h1>
+          <p className="mx-auto mt-3 max-w-sm text-[14px] leading-relaxed opacity-70">
+            Create a free account to add your work to the archive — or sign in if you already have
+            one. Staff accounts also unlock the studio.
+          </p>
+          <button
+            onClick={() => navigate({ view: "studio" })}
+            className="cta-hero mt-6 !px-8 !py-3"
+          >
+            <Lock className="h-4 w-4" />
+            Sign in or create an account
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-page">
       <div className="mx-auto max-w-4xl px-4 py-10">
@@ -93,6 +126,10 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
         <p className="mt-2 max-w-xl text-[15px] leading-relaxed opacity-70">
           Your piece enters the chosen world's gallery immediately — tagged, searchable, and
           open to likes, saves and notes from other visitors.
+        </p>
+        <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-[12px] opacity-90">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#7df2d8]" />
+          Posting as <span className="font-semibold">{handleOf(user)}</span>
         </p>
 
         <div className="mt-8 grid gap-6 md:grid-cols-[1.1fr_1fr]">

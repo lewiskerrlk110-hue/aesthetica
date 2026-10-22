@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useApp, type Route } from "@/lib/store";
 import { useStudioWorlds } from "@/lib/worlds-config";
 import { getIdentity, setName as saveName } from "@/lib/identity";
-import { Search, Upload, User, Home, Sparkles, ChevronDown, LogIn } from "lucide-react";
+import { Search, Upload, User, Home, Sparkles, ChevronDown, LogIn, LogOut, Wrench } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { useSession } from "@/lib/session";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function Nav() {
@@ -20,6 +21,9 @@ export function Nav() {
   const [ident, setIdent] = useState({ id: "", name: "" });
   const [nameDraft, setNameDraft] = useState("");
   const [staffAuthed, setStaffAuthed] = useState(false);
+  const { user: sessionUser, refresh: refreshSession } = useSession();
+  const isStaff = sessionUser?.role === "owner" || sessionUser?.role === "editor";
+  const isMember = sessionUser?.role === "member";
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -30,7 +34,7 @@ export function Nav() {
     return () => clearTimeout(t);
   }, [route]);
 
-  // Staff session probe: signed-in staff see "Studio" instead of "Sign in".
+  // Legacy probe kept for tooltip parity; the session hook drives the button.
   useEffect(() => {
     fetch("/api/studio/auth")
       .then((r) => r.json())
@@ -126,14 +130,28 @@ export function Nav() {
             <span className="hidden sm:inline">Add Artwork</span>
           </button>
           <button
-            onClick={() => go({ view: "studio" })}
+            onClick={async () => {
+              if (isMember) {
+                await fetch("/api/studio/auth", { method: "DELETE" });
+                await refreshSession();
+                setStaffAuthed(false);
+              } else {
+                go({ view: "studio" });
+              }
+            }}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors ${
-              route.view === "studio" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
+              route.view === "studio" && !isMember ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
             }`}
-            title={staffAuthed ? "Open the Studio" : "Staff sign in"}
+            title={isStaff ? "Open the Studio" : isMember ? "Sign out of your account" : "Sign in or create an account"}
           >
-            <LogIn className="h-4 w-4" />
-            <span className="hidden lg:inline">{staffAuthed ? "Studio" : "Sign in"}</span>
+            {isMember ? (
+              <LogOut className="h-4 w-4" />
+            ) : isStaff ? (
+              <Wrench className="h-4 w-4" />
+            ) : (
+              <LogIn className="h-4 w-4" />
+            )}
+            <span className="hidden lg:inline">{isStaff ? "Studio" : isMember ? "Sign out" : "Sign in"}</span>
           </button>
           <button
             onClick={() => setFxReduced(!fxReduced)}

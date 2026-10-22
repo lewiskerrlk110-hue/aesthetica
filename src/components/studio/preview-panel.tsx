@@ -2,8 +2,11 @@
 
 // STUDIO — Live preview panel: a real iframe of the museum that mirrors
 // every unsaved edit as you type (via the studio draft bridge in
-// lib/worlds-config.ts). Desktop / tablet / phone crops, reload, and an
-// "unsaved" pill while drafts are on the wire.
+// lib/worlds-config.ts). Desktop / tablet / phone crops, reload, pop-out
+// to a real browser tab (which also mirrors live drafts), and an
+// "unsaved" pill while drafts are on the wire. Links clicked inside the
+// preview open in a NEW TAB so the iframe always keeps showing the page
+// you are actually editing.
 import { useEffect, useState } from "react";
 import { Monitor, Tablet, Smartphone, RefreshCw, ExternalLink, Radio } from "lucide-react";
 import { useStudioConfig } from "@/lib/worlds-config";
@@ -32,6 +35,30 @@ export function LivePreview({
   const draftCount = Object.keys(draft?.worlds || {}).length + (draft?.site ? 1 : 0);
   const external = path.startsWith("/#") ? path : `/#${path}`;
 
+  // Anchor guard: any link clicked inside the preview opens in a new tab
+  // (SPA routes #/… and external URLs alike) instead of navigating the
+  // iframe away from the page being edited.
+  const guardLinks = (e: React.SyntheticEvent<HTMLIFrameElement>) => {
+    try {
+      const doc = e.currentTarget.contentDocument;
+      if (!doc || doc.getElementById("ae-preview-newtab")) return;
+      const script = doc.createElement("script");
+      script.id = "ae-preview-newtab";
+      script.textContent =
+        "(function(){document.addEventListener('click',function(ev){" +
+        "var t=ev.target;var a=t&&t.closest?t.closest('a[href]'):null;if(!a)return;" +
+        "var href=a.getAttribute('href')||'';" +
+        "if(href.charAt(0)==='#'&&href.charAt(1)!=='/')return;" + // in-page anchors stay
+        "ev.preventDefault();window.open(a.href,'_blank','noopener');" +
+        "},true);})();";
+      (doc.head || doc.documentElement).appendChild(script);
+    } catch {
+      /* not ready or cross-origin — the iframe still works, just unguarded */
+    }
+  };
+
+  const popOut = () => window.open(external, "_blank", "noopener");
+
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-white/12 bg-[#131020] shadow-2xl">
       {/* toolbar */}
@@ -46,6 +73,15 @@ export function LivePreview({
           </span>
         )}
         <div className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            onClick={popOut}
+            className="mr-1 flex items-center gap-1.5 rounded-md bg-white/8 px-2 py-1 text-[11px] font-medium text-white/80 transition-colors hover:bg-[#ff2e88]/25 hover:text-white"
+            title="Open this page in a new browser tab — it mirrors your unsaved edits live"
+          >
+            <ExternalLink className="h-3 w-3" />
+            New tab
+          </button>
           {(
             [
               { d: "desktop" as Device, icon: Monitor, label: "Desktop" },
@@ -95,13 +131,24 @@ export function LivePreview({
             src={external}
             title="Live preview of your changes"
             className="h-full w-full border-0 bg-black"
+            onLoad={guardLinks}
           />
         </div>
       </div>
 
-      <p className="border-t border-white/10 bg-white/[0.02] px-3 py-1.5 text-[10.5px] text-white/40">
-        Edits appear here the moment you make them — saving makes them permanent.
-      </p>
+      <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-white/[0.02] px-3 py-1.5">
+        <p className="text-[10.5px] text-white/40">
+          Edits appear here the moment you make them — popped-out tabs update live too.
+        </p>
+        <button
+          type="button"
+          onClick={popOut}
+          className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-[10.5px] font-medium text-white/65 transition-colors hover:border-[#ff2e88]/60 hover:text-white"
+        >
+          <ExternalLink className="h-3 w-3" />
+          Open in a new tab
+        </button>
+      </div>
     </div>
   );
 }

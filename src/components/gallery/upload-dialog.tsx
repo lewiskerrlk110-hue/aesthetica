@@ -130,7 +130,7 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
             <label className="block text-[13px]">
               <span className="mb-1.5 block font-medium opacity-80">Title *</span>
               <input
-                className="w-input"
+                className="w-input !border-white/25 !bg-white/[0.08] text-[14.5px]"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 maxLength={120}
@@ -140,7 +140,7 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
             <label className="block text-[13px]">
               <span className="mb-1.5 block font-medium opacity-80">Description</span>
               <textarea
-                className="w-input min-h-[72px] resize-y"
+                className="w-input min-h-[88px] resize-y !border-white/25 !bg-white/[0.08]"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 maxLength={600}
@@ -151,7 +151,7 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
               <label className="block text-[13px]">
                 <span className="mb-1.5 block font-medium opacity-80">World</span>
                 <select
-                  className="w-input"
+                  className="w-input !border-white/25 !bg-white/[0.08]"
                   value={aesthetic}
                   onChange={(e) => setAesthetic(e.target.value)}
                 >
@@ -164,7 +164,7 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
               </label>
               <label className="block text-[13px]">
                 <span className="mb-1.5 block font-medium opacity-80">Medium</span>
-                <select className="w-input" value={medium} onChange={(e) => setMedium(e.target.value)}>
+                <select className="w-input !border-white/25 !bg-white/[0.08]" value={medium} onChange={(e) => setMedium(e.target.value)}>
                   {Object.entries(MEDIUM_LABELS).map(([k, v]) => (
                     <option key={k} value={k} className="bg-neutral-900">
                       {v}
@@ -177,7 +177,7 @@ export function UploadDialog({ defaultWorld }: { defaultWorld?: string }) {
             <label className="block text-[13px]">
               <span className="mb-1.5 block font-medium opacity-80">Tags (comma separated)</span>
               <input
-                className="w-input"
+                className="w-input !border-white/25 !bg-white/[0.08]"
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder={`e.g. ${world?.name.toLowerCase() ?? "aesthetic"}, neon, dream`}

@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Heart, MessageCircle, Bookmark, Share2, Trash2, Eye } from "lucide-react";
 import { ArtworkCard, toggleLike, toggleBookmark, type ArtworkDTO } from "./artwork-card";
+import { VisuallySimilar } from "./visually-similar";
 import { authHeaders } from "@/lib/identity";
 import { useApp } from "@/lib/store";
 import { MEDIUM_LABELS, WORLD_MAP, type WorldId } from "@/lib/aesthetics";
@@ -129,7 +130,7 @@ export function ArtworkViewer({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         aria-describedby={undefined}
-        className="max-h-[92vh] w-[min(1100px,94vw)] max-w-[1100px] overflow-hidden border-[var(--w-panel-border)] bg-[var(--w-bg2)] p-0 text-[var(--w-fg)]"
+        className="flex max-h-[92vh] w-[min(1100px,94vw)] max-w-[1100px] sm:max-w-[1100px] flex-col overflow-hidden border-[var(--w-panel-border)] bg-[var(--w-bg2)] p-0 text-[var(--w-fg)]"
         style={{ fontFamily: "var(--w-font-body)" }}
       >
         <DialogTitle className="sr-only">{art?.title || "Artwork"}</DialogTitle>
@@ -138,7 +139,7 @@ export function ArtworkViewer({
             <div className="img-skeleton h-40 w-40 rounded-xl" />
           </div>
         ) : (
-          <div className="grid max-h-[92vh] overflow-y-auto w-scroll md:grid-cols-[1.5fr_1fr]">
+          <div className="grid min-h-0 w-scroll flex-1 overflow-y-auto md:grid-cols-[1.5fr_1fr]">
             <div className="relative bg-black/30 p-3 md:p-4">
               <img
                 src={art.imageUrl}
@@ -253,7 +254,7 @@ export function ArtworkViewer({
         )}
 
         {related.length > 0 && (
-          <div className="border-t border-[var(--w-panel-border)] p-4">
+          <div className="shrink-0 border-t border-[var(--w-panel-border)] p-4">
             <h3 className="mb-2.5 text-[13px] font-semibold uppercase tracking-widest opacity-70">
               More from {world?.name}
             </h3>
@@ -266,6 +267,8 @@ export function ArtworkViewer({
             </div>
           </div>
         )}
+
+        {art && <VisuallySimilar art={art} />}
       </DialogContent>
     </Dialog>
   );

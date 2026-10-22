@@ -130,6 +130,25 @@
    under [data-world="id"]. Shared primitives read these vars.
    ============================================================ */
 
+/* Brand defaults — every --w-* consumer (w-btn, w-input, w-panel, w-tag,
+   the artwork viewer dialog, the upload form) renders outside [data-world]
+   pages too: homepage, upload view, global dialogs. World pages override
+   these via the [data-world] blocks below. */
+:root {
+  --w-bg: #0d0b14;
+  --w-bg2: #151020;
+  --w-fg: #f4f1fa;
+  --w-fg-dim: rgba(244, 241, 250, 0.62);
+  --w-accent: #ff2e88;
+  --w-accent2: #7df2d8;
+  --w-panel: rgba(255, 255, 255, 0.045);
+  --w-panel-border: rgba(255, 255, 255, 0.14);
+  --w-font-display: var(--font-space-grotesk), sans-serif;
+  --w-font-body: var(--font-dm-sans), sans-serif;
+  --w-radius: 1rem;
+  --w-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.55);
+}
+
 [data-world] {
   --w-bg: #0d0b14;
   --w-bg2: #151020;

@@ -440,3 +440,27 @@ Work Log:
 Stage Summary:
 - The Studio reads top-to-bottom now: controls fill the whole width, and the live preview always sits beneath them as a full-width stage on desktop and tablet alike (device crops, reload and the unsaved pill unchanged) — no more 540px sidebar squeezing the editors.
 - Every "Add to the archive" entry point (hero tour button, museum CTA, upload submit) and the artwork-viewer Post button now wear the explicit Æ pink→teal gradient with a glow — visible on any background, no longer dependent on world-scoped CSS variables that don't exist outside world pages.
+
+---
+Task ID: VIEWER-SIMILAR-1
+Agent: main (Z.ai)
+Task: "fix the posts borders as the comments and likes etc are cut of and make a section for visually similar posts. also when moving components in studio such as the location of each thing like buttons or reordering them open it in a new tab and when uploading make the title and description box more visible"
+
+Work Log:
+- Systemic root cause: every --w-* theme variable was defined ONLY under [data-world] — the homepage, upload view and the globally-portal'd artwork viewer dialog had none, so .w-input/.w-panel/.w-tag/borders computed to transparent/none (invisible boxes, ghost dialogs)
+- globals.css: brand-default :root block now defines the full --w-* set (bg, bg2, fg, fg-dim, accent #ff2e88, accent2 #7df2d8, panel, panel-border, fonts, radius, shadow) — world blocks still override via cascade order. Had to kill the dev server + rm -rf .next (stale chunk served without the new :root block — same incident as HOME-SCROLL-1)
+- artwork-viewer.tsx: DialogContent now flex flex-col — main image/info grid is min-h-0 flex-1 overflow-y-auto (scrolls), and the "More from" row is a shrink-0 footer that can never be clipped by overflow-hidden again; ALSO found the dialog had silently rendered 512px wide forever (shadcn's sm:max-w-lg beat the base max-w-[1100px] in tw-merge) → added sm:max-w-[1100px]; the viewer now opens at a true 1100px with a 439px notes/actions column
+- NEW visual-similarity.ts: real image similarity client-side — 16×16 canvas downscale → normalized 27-bin RGB histogram, similarity = histogram intersection, boosted by tag overlap (×0.35) + same aesthetic (+0.08) + same medium (+0.05); computeVisuallySimilar() ranks candidates and returns the top 8
+- NEW /api/artworks/[id]/similar route: candidate pool = tag-matched (rarest, up to 12) + same-medium (12) + same-aesthetic top-liked (12), deduped, capped at 30 for fast in-browser scoring
+- NEW visually-similar.tsx: footer strip in the viewer — "Visually similar" heading with Sparkles, shimmer skeleton + "Comparing palettes…" while scoring, then compact ArtworkCards in a themed scrollbar row; hides itself when nothing qualifies; re-ranks only when the artwork identity changes (not on like/save toggles)
+- preview-panel.tsx (Studio live preview): NEW "New tab" toolbar button + "Open in a new tab" footer button — window.open of the previewed page; popped-out tabs mirror unsaved edits live via the existing draft bridge (move components / reorder worlds / scene drags and watch in the other tab). PLUS an anchor guard injected into the iframe on load: any link clicked inside the preview (SPA #/… routes and external URLs) opens in a NEW TAB instead of navigating the iframe away — the preview always keeps showing the page being edited (in-page #anchors still scroll normally)
+- upload-dialog.tsx: title/description/tags/selects got explicit !border-white/25 !bg-white/[0.08] (on top of the :root defaults) + taller description (88px) + bigger title text — every box on the upload form is now clearly outlined
+- E2E (agent-browser): :root var resolves (#ffffff24) after the .next purge; upload boxes 1px solid + visible bg; artwork dialog rgb(21,16,32) bg + 1px white/14 border, 1100×828, main grid scrolls, More-from + Visually-similar footers both fully visible; similar API returned 7 diverse candidates and the ranked row rendered 7 cards with visually-correct ordering (matching sunset-road pieces first, dreamcore meadow last); studio: guard script injected into the iframe doc, synthetic link click inside the preview opened a NEW TAB at #/world/synthwave while the studio iframe stayed on #/world/retrowave; "New tab" button opened retrowave in a third tab; tablet 834×1112: dialog 784×899 fits; zero console/page errors
+- Screenshots: artwork-viewer-fixed.png, artwork-viewer-tablet.png, upload-form-visible-inputs.png, studio-preview-newtab.png (docs/screenshots/)
+- eslint + tsc clean on all six changed/created files
+
+Stage Summary:
+- Posts no longer bleed through their frame: the artwork dialog has a real border and solid background everywhere (not just inside world pages), opens at its intended 1100px, and its "More from" strip can never be cut off again.
+- A "Visually similar" section now ranks other pieces by actual pixel-palette resemblance (plus tag/medium/aesthetic signals) — real visual matching, computed in the browser with zero new dependencies.
+- The Studio's live preview grew proper pop-out controls: open the page in a new tab and it updates live while you edit; links inside the preview open in new tabs so the preview never wanders off the page being edited.
+- The upload form's Title and Description boxes (and every field around them) finally read as solid, bordered inputs.
